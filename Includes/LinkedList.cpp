@@ -1,6 +1,5 @@
 /* Copyright (C) György Ferenc - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * You are authorized to use this file in every project if you mention the creator!
  * Written by György Ferenc <gyferenc2002@gmail.com>, May 2019
  */
 
