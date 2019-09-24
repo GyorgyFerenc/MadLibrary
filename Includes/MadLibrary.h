@@ -6,7 +6,10 @@
 #ifndef __MadLibrary_H_INCLUDED__
 #define __MadLibrary_H_INCLUDED__
     ///Inicializalas
+#include <cstddef>
 namespace MadLibrary{
+    template <class DataType>
+    bool PrimeCheck(DataType prime);
     template <class DataType>
     struct node{
         DataType data;
@@ -31,5 +34,6 @@ namespace MadLibrary{
             void AddToBegin(DataType data);
     };
 }
-#include "LinkedList.cpp"
+#include "LinkedList.h"
+#include "PrimeCheck.h"
 #endif 
