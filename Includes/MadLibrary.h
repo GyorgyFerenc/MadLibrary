@@ -9,7 +9,13 @@
 #include <cstddef>
 namespace MadLibrary{
     template <class DataType>
+    unsigned int NumberSize(DataType Number);
+    template <class DataType>
+    DataType SimplePow(DataType Number,int exp);
+    template <class DataType>
     bool PrimeCheck(DataType prime);
+    template <class DataType>
+    DataType DeleteDigit(DataType Number,unsigned int pos);
     template <class DataType>
     struct node{
         DataType data;
@@ -35,5 +41,5 @@ namespace MadLibrary{
     };
 }
 #include "LinkedList.h"
-#include "PrimeCheck.h"
+#include "SimpleFunctions.h"
 #endif 
