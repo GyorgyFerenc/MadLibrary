@@ -2,12 +2,14 @@
  * You are authorized to use this file in every project if you mention the creator!
  * Written by György Ferenc <gyferenc2002@gmail.com>, May 2019
  */
+#ifndef __LinkedList_HPP_INCLUDED__
+#define __LinkedList_HPP_INCLUDED__
 
 #include <iostream>
 #include <stdexcept>
-#include "MadLibrary.h"
+#include "MadLibrary.hpp"
 
-///Kifejtes
+//operator=
 template <class DataType>
 void MadLibrary::LinkedList<DataType>::operator=(LinkedList<DataType> fromLinkedList){
     
@@ -16,6 +18,8 @@ void MadLibrary::LinkedList<DataType>::operator=(LinkedList<DataType> fromLinked
         this->AddToEnd(fromLinkedList[i]);
     }
 }
+
+//Remove
 template <class DataType>
 void MadLibrary::LinkedList<DataType>::Remove(int position){
     MadLibrary::node<DataType>* temp=this->inPoint;
@@ -41,6 +45,8 @@ void MadLibrary::LinkedList<DataType>::Remove(int position){
     temp->previous->next=temp->next;
     delete temp;
 }
+
+//MakeEmpty
 template <class DataType>
 void MadLibrary::LinkedList<DataType>::MakeEmpty()
 {
@@ -64,6 +70,8 @@ void MadLibrary::LinkedList<DataType>::MakeEmpty()
         delete temp->next;
     }
 }
+
+//Size
 template <class DataType>
 size_t MadLibrary::LinkedList<DataType>::Size()
 {
@@ -76,6 +84,8 @@ size_t MadLibrary::LinkedList<DataType>::Size()
     }
     return size;
 }
+
+//Constructors
 template <class DataType>
 MadLibrary::LinkedList<DataType>::LinkedList(DataType data){
     this->inPoint=new node<DataType>;
@@ -83,10 +93,13 @@ MadLibrary::LinkedList<DataType>::LinkedList(DataType data){
     inPoint->next=NULL;
     inPoint->previous=NULL;
 }
+
 template <class DataType>
 MadLibrary::LinkedList<DataType>::LinkedList(){
     this->inPoint=NULL;
 }
+
+//AddToBegin
 template <class DataType>
 void MadLibrary::LinkedList<DataType>::AddToBegin(DataType data){
     MadLibrary::node<DataType>* newNode=new node<DataType>;
@@ -102,6 +115,8 @@ void MadLibrary::LinkedList<DataType>::AddToBegin(DataType data){
     this->inPoint->previous=newNode;
     inPoint=newNode;
 }
+
+//Insert
 template <class DataType>
 void MadLibrary::LinkedList<DataType>::Insert(DataType data,unsigned int position){
     MadLibrary::node<DataType>* theNewNode=new node<DataType>;
@@ -127,6 +142,8 @@ void MadLibrary::LinkedList<DataType>::Insert(DataType data,unsigned int positio
     theNewNode->previous=temp;
 
 }
+
+//AddToEnd
 template <class DataType>
 void MadLibrary::LinkedList<DataType>::AddToEnd(DataType data){
     MadLibrary::node<DataType>* theNewNode=new node<DataType>;
@@ -146,6 +163,7 @@ void MadLibrary::LinkedList<DataType>::AddToEnd(DataType data){
     theNewNode->previous=temp;
 }
 
+//GetData
 template <class DataType>
 DataType MadLibrary::LinkedList<DataType>::GetData(unsigned int position){
     MadLibrary::node<DataType>* temp=this->inPoint;
@@ -155,8 +173,12 @@ DataType MadLibrary::LinkedList<DataType>::GetData(unsigned int position){
     }
     return temp->data;
 }
+
+//operator[]
 template <class DataType>
 DataType MadLibrary::LinkedList<DataType>::operator[](unsigned int position)
 {
     return this->GetData(position);
 }
+
+#endif

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../Includes/MadLibrary.h"
+#include "../Includes/MadLibrary.hpp"
 
 int main(){
     

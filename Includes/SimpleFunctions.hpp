@@ -1,4 +1,7 @@
-#include "MadLibrary.h"
+#ifndef __SimpleFunctions_HPP_INCLUDED__
+#define __SimpleFunctions_HPP_INCLUDED__
+
+#include "MadLibrary.hpp"
 #include <ctgmath>
 
 //NumberSize
@@ -42,3 +45,4 @@ bool MadLibrary::PrimeCheck(DataType prime){
     }
     return true;
 }
+#endif

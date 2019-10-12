@@ -3,10 +3,11 @@
  * Written by György Ferenc <gyferenc2002@gmail.com>, May 2019
  */
 
-#ifndef __MadLibrary_H_INCLUDED__
-#define __MadLibrary_H_INCLUDED__
+#ifndef __MadLibrary_HPP_INCLUDED__
+#define __MadLibrary_HPP_INCLUDED__
     ///Inicializalas
 #include <cstddef>
+#include <list>
 namespace MadLibrary{
     template <class DataType>
     unsigned int NumberSize(DataType Number);
@@ -39,7 +40,13 @@ namespace MadLibrary{
             void Insert(DataType data,unsigned int position);
             void AddToBegin(DataType data);
     };
+    template <class DataType>
+    class STLLinkedList:public std::list<DataType>{
+        public:
+            DataType operator[](size_t position);
+    };
 }
-#include "LinkedList.h"
-#include "SimpleFunctions.h"
+#include "LinkedList.hpp"
+#include "SimpleFunctions.hpp"
+#include "STLLinkedList.hpp"
 #endif 

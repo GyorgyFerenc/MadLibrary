@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "iostream": "cpp",
-        "ctgmath": "cpp"
+        "ctgmath": "cpp",
+        "deque": "cpp",
+        "list": "cpp"
     }
 }
