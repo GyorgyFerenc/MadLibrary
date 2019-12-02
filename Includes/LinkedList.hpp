@@ -165,7 +165,7 @@ void MadLibrary::LinkedList<DataType>::AddToEnd(DataType data){
 
 //GetData
 template <class DataType>
-DataType MadLibrary::LinkedList<DataType>::GetData(unsigned int position){
+DataType& MadLibrary::LinkedList<DataType>::GetData(unsigned int position){
     MadLibrary::node<DataType>* temp=this->inPoint;
     for (int i=0;i<position;i++)
     {
@@ -176,7 +176,7 @@ DataType MadLibrary::LinkedList<DataType>::GetData(unsigned int position){
 
 //operator[]
 template <class DataType>
-DataType MadLibrary::LinkedList<DataType>::operator[](unsigned int position)
+DataType& MadLibrary::LinkedList<DataType>::operator[](unsigned int position)
 {
     return this->GetData(position);
 }
