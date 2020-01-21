@@ -8,6 +8,6 @@
 ```cpp
 #include "Includes/MadLibrary.hpp"
 ```
- The you ready to go.
+ Then you ready to go.
  
  
