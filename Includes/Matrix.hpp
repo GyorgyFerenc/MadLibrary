@@ -1,5 +1,5 @@
-#ifndef __Time_HPP_INCLUDED__
-#define __Time_HPP_INCLUDED__
+#ifndef __Matrix_HPP_INCLUDED__
+#define __Matrix_HPP_INCLUDED__
 
 #include "MadLibrary.hpp"
 

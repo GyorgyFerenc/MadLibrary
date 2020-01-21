@@ -110,7 +110,7 @@ void MadLibrary::StringToNumber(RandomAccesIterator begin,RandomAccesIterator en
 
 //NumberSize
 template <class DataType>
-unsigned int MadLibrary::NumberSize(DataType Number){
+uint32_t MadLibrary::NumberSize(DataType Number){
     unsigned int size=0;
     do{
         Number/=10;
@@ -121,7 +121,7 @@ unsigned int MadLibrary::NumberSize(DataType Number){
 
 //SimplePow
 template <class DataType>
-DataType MadLibrary::SimplePow(DataType Number,int exp){
+DataType MadLibrary::SimplePow(DataType Number,uint32_t exp){
     if (exp==0) return 1;
     DataType temp=Number;
     for (int i=0;i<exp-1;i++){
@@ -132,7 +132,7 @@ DataType MadLibrary::SimplePow(DataType Number,int exp){
 
 //DeleteDigit
 template <class DataType>
-DataType MadLibrary::DeleteDigit(DataType Number,unsigned int pos){
+DataType MadLibrary::DeleteDigit(DataType Number,uint32_t pos){
     return Number/MadLibrary::SimplePow(10,MadLibrary::NumberSize(Number)-pos)*MadLibrary::SimplePow(10,MadLibrary::NumberSize(Number)-pos-1)+Number%MadLibrary::SimplePow(10,MadLibrary::NumberSize(Number)-pos-1);
 }
 

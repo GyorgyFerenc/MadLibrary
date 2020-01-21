@@ -37,11 +37,11 @@ namespace MadLibrary{
 
     //NumberSize
     template <class DataType>
-    unsigned int NumberSize(DataType Number);
+    uint32_t NumberSize(DataType Number);
 
     //SimplePow
     template <class DataType>
-    DataType SimplePow(DataType Number,int exp);
+    DataType SimplePow(DataType Number,uint32_t exp);
 
     //PrimeCheck
     template <class DataType>
@@ -49,7 +49,7 @@ namespace MadLibrary{
 
     //DeleteDigit
     template <class DataType>
-    DataType DeleteDigit(DataType Number,unsigned int pos);
+    DataType DeleteDigit(DataType Number,uint32_t pos);
 
 
     //Matrix
