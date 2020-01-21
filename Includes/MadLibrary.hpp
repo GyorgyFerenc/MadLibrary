@@ -51,6 +51,8 @@ namespace MadLibrary{
     template <class DataType>
     DataType DeleteDigit(DataType Number,uint32_t pos);
 
+    //Map
+    double Map(double value, double start1, double stop1, double start2, double stop2);
 
     //Matrix
     template <class DataType>
@@ -61,6 +63,7 @@ namespace MadLibrary{
             uint32_t row,col;
         public:
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
+            static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
             std::vector<DataType>& operator[](size_t position);
             std::vector<DataType> operator[](size_t position) const;
@@ -77,7 +80,7 @@ namespace MadLibrary{
             Matrix<DataType> operator+(const Matrix<DataType> other);
             void operator=(const Matrix& other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
-            //s~Matrix();
+            ~Matrix();
     };
     
     //Node

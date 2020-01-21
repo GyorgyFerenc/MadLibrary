@@ -22,6 +22,11 @@ MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::ZeroMatrix(uint32_t r
     return temp;
 }
 
+template <class DataType>
+MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::ZeroMatrix(uint32_t number){
+    return MadLibrary::Matrix<DataType>::ZeroMatrix(number,number);
+}
+
 //ZeroMatrix
 template <class DataType>
 MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::IdentityMatrix(uint32_t size){
@@ -141,5 +146,9 @@ MadLibrary::Matrix<DataType>::Matrix(){
     this->Resize(0,0);
 }
 
-
+//Destructor
+template <class DataType>
+MadLibrary::Matrix<DataType>::~Matrix(){
+    this->Clean();
+}
 #endif

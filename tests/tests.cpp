@@ -4,7 +4,8 @@
 #include <iostream>
 #include <vector>
 
+
+
 int main(){
-    std::vector<int> b;
-    std::vector<int> a; 
+    std::cout<<MadLibrary::Map(3,1,10,10,100);
 }
