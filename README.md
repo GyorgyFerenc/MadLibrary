@@ -31,7 +31,7 @@ __Parameters__:
 __Return Value__:
     There is no return value.
     
- ## Abs
+## Abs
 ```cpp
 template<class DataType>
 DataType Abs(DataType data);
@@ -41,7 +41,7 @@ __Parameters__:
 - DataType data: the data.
 
 __Return Value__:
-    absolute value of any data.
+    Absolute value of any data.
     
 ## PolygonArea
 ```cpp
@@ -74,4 +74,67 @@ __Parameters__:
 __Return Value__:
     There is no return value.
 
+## StringToNumber
+```cpp
+template <class DataType,class RandomAccesIterator>
+void StringToNumber(RandomAccesIterator begin,RandomAccesIterator end,DataType& toData);
+```
+Extract the data out of the string.
+__Parameters__:
+- RandomAccesIterator begin: RandomAccesIterator to the begining of the data.
+- RandomAccesIterator end: RandomAccesIterator to the end of the data.
+- DataType& toData: The variable to store the data.
+
+__Return Value__:
+    There is no return value.
+
+## NumberSize
+```cpp
+template <class DataType>
+uint32_t NumberSize(DataType Number);
+```
+Return the size of the number.
+__Parameters__:
+- DataType Number: The number.
+
+__Return Value__:
+    Return the size of the number.
     
+## SimplePow
+```cpp
+template <class DataType>
+DataType SimplePow(DataType Number,uint32_t exp);
+```
+Rraises the number to a positive whole number exponent.
+__Parameters__:
+- DataType Number: The number.
+- uint32_t exp: The exponent.
+
+__Return Value__:
+    The new number.
+    
+## PrimeCheck
+```cpp
+template <class DataType>
+bool PrimeCheck(DataType prime);
+```
+Check if the number is a prime.
+__Parameters__:
+- DataType prime: The number to check.
+
+__Return Value__:
+    Returns true if it's a prime, otherwise false.
+
+## DeleteDigit
+```cpp
+template <class DataType>
+DataType DeleteDigit(DataType Number,uint32_t pos);
+```
+Delete a digit from the number.
+__Parameters__:
+- DataType Number: The number to delete from.
+- uint32_t pos: The position from to delete, zero indexed.
+
+__Return Value__:
+    Returns the new number.
+
