@@ -4,15 +4,15 @@
 [Installation](#Installation) 
 
 [Documentation](#Documentation)
-## Installation
+# Installation
  It provides and easy installation.
  Download the Includes folder with the files and put in your project folder, then in your project include the MadLibrary.hpp.
 ```cpp
 #include "Includes/MadLibrary.hpp"
 ```
  The you ready to go.
-## Documentation
- ____Dijsktra____
+# Documentation
+##Dijsktra
  
 ```cpp
 void Dijkstra(std::vector<std::vector<uint32_t>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<uint32_t>& distance);
@@ -31,7 +31,7 @@ __Parameters__:
 __Return Value__:
     There is no return value.
     
- ____Abs____
+ ##Abs
 ```cpp
 template<class DataType>
 DataType Abs(DataType data);
@@ -43,7 +43,7 @@ __Parameters__:
 __Return Value__:
     absolute value of any data.
     
- ____PolygonArea____
+##PolygonArea
 ```cpp
 template<class DataType,class DataType2>
 void PolygonArea(std::vector<DataType> X, std::vector<DataType> Y,DataType2 &temp);
@@ -59,7 +59,7 @@ __Return Value__:
     There is no return value.
 
     
- ____MergeSort____
+##MergeSort
 ```cpp
 template<typename Iter>
 void MergeSort(Iter beg, Iter end);
