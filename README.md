@@ -2,6 +2,7 @@
  Provide usefull resources, codes etc.
  
 [Installation](#Installation)
+[Documentation](#Documentation)
 ## Installation
  It provides and easy installation.
  Download the Includes folder with the files and put in your project folder, then in your project include the MadLibrary.hpp.
@@ -28,3 +29,48 @@ __Parameters__:
 
 __Return Value__:
     There is no return value.
+    
+ ____Abs____
+```cpp
+template<class DataType>
+DataType Abs(DataType data);
+```
+It is function returning the absolute value of any data.
+__Parameters__:
+- DataType data: the data.
+
+__Return Value__:
+    absolute value of any data.
+    
+ ____PolygonArea____
+```cpp
+template<class DataType,class DataType2>
+void PolygonArea(std::vector<DataType> X, std::vector<DataType> Y,DataType2 &temp);
+```
+It calculates the area of a given polygon that has no holes in it.
+See: [Shoelace Formula](https://en.wikipedia.org/wiki/Shoelace_formula)
+__Parameters__:
+- std::vector<DataType> X: The st::vector of X coordinates of the edges.
+- std::vector<DataType> Y: The st::vector of Y coordinates of the edges.
+- DataType2 &temp: variable where is the area is stored
+
+__Return Value__:
+    There is no return value.
+
+    
+ ____MergeSort____
+```cpp
+template<typename Iter>
+void MergeSort(Iter beg, Iter end);
+```
+Sorting the element of a container.
+See: [Merge Sort](https://en.wikipedia.org/wiki/Merge_sort)
+Note: This code was written by [Zach Whaley](https://github.com/zachwhaley).
+__Parameters__:
+- Iter beg: Iterator to the begining of the container.
+- Iter end: Iterator to the end of the container.
+
+__Return Value__:
+    There is no return value.
+
+    
