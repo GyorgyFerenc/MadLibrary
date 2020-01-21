@@ -27,4 +27,4 @@ __Parameters__:
 - std::vector<uint32_t>& distance: The std::vector where is the distance from the source are stored.
 
 __Return Value__:
-    There is none return value.
+    There is no return value.
