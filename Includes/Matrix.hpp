@@ -69,7 +69,7 @@ MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator*(MadLibrary:
     for (size_t i=0;i<temp.GetRow();i++){
         for (size_t j=0;j<temp.GetColumn();j++){
             DataType tempData=this->GetData(0,0)-this->GetData(0,0);
-            for (size_t z=0;z<temp.GetRow();z++){
+            for (size_t z=0;z<other.GetRow();z++){
                 tempData+=this->GetData(i,z)*other.GetData(z,j);
             }
             temp[i][j]=tempData;

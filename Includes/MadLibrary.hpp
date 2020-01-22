@@ -65,8 +65,6 @@ namespace MadLibrary{
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
-            std::vector<DataType>& operator[](size_t position);
-            std::vector<DataType> operator[](size_t position) const;
             Matrix(const uint32_t row,const uint32_t col, DataType fill);
             Matrix(const uint32_t row,const uint32_t col);
             Matrix();
@@ -77,8 +75,10 @@ namespace MadLibrary{
             DataType GetData(uint32_t row,uint32_t col) const;
             uint32_t GetRow() const;
             uint32_t GetColumn() const;
+            std::vector<DataType>& operator[](size_t position);
+            std::vector<DataType> operator[](size_t position) const;
             Matrix<DataType> operator+(const Matrix<DataType> other);
-            void operator=(const Matrix& other);
+            void operator=(const Matrix<DataType>& other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
             ~Matrix();
     };
