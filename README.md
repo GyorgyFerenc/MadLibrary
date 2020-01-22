@@ -138,3 +138,48 @@ __Parameters__:
 __Return Value__:
     Returns the new number.
 
+## Map
+```cpp
+double Map(double value, double start1, double stop1, double start2, double stop2);
+```
+It creates a value between an interval based on the value provided and the original interval.
+__Parameters__:
+- double value: the value to map. Note: start1<=value<=stop1.
+- double start1: the first interval mininum.
+- double stop1: the first interval maximum.
+- double start2: the map interval mininum.
+- double stop2: the map interval maximum.
+
+__Return Value__:
+    Returns the mapped value.
+
+## Matrix
+```cpp
+template <class DataType>
+    class Matrix
+    {
+        private:
+            std::vector<std::vector<DataType>> vect;
+            uint32_t row,col;
+        public:
+            static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
+            static Matrix<DataType> ZeroMatrix(uint32_t number);
+            static Matrix<DataType> IdentityMatrix(uint32_t size);
+            std::vector<DataType>& operator[](size_t position);
+            std::vector<DataType> operator[](size_t position) const;
+            Matrix(const uint32_t row,const uint32_t col, DataType fill);
+            Matrix(const uint32_t row,const uint32_t col);
+            Matrix();
+            Matrix(const Matrix& other);
+            void Fill(DataType data);
+            void Resize(const uint32_t row,const uint32_t col);
+            void Clean();
+            DataType GetData(uint32_t row,uint32_t col) const;
+            uint32_t GetRow() const;
+            uint32_t GetColumn() const;
+            Matrix<DataType> operator+(const Matrix<DataType> other);
+            void operator=(const Matrix& other);
+            Matrix<DataType> operator*(const Matrix<DataType> other);
+            ~Matrix();
+    };
+```
