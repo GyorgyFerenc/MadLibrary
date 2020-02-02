@@ -383,10 +383,24 @@ __Return Value__:
 ~Matrix();
 ```
 
-It frees up the used memory
+It frees up the used memory.
 
 __Paramters__:
     There is no parameter.
     
 __Return Value__:
     There is no return value.
+    
+### Deconstructor
+```cpp
+DataType GetDeterminant() const;
+```
+
+It calculates the Matrix determinant.
+See: [Determinant](https://en.wikipedia.org/wiki/Determinant)
+
+__Paramters__:
+    There is no parameter.
+    
+__Return Value__:
+    Returns the calculated determinant.
