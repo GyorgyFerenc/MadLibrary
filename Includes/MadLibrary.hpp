@@ -73,6 +73,7 @@ namespace MadLibrary{
             void Resize(const uint32_t row,const uint32_t col);
             void Clean();
             DataType GetData(uint32_t row,uint32_t col) const;
+            DataType GetDeterminant() const;
             uint32_t GetRow() const;
             uint32_t GetColumn() const;
             std::vector<DataType>& operator[](size_t position);

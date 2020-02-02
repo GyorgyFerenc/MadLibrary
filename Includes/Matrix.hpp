@@ -84,6 +84,95 @@ DataType MadLibrary::Matrix<DataType>::GetData(uint32_t row,uint32_t col) const{
     return this->vect[row][col];
 }
 
+//GetDeterminant
+template <class DataType>
+DataType MadLibrary::Matrix<DataType>::GetDeterminant() const{
+    DataType Det=0;
+    //Check for a row with zeros
+    for (size_t i = 0; i < this->GetRow(); i++)
+    {
+        bool a=true;
+        for (size_t j = 0; j < this->GetColumn(); j++)
+        {
+            if (this->GetData(i,j)!=0){
+                a=false;
+                break;
+            }
+        }
+        if (a)
+        {
+            return 0;
+        }
+    }
+    //Check for identical rows
+    for (size_t i = 0; i < this->GetRow()-1; i++)
+    {
+        bool a=true;
+        for (size_t j = 0; j < this->GetColumn(); j++)
+        {
+            if (this->GetData(i,j)!=this->GetData(i+1,j)){
+                a=false;
+                break;
+            }
+        }
+        if (a)
+        {
+            return 0;
+        }
+    }
+    //Check for a column with zeros
+    for (size_t i = 0; i < this->GetColumn(); i++)
+    {
+        bool a=true;
+        for (size_t j = 0; j < this->GetRow(); j++)
+        {
+            if (this->GetData(j,i)!=0){
+                a=false;
+                break;
+            }
+        }
+        if (a)
+        {
+            return 0;
+        }
+    }
+    //Check for identical columns
+    for (size_t i = 0; i < this->GetColumn()-1; i++)
+    {
+        bool a=true;
+        for (size_t j = 0; j < this->GetRow(); j++)
+        {
+            if (this->GetData(j,i)!=this->GetData(j,i+1)){
+                a=false;
+                break;
+            }
+        }
+        if (a)
+        {
+            return 0;
+        }
+    }
+    if (this->GetRow()<=2) return this->GetData(0,0)*this->GetData(1,1)-this->GetData(1,0)*this->GetData(0,1);
+    for (size_t i = 0; i < this->GetColumn(); i++)
+    {
+        MadLibrary::Matrix<DataType> newMatrix(this->GetRow()-1,this->GetColumn()-1,0);
+        for (size_t j = 1; j < this->GetRow(); j++)
+        {
+            size_t t=0;
+            for (size_t z = 0; z < newMatrix.GetColumn(); z++)
+            {
+                if (i==z){
+                    t++;
+                }
+                newMatrix[j-1][z]=this->GetData(j,z+t);
+                
+            }
+        }
+        Det+=MadLibrary::SimplePow(-1,i)*this->GetData(0,i)*newMatrix.GetDeterminant();
+    }
+    return Det;
+}
+
 //operator[]
 template <class DataType>
 std::vector<DataType>& MadLibrary::Matrix<DataType>::operator[](size_t position){
