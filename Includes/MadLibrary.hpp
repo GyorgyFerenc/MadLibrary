@@ -82,8 +82,10 @@ namespace MadLibrary{
             std::vector<DataType>& operator[](size_t position);
             std::vector<DataType> operator[](size_t position) const;
             Matrix<DataType> operator+(const Matrix<DataType> other);
+            void operator+=(const Matrix<DataType> other);
             void operator=(const Matrix<DataType>& other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
+            void operator*=(const Matrix<DataType> other);
             ~Matrix();
     };
     

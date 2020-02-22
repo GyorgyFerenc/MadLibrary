@@ -7,24 +7,7 @@
 
 
 int main(){
-    MadLibrary::Matrix<double> a(5,5);
-    std::ifstream iF("tests/matrix.in");
-    int n;
-    iF>>n;
-    std::cout<<n<<std::endl;
-    for (uint32_t i=0;i<n;i++){
-        for (uint32_t j=0;j<n;j++){
-            iF>>a[i][j];
-        }
-    }
-    for (uint32_t i=0;i<n;i++){
-        for (uint32_t j=0;j<n;j++){
-            std::cout<<a[i][j]<<" ";
-        }
-        std::cout<<std::endl;
-    }
-    std::vector<uint32_t> prev;
-    std::vector<double>dist;
-    MadLibrary::Dijkstra(a,0,prev,dist);
-    std::cout<<dist[3];
+    MadLibrary::Matrix<uint32_t> a(3,3,4);
+    a=MadLibrary::SimplePow(a,3);
+    std::cout<<a[0][0];
 }

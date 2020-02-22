@@ -78,6 +78,18 @@ MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator*(MadLibrary:
     return temp;
 }
 
+//operator+=
+template <class DataType>
+void MadLibrary::Matrix<DataType>::operator+=(MadLibrary::Matrix<DataType> other){
+    this->operator=(this->operator+(other));
+}
+
+//operator*=
+template <class DataType>
+void MadLibrary::Matrix<DataType>::operator*=(MadLibrary::Matrix<DataType> other){
+    this->operator=(this->operator*(other));
+}
+
 //GetData
 template <class DataType>
 DataType MadLibrary::Matrix<DataType>::GetData(uint32_t row,uint32_t col) const{

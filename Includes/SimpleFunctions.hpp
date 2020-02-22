@@ -131,10 +131,29 @@ uint32_t MadLibrary::NumberSize(DataType Number){
 //SimplePow
 template <class DataType>
 DataType MadLibrary::SimplePow(DataType Number,uint32_t exp){
-    if (exp==0) return 1;
+    if (exp==0) return (Number/Number);
+    if (exp==1) return Number;
     DataType temp=Number;
-    for (int i=0;i<exp-1;i++){
+    uint32_t MomentExp=1;
+    std::vector<DataType> Numbers;//0->2^1, 1->2^2
+    std::vector<uint32_t> Exponents;//0->1,1->2
+    while (MomentExp*2<=exp)
+    {
+        Number*=Number;
+        MomentExp*=2;
+        Exponents.push_back(MomentExp);
+        Numbers.push_back(Number);
+    }
+    for (uint32_t i=0;i<Numbers.size();i++){
+        if (MomentExp+Exponents[i]<exp){
+            Number*=Numbers[i];
+            MomentExp+=Exponents[i];
+        }
+    }
+    while (MomentExp<exp)
+    {
         Number*=temp;
+        MomentExp++;
     }
     return Number;
 }
