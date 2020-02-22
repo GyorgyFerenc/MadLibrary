@@ -192,8 +192,10 @@ template <class DataType>
             std::vector<DataType>& operator[](size_t position);
             std::vector<DataType> operator[](size_t position) const;
             Matrix<DataType> operator+(const Matrix<DataType> other);
-            void operator=(const Matrix& other);
+            void operator+=(const Matrix<DataType> other);
+            void operator=(const Matrix<DataType>& other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
+            void operator*=(const Matrix<DataType> other);
             ~Matrix();
     };
 ```
@@ -355,6 +357,20 @@ __Paramters__:
 __Return Value__:
     Returns the newly created Matrix.
 
+### Operator+=
+```cpp
+void operator+=(const Matrix<DataType> other);
+```
+
+It adds the Matrices and assigns the values to the first Matrix.
+See: [Matrix Addition](https://en.wikipedia.org/wiki/Matrix_addition)
+
+__Paramters__:
+- const Matrix<DataType> other: The Matrix to add to.
+    
+__Return Value__:
+    There is no return value.
+
 ### Operator=
 ```cpp
 void operator=(const Matrix<DataType>& other);
@@ -374,6 +390,20 @@ Matrix<DataType> operator*(const Matrix<DataType> other);
 ```
 
 It multiples the Matrices.
+See: [Matrix Multiplication](https://en.wikipedia.org/wiki/Matrix_multiplication)
+
+__Paramters__:
+- const Matrix<DataType> other: The Matrix to multiple with.
+    
+__Return Value__:
+    It returns the newly created Matrix.
+
+### Operator*=
+```cpp
+void operator*=(const Matrix<DataType> other);
+```
+
+It multiples the Matrices and assigns the values to the first Matrix.
 See: [Matrix Multiplication](https://en.wikipedia.org/wiki/Matrix_multiplication)
 
 __Paramters__:
