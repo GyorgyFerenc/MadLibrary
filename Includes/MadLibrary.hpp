@@ -16,8 +16,10 @@ namespace MadLibrary{
     class Matrix;
 
     //Dijkstra
-    void Dijkstra(std::vector<std::vector<uint32_t>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<uint32_t>& distance);
-    void Dijkstra(Matrix<uint32_t> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<uint32_t>& distance);
+    template <class DataType>
+    void Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
+    template <class DataType>
+    void Dijkstra(Matrix<DataType> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
     
     //Abs
     template<class DataType>

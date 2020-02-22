@@ -7,7 +7,7 @@
 
 
 int main(){
-    MadLibrary::Matrix<uint32_t> a(5,5);
+    MadLibrary::Matrix<double> a(5,5);
     std::ifstream iF("tests/matrix.in");
     int n;
     iF>>n;
@@ -23,7 +23,8 @@ int main(){
         }
         std::cout<<std::endl;
     }
-    std::vector<uint32_t> prev,dist;
+    std::vector<uint32_t> prev;
+    std::vector<double>dist;
     MadLibrary::Dijkstra(a,0,prev,dist);
     std::cout<<dist[3];
 }

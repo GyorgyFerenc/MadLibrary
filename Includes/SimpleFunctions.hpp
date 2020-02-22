@@ -5,6 +5,7 @@
 #include <ctgmath>
 #include <sstream>
 #include <algorithm>
+#include <limits>
 
 //Map
 double MadLibrary::Map(double value, double start1, double stop1, double start2, double stop2) {
@@ -13,7 +14,8 @@ double MadLibrary::Map(double value, double start1, double stop1, double start2,
 }
 
 //Dijkstra
-uint32_t ExtractMin(std::vector<uint32_t> theList, std::vector<uint32_t>& distance){
+template <class DataType>
+uint32_t ExtractMin(std::vector<uint32_t> theList, std::vector<DataType>& distance){
     uint32_t MinDist=distance[theList[0]],TheNode=theList[0];
     for (size_t i=1;i<theList.size();i++){
         if (distance[theList[i]]<MinDist){
@@ -24,8 +26,9 @@ uint32_t ExtractMin(std::vector<uint32_t> theList, std::vector<uint32_t>& distan
     return TheNode;
 }
 
-std::vector<uint32_t> TheNeighbors(std::vector<std::vector<uint32_t>> Graph,uint32_t node){
-    std::vector<uint32_t> TheNeighbors;
+template <class DataType>
+std::vector<DataType> TheNeighbors(std::vector<std::vector<DataType>> Graph,uint32_t node){
+    std::vector<DataType> TheNeighbors;
     for (size_t i=0;i<Graph.size();i++){
         if (Graph[node][i]!=0)
         {
@@ -35,13 +38,16 @@ std::vector<uint32_t> TheNeighbors(std::vector<std::vector<uint32_t>> Graph,uint
     return TheNeighbors;
 }
 
-void MadLibrary::Dijkstra(std::vector<std::vector<uint32_t>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<uint32_t>& distance){
+template <class DataType>
+void MadLibrary::Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance){
     uint32_t GraphSize=Graph.size();
     previous.clear();
     distance.clear();
     for (size_t i=0; i<GraphSize;i++){
-        previous.push_back(-1);
-        distance.push_back(-1);
+        //previous.push_back(-1);
+        //distance.push_back(-1);
+        previous.push_back(std::numeric_limits<uint32_t>::max());
+        distance.push_back(std::numeric_limits<DataType>::max());
     }
     distance[source]=0;
     std::vector<uint32_t> theList;
@@ -51,9 +57,9 @@ void MadLibrary::Dijkstra(std::vector<std::vector<uint32_t>> Graph, uint32_t sou
     while (!theList.empty())
     {
         uint32_t temp=ExtractMin(theList,distance);
-        std::vector<uint32_t> Neighbors=TheNeighbors(Graph,temp);
+        std::vector<DataType> Neighbors=TheNeighbors(Graph,temp);
         for (size_t i=0;i<Neighbors.size();i++){
-            uint32_t alt=distance[temp]+Graph[temp][Neighbors[i]];
+            DataType alt=distance[temp]+Graph[temp][Neighbors[i]];
             if (alt<distance[Neighbors[i]]){
                 distance[Neighbors[i]]=alt;
                 previous[Neighbors[i]]=temp;
@@ -70,8 +76,9 @@ void MadLibrary::Dijkstra(std::vector<std::vector<uint32_t>> Graph, uint32_t sou
     }
 }
 
-void MadLibrary::Dijkstra(MadLibrary::Matrix<uint32_t> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<uint32_t>& distance){
-    Dijkstra((std::vector<std::vector<uint32_t>>)Graph,source,previous,distance);
+template <class DataType>
+void MadLibrary::Dijkstra(MadLibrary::Matrix<DataType> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance){
+    Dijkstra((std::vector<std::vector<DataType>>)Graph,source,previous,distance);
 }
 
 //Abs
