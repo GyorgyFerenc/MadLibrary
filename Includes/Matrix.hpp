@@ -184,6 +184,12 @@ std::vector<DataType> MadLibrary::Matrix<DataType>::operator[](size_t position) 
     return vect[position];
 }
 
+//cast operator
+template <class DataType>
+MadLibrary::Matrix<DataType>::operator std::vector<std::vector<DataType>>(){
+    return this->vect;
+}
+
 //Resize
 template <class DataType>
 void MadLibrary::Matrix<DataType>::Resize(const uint32_t row,const uint32_t col){

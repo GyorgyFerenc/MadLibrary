@@ -71,11 +71,7 @@ void MadLibrary::Dijkstra(std::vector<std::vector<uint32_t>> Graph, uint32_t sou
 }
 
 void MadLibrary::Dijkstra(MadLibrary::Matrix<uint32_t> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<uint32_t>& distance){
-    std::vector<std::vector<uint32_t>> temp;
-    for (size_t i=0;i<Graph.GetRow();i++){
-        temp.push_back(Graph[i]);
-    }
-    Dijkstra(temp,source,previous,distance);
+    Dijkstra((std::vector<std::vector<uint32_t>>)Graph,source,previous,distance);
 }
 
 //Abs

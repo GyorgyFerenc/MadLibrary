@@ -62,6 +62,7 @@ namespace MadLibrary{
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
+            operator std::vector<std::vector<DataType>>();
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
