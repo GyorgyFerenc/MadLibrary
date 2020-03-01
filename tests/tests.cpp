@@ -7,7 +7,6 @@
 
 
 int main(){
-    MadLibrary::Matrix<uint32_t> a(3,3,4);
-    a=MadLibrary::SimplePow(a,3);
-    std::cout<<a[0][0];
+    uint32_t a=1;
+    std::cout<<MadLibrary::SimplePow(1,((uint32_t)-1));
 }

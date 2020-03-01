@@ -44,8 +44,6 @@ void MadLibrary::Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t sou
     previous.clear();
     distance.clear();
     for (size_t i=0; i<GraphSize;i++){
-        //previous.push_back(-1);
-        //distance.push_back(-1);
         previous.push_back(std::numeric_limits<uint32_t>::max());
         distance.push_back(std::numeric_limits<DataType>::max());
     }
@@ -143,11 +141,16 @@ DataType MadLibrary::SimplePow(DataType Number,uint32_t exp){
         MomentExp*=2;
         Exponents.push_back(MomentExp);
         Numbers.push_back(Number);
+        if (MomentExp>=std::numeric_limits<uint32_t>::max()/2){
+            Numbers.pop_back();
+            Exponents.pop_back();
+            break;
+        }
     }
     for (uint32_t i=0;i<Numbers.size();i++){
-        if (MomentExp+Exponents[i]<exp){
-            Number*=Numbers[i];
-            MomentExp+=Exponents[i];
+        if (MomentExp+Exponents[Numbers.size()-i-1]<exp){
+            Number*=Numbers[Numbers.size()-i-1];
+            MomentExp+=Exponents[Numbers.size()-i-1];
         }
     }
     while (MomentExp<exp)
