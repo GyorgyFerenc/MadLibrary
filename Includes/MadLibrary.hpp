@@ -30,8 +30,10 @@ namespace MadLibrary{
     void PolygonArea(std::vector<DataType> X, std::vector<DataType> Y,DataType2 &temp);
     
     //MergeSort
-    template<typename Iter>
-    void MergeSort(Iter beg, Iter end); //by  zachwhaley
+    template<class Iter, class Comper>
+    void MergeSort(Iter beg, Iter end, Comper comp);
+    template<class Iter>
+    void MergeSort(Iter beg, Iter end);
     
     //StringToNumber
     template <class DataType,class RandomAccesIterator>
@@ -64,7 +66,8 @@ namespace MadLibrary{
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
-            operator std::vector<std::vector<DataType>>();
+            template <typename OutputStream>
+            void PlotMatrix(OutputStream& Os) const;
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
@@ -77,6 +80,7 @@ namespace MadLibrary{
             void Clean();
             DataType GetData(uint32_t row,uint32_t col) const;
             DataType GetDeterminant() const;
+            DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
             uint32_t GetRow() const;
             uint32_t GetColumn() const;
             std::vector<DataType>& operator[](size_t position);
@@ -85,7 +89,15 @@ namespace MadLibrary{
             void operator+=(const Matrix<DataType> other);
             void operator=(const Matrix<DataType>& other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
+            Matrix<DataType> operator*(const DataType Data);
             void operator*=(const Matrix<DataType> other);
+            void operator*=(const DataType Data);
+            Matrix<DataType> operator/(Matrix<DataType> other);
+            Matrix<DataType> operator/(const DataType Data);
+            void operator/=(const Matrix<DataType> other);
+            void operator/=(const DataType Data);
+            Matrix<DataType> GetInverse();
+            explicit operator std::vector<std::vector<DataType>>();
             ~Matrix();
     };
     

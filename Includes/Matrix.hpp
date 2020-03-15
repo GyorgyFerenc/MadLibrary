@@ -3,6 +3,18 @@
 
 #include "MadLibrary.hpp"
 
+//PlotMatrix
+template <class DataType>
+template <typename OutputStream>
+void MadLibrary::Matrix<DataType>::PlotMatrix(OutputStream& Os) const {
+    for (uint32_t i = 0; i < this->GetRow(); i++) {
+        for (uint32_t j = 0; j < this->GetColumn(); j++) {
+            Os << this->GetData(i, j)<<" ";
+        }
+        Os << "\n";
+    }
+}
+
 //GetRow
 template <class DataType>
 uint32_t MadLibrary::Matrix<DataType>::GetRow() const{
@@ -62,9 +74,15 @@ MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator+(MadLibrary:
     return temp;
 }
 
+//operator+=
+template <class DataType>
+void MadLibrary::Matrix<DataType>::operator+=(const MadLibrary::Matrix<DataType> other) {
+    this->operator=(this->operator+(other));
+}
+
 //operator*
 template <class DataType>
-MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator*(MadLibrary::Matrix<DataType> other){
+MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator*(const MadLibrary::Matrix<DataType> other){
     MadLibrary::Matrix<DataType> temp(this->GetRow(),other.GetColumn());
     for (size_t i=0;i<temp.GetRow();i++){
         for (size_t j=0;j<temp.GetColumn();j++){
@@ -78,16 +96,54 @@ MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator*(MadLibrary:
     return temp;
 }
 
-//operator+=
 template <class DataType>
-void MadLibrary::Matrix<DataType>::operator+=(MadLibrary::Matrix<DataType> other){
-    this->operator=(this->operator+(other));
+MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator*(const DataType Data) {
+    MadLibrary::Matrix<DataType> temp(this->GetRow(), this->GetRow());
+    for (uint32_t i = 0; i < this->GetRow(); i++) {
+        for (uint32_t j = 0; j < this->GetColumn(); j++) {
+            temp[i][j] = this->GetData(i, j) * Data;
+        }
+    }
+    return temp;
 }
 
 //operator*=
 template <class DataType>
-void MadLibrary::Matrix<DataType>::operator*=(MadLibrary::Matrix<DataType> other){
+void MadLibrary::Matrix<DataType>::operator*=(const MadLibrary::Matrix<DataType> other){
     this->operator=(this->operator*(other));
+}
+
+template <class DataType>
+void MadLibrary::Matrix<DataType>::operator*=(const DataType Data){
+    this->operator=(this->operator*(Data));
+}
+
+//operator/
+template <class DataType>
+MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator/(MadLibrary::Matrix<DataType> other) {
+    return this->operator*(other.GetInverse());
+}
+
+template <class DataType>
+MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::operator/(const DataType Data) {
+    MadLibrary::Matrix<DataType> temp(this->GetRow(), this->GetRow());
+    for (uint32_t i = 0; i < this->GetRow(); i++) {
+        for (uint32_t j = 0; j < this->GetColumn(); j++) {
+            temp[i][j] = this->GetData(i, j) / Data;
+        }
+    }
+    return temp;
+}
+
+//operator/=
+template <class DataType>
+void MadLibrary::Matrix<DataType>::operator/=(const MadLibrary::Matrix<DataType> other) {
+    this->operator=(this->operator/(other));
+}
+
+template <class DataType>
+void MadLibrary::Matrix<DataType>::operator/=(const DataType Data) {
+    this->operator=(this->operator/(Data));
 }
 
 //GetData
@@ -164,25 +220,51 @@ DataType MadLibrary::Matrix<DataType>::GetDeterminant() const{
             return 0;
         }
     }
-    if (this->GetRow()<=2) return this->GetData(0,0)*this->GetData(1,1)-this->GetData(1,0)*this->GetData(0,1);
+    if (this->GetRow() == 2) return this->GetData(0, 0) * this->GetData(1, 1) - this->GetData(1, 0) * this->GetData(0, 1);
+    if (this->GetRow() == 1) return this->GetData(0, 0);
     for (size_t i = 0; i < this->GetColumn(); i++)
     {
-        MadLibrary::Matrix<DataType> newMatrix(this->GetRow()-1,this->GetColumn()-1,0);
-        for (size_t j = 1; j < this->GetRow(); j++)
-        {
-            size_t t=0;
-            for (size_t z = 0; z < newMatrix.GetColumn(); z++)
-            {
-                if (i==z){
-                    t++;
-                }
-                newMatrix[j-1][z]=this->GetData(j,z+t);
-                
-            }
-        }
-        Det+=MadLibrary::SimplePow(-1,i)*this->GetData(0,i)*newMatrix.GetDeterminant();
+        Det+=MadLibrary::SimplePow(-1,i)*this->GetData(0,i)*this->GetSubDeterminant(0,i);
     }
     return Det;
+}
+
+//GetSubDeterminant
+template<class DataType>
+DataType MadLibrary::Matrix<DataType>::GetSubDeterminant(uint32_t row, uint32_t col) const {
+    MadLibrary::Matrix<DataType> newMatrix(this->GetRow() - 1, this->GetColumn() - 1, 0);
+    size_t t = 0;
+    
+    for (size_t i = 0; i < newMatrix.GetRow(); i++)
+    {
+        size_t z = 0;
+        for (size_t j = 0; j < newMatrix.GetColumn(); j++)
+        {
+            if (row == i) {
+                t=1;
+            }
+            if (col == j) {
+                z=1;
+            }
+            newMatrix[i][j] = this->GetData(i+t, j + z);
+
+        }
+    }
+    return newMatrix.GetDeterminant();
+}
+
+//GetInverse
+template<class DataType>
+MadLibrary::Matrix<DataType> MadLibrary::Matrix<DataType>::GetInverse()
+{
+    Matrix<DataType> newMatrix(this->GetRow(), this->GetColumn());
+    
+    for (uint32_t i = 0; i < newMatrix.GetRow(); i++) {
+        for (uint32_t j = 0; j < newMatrix.GetColumn(); j++) {
+            newMatrix[j][i] = MadLibrary::SimplePow(-1, i + j) * this->GetSubDeterminant(i, j);
+        }
+    }
+    return (newMatrix*(1/this->GetDeterminant()));
 }
 
 //operator[]
@@ -197,10 +279,12 @@ std::vector<DataType> MadLibrary::Matrix<DataType>::operator[](size_t position) 
 }
 
 //cast operator
-template <class DataType>
-MadLibrary::Matrix<DataType>::operator std::vector<std::vector<DataType>>(){
+template<class DataType>
+MadLibrary::Matrix<DataType>::operator std::vector<std::vector<DataType>>()
+{
     return this->vect;
 }
+
 
 //Resize
 template <class DataType>
@@ -224,8 +308,8 @@ void MadLibrary::Matrix<DataType>::Matrix::Clean(){
 //Fill
 template <class DataType>
 void MadLibrary::Matrix<DataType>::Fill(DataType data){
-    for (uint64_t i=0;i<this->row;i++){
-        for (uint64_t j=0;j<this->col;j++){
+    for (uint32_t i=0;i<this->row;i++){
+        for (uint32_t j=0;j<this->col;j++){
             this->vect[i][j]=data;
         }
     }

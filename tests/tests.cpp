@@ -4,9 +4,14 @@
 #include <iostream>
 #include <vector>
 
-
+bool m(const int& a,const int& b){
+    return a>b;
+}
 
 int main(){
-    uint32_t a=1;
-    std::cout<<MadLibrary::SimplePow(1,((uint32_t)-1));
+    std::vector<int> a={2,-125,10,5,1,5621,2,51,6,512,-125,1,1,562,124,21,-251,2};
+    MadLibrary::MergeSort(a.begin(),a.end(),m);
+    for (uint32_t i=0;i<a.size();i++){
+        std::cout<<a[i]<<" ";
+    }
 }
