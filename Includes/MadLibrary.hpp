@@ -110,12 +110,12 @@ namespace MadLibrary{
     template <typename VertexData>
     class Vertex{
         protected:
-            uint32_t SerialNumber;
+            uint32_t ID;
             VertexData Data;
         public:
-            Vertex(uint32_t SerialNumber,VertexData Data);
-            void SetSerialNumber(uint32_t SerialNumber);
-            uint32_t GetSerialNumber();
+            Vertex(uint32_t ID,VertexData Data);
+            void SetID(uint32_t ID);
+            uint32_t GetID();
             void SetData(VertexData Data);
             VertexData GetData();
     };
@@ -134,18 +134,23 @@ namespace MadLibrary{
             void SetVertexTo(uint32_t VertexTo);
             void SetEdge(uint32_t VertexFrom, uint32_t VertexTo);
             void SetEdge(std::pair<uint32_t,uint32_t> NewEdge);
-            void SetEdgeData(EdgeData Data);
-            EdgeData GetEdgeData();
+            void SetData(EdgeData Data);
+            EdgeData GetData();
     };
 
     template <typename VertexData,typename EdgeData>
     class Graph
     {
         protected:
-            std::vector<Vertex> VertexList;
-            std::vector<Edge> EdgeList;
+            std::vector<Vertex<VertexData>> VertexList;
+            std::vector<Edge<EdgeData>> EdgeList;
+            uint32_t IDCount=0;
         public:
-            Graph();
+            void AddVertex(VertexData Data);
+            void AddEdge(uint32_t VertexFrom,uint32_t VertexTo,EdgeData Data);
+            VertexData GetVertexData(uint32_t ID);
+            EdgeData GetEdgeData(std::pair<uint32_t,uint32_t> TheEdge);
+            EdgeData GetEdgeData(uint32_t VertexFrom,uint32_t VertexTo);
     };
 }
 
