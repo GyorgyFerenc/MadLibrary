@@ -14,6 +14,12 @@ namespace MadLibrary{
     //INIT
     template <class DataType>
     class Matrix;
+    template <typename VertexData,typename EdgeData>
+    class Graph;
+    template <typename VertexData>
+    class Vertex;
+    template <typename EdgeData>
+    class Edge;
 
     //Dijkstra
     template <class DataType>
@@ -62,12 +68,12 @@ namespace MadLibrary{
     template <class DataType>
     class Matrix
     {
-        private:
+        protected:
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
             template <typename OutputStream>
-            void PlotMatrix(OutputStream& Os) const;
+            void Plot(OutputStream& Os) const;
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
@@ -101,71 +107,50 @@ namespace MadLibrary{
             ~Matrix();
     };
     
-    //Node
-    template <class DataType>
-    struct node{
-        DataType data;
-        node* next;
-        node* previous;
-    };
-    
-
-    //LinkedList
-    template <class DataType>
-    class LinkedList{
-        private:
-            node<DataType>* inPoint;
+    template <typename VertexData>
+    class Vertex{
+        protected:
+            uint32_t SerialNumber;
+            VertexData Data;
         public:
-            LinkedList(DataType data);
-            LinkedList();
-            size_t Size();
-            DataType& GetData(unsigned int position);
-            DataType& operator[](unsigned int position);
-            void operator=(LinkedList<DataType> fromLinkedList);
-            void Remove(int position);
-            void MakeEmpty();
-            void AddToEnd(DataType data);
-            void Insert(DataType data,unsigned int position);
-            void AddToBegin(DataType data);
+            Vertex(uint32_t SerialNumber,VertexData Data);
+            void SetSerialNumber(uint32_t SerialNumber);
+            uint32_t GetSerialNumber();
+            void SetData(VertexData Data);
+            VertexData GetData();
     };
 
-    //STLLinkedList and his Iterator
-    template <class DataType>
-    class STLLinkedListIterator;
-
-    template <class DataType>
-    class STLLinkedList:public std::list<DataType>{
+    template <typename EdgeData>
+    class Edge{
+        protected:
+            uint32_t VertexTo,VertexFrom;
+            EdgeData Data;
         public:
-            DataType& operator[](size_t position);
-            STLLinkedListIterator<DataType> RandBegin();
-            STLLinkedListIterator<DataType> RandEnd();
+            Edge(uint32_t VertexFrom, uint32_t VertexTo,EdgeData Data);
+            uint32_t GetVertexFrom();
+            uint32_t GetVertexTo();
+            std::pair<uint32_t,uint32_t> GetEdge();
+            void SetVertexFrom(uint32_t VertexFrom);
+            void SetVertexTo(uint32_t VertexTo);
+            void SetEdge(uint32_t VertexFrom, uint32_t VertexTo);
+            void SetEdge(std::pair<uint32_t,uint32_t> NewEdge);
+            void SetEdgeData(EdgeData Data);
+            EdgeData GetEdgeData();
     };
 
-    template <class DataType>
-    class STLLinkedListIterator:public std::random_access_iterator_tag,std::_List_iterator<DataType>{
-        private:
-            STLLinkedList<DataType> *List;
-            size_t pos=0;
+    template <typename VertexData,typename EdgeData>
+    class Graph
+    {
+        protected:
+            std::vector<Vertex> VertexList;
+            std::vector<Edge> EdgeList;
         public:
-            STLLinkedListIterator(STLLinkedList<DataType> *List);
-            const STLLinkedList<DataType>* GetListPonter();
-            size_t GetPos();
-            void operator+=(int number); 
-            void operator-=(int number);
-            void operator++();
-            void operator--();
-            void operator++(int);
-            void operator--(int);
-            bool operator==(STLLinkedListIterator<DataType> &temp);
-            bool operator!=(STLLinkedListIterator<DataType> &temp);
-            void operator=(STLLinkedListIterator<DataType> &temp);
-            STLLinkedListIterator<DataType> operator+(int number);
-            DataType& operator*();
+            Graph();
     };
-    
 }
-#include "LinkedList.hpp"
+
 #include "SimpleFunctions.hpp"
-#include "STLLinkedList.hpp"
 #include "Matrix.hpp"
+#include "Graph.hpp"
+
 #endif 

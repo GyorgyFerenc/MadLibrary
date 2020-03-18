@@ -3,10 +3,10 @@
 
 #include "MadLibrary.hpp"
 
-//PlotMatrix
+//Plot
 template <class DataType>
 template <typename OutputStream>
-void MadLibrary::Matrix<DataType>::PlotMatrix(OutputStream& Os) const {
+void MadLibrary::Matrix<DataType>::Plot(OutputStream& Os) const {
     for (uint32_t i = 0; i < this->GetRow(); i++) {
         for (uint32_t j = 0; j < this->GetColumn(); j++) {
             Os << this->GetData(i, j)<<" ";
