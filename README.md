@@ -72,7 +72,6 @@ void MergeSort(Iter beg, Iter end);
 ```
 Sorting the element of a container.
 See: [Merge Sort](https://en.wikipedia.org/wiki/Merge_sort)
-Note: This code was written by [Zach Whaley](https://github.com/zachwhaley).
 
 __Parameters__:
 - Iter beg: Iterator to the begining of the container.
@@ -174,10 +173,13 @@ template <class DataType>
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
+            template <typename OutputStream>
+            void Plot(OutputStream& Os) const;
             operator std::vector<std::vector<DataType>>();
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
+            Matrix<DataType> GetInverse();
             Matrix(const uint32_t row,const uint32_t col, DataType fill);
             Matrix(const uint32_t row,const uint32_t col);
             Matrix();
@@ -186,6 +188,7 @@ template <class DataType>
             void Resize(const uint32_t row,const uint32_t col);
             void Clean();
             DataType GetData(uint32_t row,uint32_t col) const;
+            DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
             DataType GetDeterminant() const;
             uint32_t GetRow() const;
             uint32_t GetColumn() const;
@@ -195,7 +198,13 @@ template <class DataType>
             void operator+=(const Matrix<DataType> other);
             void operator=(const Matrix<DataType>& other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
+            Matrix<DataType> operator*(const DataType Data);
             void operator*=(const Matrix<DataType> other);
+            void operator*=(const DataType Data);
+            Matrix<DataType> operator/(Matrix<DataType> other);
+            Matrix<DataType> operator/(const DataType Data);
+            void operator/=(const Matrix<DataType> other);
+            void operator/=(const DataType Data);
             ~Matrix();
     };
 ```
@@ -387,13 +396,16 @@ __Return Value__:
 ### Operator*
 ```cpp
 Matrix<DataType> operator*(const Matrix<DataType> other);
+Matrix<DataType> operator*(const DataType Data);
 ```
 
-It multiples the Matrices.
+1. It multiples the Matrices.
 See: [Matrix Multiplication](https://en.wikipedia.org/wiki/Matrix_multiplication)
+2. It multiples the Matrix with a constant.
 
 __Paramters__:
 - const Matrix<DataType> other: The Matrix to multiple with.
+- const DataType Data: The data to multiple with.
     
 __Return Value__:
     It returns the newly created Matrix.
@@ -401,13 +413,16 @@ __Return Value__:
 ### Operator*=
 ```cpp
 void operator*=(const Matrix<DataType> other);
+void operator*=(const DataType Data);
 ```
 
-It multiples the Matrices and assigns the values to the first Matrix.
+1. It multiples the Matrices and assigns the values to the first Matrix.
 See: [Matrix Multiplication](https://en.wikipedia.org/wiki/Matrix_multiplication)
+2. It multiples the Matrix with a constant and assigns the values to the Matrix.
 
 __Paramters__:
 - const Matrix<DataType> other: The Matrix to multiple with.
+- const DataType Data: The data to multiple with.
     
 __Return Value__:
     There is no return value.
@@ -451,3 +466,80 @@ __Paramters__:
     
 __Return Value__:
     Returns the 2d std::vector.
+
+### Plot
+```cpp
+template <typename OutputStream>
+void Plot(OutputStream& Os) const;
+```
+
+It writes the matrix to an outputstream.
+
+__Paramters__:
+- OutputStream& Os: The outputstream.
+    
+__Return Value__:
+    There is no return value.
+
+
+### GetSubDeterminant
+```cpp
+DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
+```
+
+It gives the minor of the matrix.
+See: [Minor](https://en.wikipedia.org/wiki/Minor_(linear_algebra))
+
+__Paramters__:
+- uint32_t row: The row coordinate.
+- uint32_t col: The column coordinate.
+    
+__Return Value__:
+    Returns the minor.
+
+### GetInverse
+```cpp
+Matrix<DataType> GetInverse();
+```
+It creates the Inverse of the Matrix.
+See: [Invertable Matrix](https://en.wikipedia.org/wiki/Invertible_matrix)
+
+__Parameters__:
+    There is no parameter.
+    
+__Return Value__:
+    Returns the newly created Matrix.
+
+### Operator/
+```cpp
+Matrix<DataType> operator/(Matrix<DataType> other);
+Matrix<DataType> operator/(const DataType Data);
+```
+
+1. It divedes the Matrices.
+See: [Invertible Matrix](https://en.wikipedia.org/wiki/Invertible_matrix)
+2. It divedes the Matrix with a constant.
+
+__Paramters__:
+- const Matrix<DataType> other: The Matrix to multiple with.
+- const DataType Data: The data to multiple with.
+    
+__Return Value__:
+    It returns the newly created Matrix.
+
+### Operator/=
+```cpp
+void operator/=(const Matrix<DataType> other);
+void operator/=(const DataType Data);
+```
+
+1. It divedes the Matrices and assigns the values to the first Matrix.
+See: [Invertible Matrix](https://en.wikipedia.org/wiki/Invertible_matrix)
+2. It divedes the Matrix with a constant and assigns the values to the first Matrix.
+
+__Paramters__:
+- const Matrix<DataType> other: The Matrix to multiple with.
+- const DataType Data: The data to multiple with.
+    
+__Return Value__:
+    There is no return value.
