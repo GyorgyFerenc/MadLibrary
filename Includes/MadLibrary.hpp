@@ -2,7 +2,12 @@
  * You are authorized to use this file in every project if you mention the creator!
  * Written by György Ferenc <gyferenc2002@gmail.com>, May 2019
  */
-
+/*
+TODO:
+    -Old meg a toString functiont ha van toString functionje a DataTypenak akkor azt hasznalja ha nincs akkor az 
+    operator<< functiont
+        Note: std::typeid, std::typeinfo
+*/
 #ifndef __MadLibrary_HPP_INCLUDED__
 #define __MadLibrary_HPP_INCLUDED__
     ///Inicializalas
@@ -10,6 +15,8 @@
 #include <list>
 #include <iterator>
 #include <vector>
+#include <sstream>
+#include <iostream>
 namespace MadLibrary{
     //INIT
     template <class DataType>
@@ -20,6 +27,11 @@ namespace MadLibrary{
     class Vertex;
     template <typename EdgeData>
     class Edge;
+    
+
+    //toString
+    template <class DataType>
+    std::string toString(std::vector<DataType> vect);
 
     //Dijkstra
     template <class DataType>
@@ -72,8 +84,8 @@ namespace MadLibrary{
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
-            template <typename OutputStream>
-            void Plot(OutputStream& Os) const;
+            template<DataType>
+            friend std::ostream& operator<<(std::ostream& Os, const Matrix<DataType>& TheMatrix);
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
@@ -106,7 +118,8 @@ namespace MadLibrary{
             explicit operator std::vector<std::vector<DataType>>();
             ~Matrix();
     };
-    
+
+
     template <typename VertexData>
     class Vertex{
         protected:
@@ -151,6 +164,15 @@ namespace MadLibrary{
             VertexData GetVertexData(uint32_t ID);
             EdgeData GetEdgeData(std::pair<uint32_t,uint32_t> TheEdge);
             EdgeData GetEdgeData(uint32_t VertexFrom,uint32_t VertexTo);
+            void DeleteVertex(uint32_t VertexID);
+            void DeleteEdge(std::pair<uint32_t,uint32_t> TheEdge);
+            void DeleteEdge(uint32_t VertexFrom,uint32_t VertexTo);
+            std::vector<uint32_t> GetVertexIDs();
+            std::vector<std::pair<uint32_t,uint32_t>> GetEdgeVertices();
+            std::vector<Vertex<VertexData>> GetVertexList();
+            std::vector<Edge<EdgeData>> GetEdgeList();
+            void SetVertexList(std::vector<Vertex<VertexData>> newVertexList);
+            void SetEdgeList(std::vector<Edge<EdgeData>> newEdgeList);
     };
 }
 

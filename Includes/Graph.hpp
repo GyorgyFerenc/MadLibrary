@@ -3,7 +3,8 @@
 
 #include "MadLibrary.hpp"
 #include <algorithm>
-//Vertex
+
+///Vertex
 //Constructor
 template<typename VertexData>
 MadLibrary::Vertex<VertexData>::Vertex(uint32_t ID,VertexData Data){
@@ -35,7 +36,7 @@ VertexData MadLibrary::Vertex<VertexData>::GetData(){
     return this->Data;
 }
 
-//Edge
+///Edge
 //Constructor
 template <typename EdgeData>
 MadLibrary::Edge<EdgeData>::Edge(uint32_t VertexFrom,uint32_t VertexTo,EdgeData Data){
@@ -101,7 +102,7 @@ EdgeData MadLibrary::Edge<EdgeData>::GetData(){
     return this->Data;
 }
 
-//Graph
+///Graph
 //AddEdge
 template <typename VertexData,typename EdgeData>
 void MadLibrary::Graph<VertexData,EdgeData>::AddEdge(uint32_t VertexFrom,uint32_t VertexTo,EdgeData Data){
@@ -146,4 +147,83 @@ EdgeData MadLibrary::Graph<VertexData,EdgeData>::GetEdgeData(uint32_t VertexFrom
     return EdgeData();
 }
 
+//DeleteVertex
+template <typename VertexData,typename EdgeData>
+void MadLibrary::Graph<VertexData,EdgeData>::DeleteVertex(uint32_t VertexID){
+    for (uint32_t i=0;i<this->VertexList.size();i++){
+        if (this->VertexList[i].GetID()==VertexID){
+            this->VertexList.erase(VertexList.begin()+i);
+            return;
+        }
+    }
+}
+
+//DeleteEdge
+template <typename VertexData,typename EdgeData>
+void MadLibrary::Graph<VertexData,EdgeData>::DeleteEdge(std::pair<uint32_t,uint32_t> TheEdge){
+    for (uint32_t i=0; i<this->EdgeList.size();i++){
+        if (this->EdgeList[i].GetEdge()==TheEdge){
+            this->EdgeList.erase(EdgeList.begin()+i);
+        }
+    }
+}
+
+template <typename VertexData,typename EdgeData>
+void MadLibrary::Graph<VertexData,EdgeData>::DeleteEdge(uint32_t VertexFrom,uint32_t VertexTo){
+    for (uint32_t i=0; i<this->EdgeList.size();i++){
+        if (this->EdgeList[i].GetVertexFrom()==VertexFrom && this->EdgeList[i].GetVertexTo()==VertexTo){
+            this->EdgeList.erase(EdgeList.begin()+i);
+        }
+    }
+}
+
+//GetVertexIDs
+template <typename VertexData,typename EdgeData>
+std::vector<uint32_t> MadLibrary::Graph<VertexData,EdgeData>::GetVertexIDs(){
+    std::vector<uint32_t> newVector;
+    for (uint32_t i=0;i<this->VertexList.size();i++){
+        newVector.push_back(this->VertexList[i].GetID());
+    }
+    return newVector;
+}
+
+//GetEdges
+template <typename VertexData,typename EdgeData>
+std::vector<std::pair<uint32_t,uint32_t>> MadLibrary::Graph<VertexData,EdgeData>::GetEdgeVertices(){
+    std::vector<std::pair<uint32_t,uint32_t>> newVector;
+    for (uint32_t i=0;i<this->EdgeList.size();i++){
+        newVector.push_back(this->EdgeList[i].GetEdge());
+    }
+    return newVector;
+}
+
+//GetVertexList
+template <typename VertexData,typename EdgeData>
+std::vector<MadLibrary::Vertex<VertexData>> MadLibrary::Graph<VertexData,EdgeData>::GetVertexList(){
+    return this->VertexList;
+}
+
+//GetEdgeList
+template <typename VertexData,typename EdgeData>
+std::vector<MadLibrary::Edge<EdgeData>> MadLibrary::Graph<VertexData,EdgeData>::GetEdgeList(){
+    return this->EdgeList;
+}
+
+//SetVertexList
+template <typename VertexData,typename EdgeData>
+void MadLibrary::Graph<VertexData,EdgeData>::SetVertexList(std::vector<MadLibrary::Vertex<VertexData>> newVertexList){
+    this->VertexList=newVertexList;
+}
+
+//SetEdgeList
+template <typename VertexData,typename EdgeData>
+void MadLibrary::Graph<VertexData,EdgeData>::SetEdgeList(std::vector<MadLibrary::Edge<EdgeData>> newEdgeList){
+    this->EdgeList=newEdgeList;
+}
+
+
+/*
+            void SetVertexList(std::vector<Vertex<VertexData>> newVertexList);
+            void SetEdgeList(std::vector<Edge<EdgeData>> newEdgeList);
+*/
 #endif

@@ -3,16 +3,16 @@
 
 #include "MadLibrary.hpp"
 
-//Plot
-template <class DataType>
-template <typename OutputStream>
-void MadLibrary::Matrix<DataType>::Plot(OutputStream& Os) const {
-    for (uint32_t i = 0; i < this->GetRow(); i++) {
-        for (uint32_t j = 0; j < this->GetColumn(); j++) {
-            Os << this->GetData(i, j)<<" ";
+//operator<<
+template<class DataType>
+std::ostream& operator<<(std::ostream& Os, const MadLibrary::Matrix<DataType>& TheMatrix){
+    for (uint32_t i = 0; i < TheMatrix.GetRow(); i++) {
+        for (uint32_t j = 0; j < TheMatrix.GetColumn(); j++) {
+            Os << TheMatrix.GetData(i, j)<<" ";
         }
         Os << "\n";
     }
+    return Os;
 }
 
 //GetRow
