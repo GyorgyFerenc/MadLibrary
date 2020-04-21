@@ -2,26 +2,88 @@
 #define __SimpleFunctions_HPP_INCLUDED__
 
 #include "MadLibrary.hpp"
-#include <ctgmath>
-#include <sstream>
-#include <algorithm>
-#include <limits>
 
-//toString
-/*
-template <class DataType>
-std::string MadLibrary::toString(std::vector<DataType> vect){
+//toCleverString
+template <typename DataType>
+std::string MadLibrary::toCleverString(DataType data){
+    std::stringstream SStream;
+    SStream<<data;
+    std::string theString=SStream.str();
+    return theString;
+}
+
+std::string MadLibrary::toCleverString(std::string data){
+    std::stringstream SStream;
+    SStream<<"\""<<data<<"\"";
+    std::string theString=SStream.str();
+    return theString;
+}
+
+std::string MadLibrary::toCleverString(char data){
+    std::stringstream SStream;
+    SStream<<"\'"<<data<<"\'";
+    std::string theString=SStream.str();
+    return theString;
+}
+
+std::string MadLibrary::toCleverString(const char* data){
+    std::stringstream SStream;
+    SStream<<"\""<<data<<"\"";
+    std::string theString=SStream.str();
+    return theString;
+}
+
+template <typename DataType>
+std::string MadLibrary::toCleverString(DataType data,uint32_t flag){
+    std::stringstream SStream;
+    std::bitset<sizeof(data)*8> b(data);
+    switch (flag)
+    {
+    case 1:
+        SStream<<"0x"<<std::hex<<data;
+        break;
+    case 2:
+        SStream<<"0b"<<b.to_string();
+        break;
+    case 3:
+        SStream<<"Octx"<<std::oct<<data;
+        break;
+    default:
+        SStream<<MadLibrary::toCleverString(data);
+        break;
+    }
+    std::string theString=SStream.str();
+    return theString;
+}
+
+template <typename DataType>
+std::string MadLibrary::toCleverString(std::vector<DataType> vect){
     std::stringstream SStream;
     SStream<<"(";
     for (uint32_t i=0;i<vect.size()-1;i++){
-        SStream<<vect[i]<<",";
+        SStream<<MadLibrary::toCleverString(vect[i])<<",";
     }
-    SStream<<vect[vect.size()-1];
+    SStream<<MadLibrary::toCleverString(vect[vect.size()-1]);
     SStream<<")";
     std::string theString=SStream.str();
     return theString;
-}*/
-
+}
+#if ListIncluded
+    template <typename DataType>
+    std::string MadLibrary::toCleverString(std::list<DataType> TheList){
+        std::stringstream SStream;
+        auto itList=TheList.begin();
+        SStream<<"(";
+        for (uint32_t i=0;i<TheList.size()-1;i++){
+            SStream<<MadLibrary::toCleverString(*itList)<<",";
+            itList++;
+        }
+        SStream<<MadLibrary::toCleverString(*itList);
+        SStream<<")";
+        std::string theString=SStream.str();
+        return theString;
+    }
+#endif
 //Map
 double MadLibrary::Map(double value, double start1, double stop1, double start2, double stop2) {
     double outgoing = start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));

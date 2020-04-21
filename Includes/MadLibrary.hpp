@@ -12,12 +12,18 @@ TODO:
 #define __MadLibrary_HPP_INCLUDED__
 
 ///Inicializalas
-#include <cstddef>
-#include <list>
-#include <iterator>
 #include <vector>
 #include <sstream>
-#include <iostream>
+#include <algorithm>
+#include <bitset>
+
+
+#if defined(_GLIBCXX_LIST) || defined(_LIST_)  
+    #define ListIncluded true
+#else
+    #define ListIncluded false
+#endif
+
 
 namespace MadLibrary{
     ///INIT
@@ -33,9 +39,21 @@ namespace MadLibrary{
     template <typename EdgeData>
     class Edge;
     
-    //toString
+    //toCleverString
+    
     template <typename DataType>
-    class toString;
+    std::string toCleverString(DataType data);
+    template <typename DataType>
+    std::string toCleverString(DataType data,uint32_t flag);
+    std::string toCleverString(std::string data);
+    std::string toCleverString(char data);
+    std::string toCleverString(const char* data);
+    template <typename DataType>
+    std::string toCleverString(std::vector<DataType> vect);
+    #if ListIncluded
+        template <typename DataType>
+        std::string toCleverString(std::list<DataType> TheList);
+    #endif
 
     //Dijkstra
     template <class DataType>

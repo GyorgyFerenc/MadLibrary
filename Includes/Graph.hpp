@@ -2,7 +2,7 @@
 #define __Graph_HPP_INCLUDED__
 
 #include "MadLibrary.hpp"
-#include <algorithm>
+
 
 ///Vertex
 //Constructor

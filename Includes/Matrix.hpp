@@ -10,7 +10,7 @@ std::ostream& operator<<(std::ostream& Os, const MadLibrary::Matrix<DataType>& T
         for (uint32_t j = 0; j < TheMatrix.GetColumn(); j++) {
             Os << TheMatrix.GetData(i, j)<<" ";
         }
-        Os << "\n";
+        if (i<TheMatrix.GetRow()-1) Os << "\n";
     }
     return Os;
 }
