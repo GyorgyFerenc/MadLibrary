@@ -8,6 +8,7 @@
 #include <limits>
 
 //toString
+/*
 template <class DataType>
 std::string MadLibrary::toString(std::vector<DataType> vect){
     std::stringstream SStream;
@@ -19,7 +20,7 @@ std::string MadLibrary::toString(std::vector<DataType> vect){
     SStream<<")";
     std::string theString=SStream.str();
     return theString;
-}
+}*/
 
 //Map
 double MadLibrary::Map(double value, double start1, double stop1, double start2, double stop2) {

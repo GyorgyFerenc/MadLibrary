@@ -3,8 +3,19 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <typeinfo>
+
+using namespace MadLibrary;
+
+template <class alma>
+class ASD{
+    public: 
+        ASD(){
+            std::cout<<typeid(alma).name();
+        }
+};
 
 int main(){
-    std::vector<char> a={'a','b'};
-    std::cout<<MadLibrary::toString(a);
+    ASD<std::vector<Graph<int,int>>> a;
+    
 }

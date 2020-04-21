@@ -10,17 +10,22 @@ TODO:
 */
 #ifndef __MadLibrary_HPP_INCLUDED__
 #define __MadLibrary_HPP_INCLUDED__
-    ///Inicializalas
+
+///Inicializalas
 #include <cstddef>
 #include <list>
 #include <iterator>
 #include <vector>
 #include <sstream>
 #include <iostream>
+
 namespace MadLibrary{
-    //INIT
+    ///INIT
+    //Matrix
     template <class DataType>
     class Matrix;
+
+    //Graph
     template <typename VertexData,typename EdgeData>
     class Graph;
     template <typename VertexData>
@@ -28,10 +33,9 @@ namespace MadLibrary{
     template <typename EdgeData>
     class Edge;
     
-
     //toString
-    template <class DataType>
-    std::string toString(std::vector<DataType> vect);
+    template <typename DataType>
+    class toString;
 
     //Dijkstra
     template <class DataType>
@@ -75,6 +79,14 @@ namespace MadLibrary{
 
     //Map
     double Map(double value, double start1, double stop1, double start2, double stop2);
+
+    //toString
+    template <typename DataType>
+    class toString{
+        private:
+            std::vector<std::string> CheckFor = {"asd"};
+
+    };
 
     //Matrix
     template <class DataType>

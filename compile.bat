@@ -1,3 +1,3 @@
 @echo off
-g++ tests/tests.cpp -o a.exe
+g++ tests/tests.cpp -s -o a.exe
 a.exe
