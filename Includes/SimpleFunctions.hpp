@@ -33,6 +33,13 @@ std::string MadLibrary::toCleverString(const char* data){
     return theString;
 }
 
+std::string MadLibrary::toCleverString(char* data){
+    std::stringstream SStream;
+    SStream<<"\""<<data<<"\"";
+    std::string theString=SStream.str();
+    return theString;
+}
+
 template <typename DataType>
 std::string MadLibrary::toCleverString(DataType data,uint32_t flag){
     std::stringstream SStream;
@@ -84,6 +91,7 @@ std::string MadLibrary::toCleverString(std::vector<DataType> vect){
         return theString;
     }
 #endif
+
 //Map
 double MadLibrary::Map(double value, double start1, double stop1, double start2, double stop2) {
     double outgoing = start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
@@ -104,7 +112,7 @@ uint32_t ExtractMin(std::vector<uint32_t> theList, std::vector<DataType>& distan
 }
 
 template <class DataType>
-std::vector<DataType> TheNeighbors(std::vector<std::vector<DataType>> Graph,uint32_t node){
+std::vector<DataType> TheNeighbors(std::vector<std::vector<DataType>> &Graph,uint32_t node){
     std::vector<DataType> TheNeighbors;
     for (size_t i=0;i<Graph.size();i++){
         if (Graph[node][i]!=0)
@@ -116,7 +124,7 @@ std::vector<DataType> TheNeighbors(std::vector<std::vector<DataType>> Graph,uint
 }
 
 template <class DataType>
-void MadLibrary::Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance){
+void MadLibrary::Dijkstra(std::vector<std::vector<DataType>> &Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance){
     uint32_t GraphSize=Graph.size();
     previous.clear();
     distance.clear();
@@ -152,7 +160,7 @@ void MadLibrary::Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t sou
 }
 
 template <class DataType>
-void MadLibrary::Dijkstra(MadLibrary::Matrix<DataType> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance){
+void MadLibrary::Dijkstra(MadLibrary::Matrix<DataType> &Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance){
     Dijkstra((std::vector<std::vector<DataType>>)Graph,source,previous,distance);
 }
 

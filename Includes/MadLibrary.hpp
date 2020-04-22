@@ -48,6 +48,7 @@ namespace MadLibrary{
     std::string toCleverString(std::string data);
     std::string toCleverString(char data);
     std::string toCleverString(const char* data);
+    std::string toCleverString(char* data);
     template <typename DataType>
     std::string toCleverString(std::vector<DataType> vect);
     #if ListIncluded
@@ -57,9 +58,9 @@ namespace MadLibrary{
 
     //Dijkstra
     template <class DataType>
-    void Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
+    void Dijkstra(std::vector<std::vector<DataType>> &Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
     template <class DataType>
-    void Dijkstra(Matrix<DataType> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
+    void Dijkstra(Matrix<DataType> &Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
     
     //Abs
     template<class DataType>
@@ -97,14 +98,6 @@ namespace MadLibrary{
 
     //Map
     double Map(double value, double start1, double stop1, double start2, double stop2);
-
-    //toString
-    template <typename DataType>
-    class toString{
-        private:
-            std::vector<std::string> CheckFor = {"asd"};
-
-    };
 
     //Matrix
     template <class DataType>
