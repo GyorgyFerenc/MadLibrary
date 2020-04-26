@@ -5,7 +5,7 @@
 
 //operator<<
 template<class DataType>
-std::ostream& operator<<(std::ostream& Os, const MadLibrary::Matrix<DataType>& TheMatrix){
+std::ostream& operator<<(std::ostream& Os,const MadLibrary::Matrix<DataType>& TheMatrix){
     for (uint32_t i = 0; i < TheMatrix.GetRow(); i++) {
         for (uint32_t j = 0; j < TheMatrix.GetColumn(); j++) {
             Os << TheMatrix.GetData(i, j)<<" ";

@@ -57,6 +57,10 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xutility": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "forward_list": "cpp",
+        "queue": "cpp",
+        "map": "cpp",
+        "xtree": "cpp"
     }
 }

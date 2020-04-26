@@ -5,21 +5,21 @@
 
 //toCleverString
 template <typename DataType>
-std::string MadLibrary::toCleverString(DataType data){
+std::string MadLibrary::toCleverString(DataType& data){
     std::stringstream SStream;
     SStream<<data;
     std::string theString=SStream.str();
     return theString;
 }
 
-std::string MadLibrary::toCleverString(std::string data){
+std::string MadLibrary::toCleverString(const std::string& data){
     std::stringstream SStream;
     SStream<<"\""<<data<<"\"";
     std::string theString=SStream.str();
     return theString;
 }
 
-std::string MadLibrary::toCleverString(char data){
+std::string MadLibrary::toCleverString(char& data){
     std::stringstream SStream;
     SStream<<"\'"<<data<<"\'";
     std::string theString=SStream.str();
@@ -40,8 +40,28 @@ std::string MadLibrary::toCleverString(char* data){
     return theString;
 }
 
+template <typename DataType1,typename DataType2>
+std::string MadLibrary::toCleverString(std::pair<DataType1,DataType2>& thePair){
+    std::stringstream SStream;
+    SStream<<MadLibrary::toCleverString(thePair.first)<<":"<<MadLibrary::toCleverString(thePair.second);
+    std::string theString=SStream.str();
+    return theString;
+}
+
+template <typename DataType1,typename DataType2>
+std::string MadLibrary::toCleverString(std::map<DataType1,DataType2>& theMap){
+    std::stringstream SStream;
+    SStream<<"("<<MadLibrary::toCleverString(*(theMap.begin()));
+    for (auto it=++theMap.begin();it!=theMap.end();it++){
+        SStream<<","<<MadLibrary::toCleverString(*it);
+    }
+    SStream<<")";
+    std::string theString=SStream.str();
+    return theString;
+}
+
 template <typename DataType>
-std::string MadLibrary::toCleverString(DataType data,uint32_t flag){
+std::string MadLibrary::toCleverString(DataType& data,uint32_t flag){
     std::stringstream SStream;
     std::bitset<sizeof(data)*8> b(data);
     switch (flag)
@@ -64,7 +84,7 @@ std::string MadLibrary::toCleverString(DataType data,uint32_t flag){
 }
 
 template <typename DataType>
-std::string MadLibrary::toCleverString(std::vector<DataType> vect){
+std::string MadLibrary::toCleverString(std::vector<DataType>& vect){
     std::stringstream SStream;
     SStream<<"(";
     for (uint32_t i=0;i<vect.size()-1;i++){
@@ -75,9 +95,23 @@ std::string MadLibrary::toCleverString(std::vector<DataType> vect){
     std::string theString=SStream.str();
     return theString;
 }
+
+template <typename DataType>
+std::string MadLibrary::toCleverString(std::initializer_list<DataType>& initList){
+    std::stringstream SStream;
+        auto iTinitList=initList.begin();
+        SStream<<"("<<MadLibrary::toCleverString(*iTinitList);
+        for (iTinitList=++iTinitList;iTinitList!=initList.end();++iTinitList){
+            SStream<<","<<MadLibrary::toCleverString(*iTinitList);
+        }
+        SStream<<")";
+        std::string theString=SStream.str();
+        return theString;
+}
+
 #if ListIncluded
     template <typename DataType>
-    std::string MadLibrary::toCleverString(std::list<DataType> TheList){
+    std::string MadLibrary::toCleverString(std::list<DataType>& TheList){
         std::stringstream SStream;
         auto itList=TheList.begin();
         SStream<<"(";
@@ -86,6 +120,36 @@ std::string MadLibrary::toCleverString(std::vector<DataType> vect){
             itList++;
         }
         SStream<<MadLibrary::toCleverString(*itList);
+        SStream<<")";
+        std::string theString=SStream.str();
+        return theString;
+    }
+#endif
+
+#if ArrayIncluded
+    template <typename DataType, std::size_t Size>
+    std::string MadLibrary::toCleverString(std::array<DataType,Size>& TheArray){
+        std::stringstream SStream;
+        SStream<<"(";
+        for (uint32_t i=0;i<TheArray.size()-1;i++){
+            SStream<<MadLibrary::toCleverString(TheArray[i])<<",";
+        }
+        SStream<<MadLibrary::toCleverString(TheArray[TheArray.size()-1]);
+        SStream<<")";
+        std::string theString=SStream.str();
+        return theString;
+    }
+#endif
+
+#if ForwardListIncluded
+    template <typename DataType>
+    std::string MadLibrary::toCleverString(std::forward_list<DataType>& TheForwardList){
+        std::stringstream SStream;
+        auto itForwardList=TheForwardList.begin();
+        SStream<<"("<<MadLibrary::toCleverString(*itForwardList);
+        for (itForwardList=++TheForwardList.begin();itForwardList!=TheForwardList.end();itForwardList++){
+            SStream<<","<<MadLibrary::toCleverString(*itForwardList);
+        }
         SStream<<")";
         std::string theString=SStream.str();
         return theString;
@@ -294,4 +358,5 @@ void MadLibrary::MergeSort(Iter beg, Iter end)
     MadLibrary::MergeSort(mid, end);
     std::inplace_merge(beg, mid, end);
 }
+
 #endif

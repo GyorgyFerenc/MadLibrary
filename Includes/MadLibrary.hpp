@@ -2,11 +2,11 @@
  * You are authorized to use this file in every project if you mention the creator!
  * Written by György Ferenc <gyferenc2002@gmail.com>, May 2019
  */
+
 /*
 TODO:
-    -Old meg a toString functiont ha van toString functionje a DataTypenak akkor azt hasznalja ha nincs akkor az 
-    operator<< functiont
-        Note: std::typeid, std::typeinfo
+    -Implementalj TopologicalSort, FeszitoFat Graphba
+    -toCleverString Pairekre,Mappokra
 */
 #ifndef __MadLibrary_HPP_INCLUDED__
 #define __MadLibrary_HPP_INCLUDED__
@@ -16,12 +16,25 @@ TODO:
 #include <sstream>
 #include <algorithm>
 #include <bitset>
-
+#include <queue>
+#include <map>
 
 #if defined(_GLIBCXX_LIST) || defined(_LIST_)  
     #define ListIncluded true
 #else
     #define ListIncluded false
+#endif
+
+#if defined(_GLIBCXX_ARRAY) || defined(_ARRAY_)
+    #define ArrayIncluded true
+#else
+    #define ArrayIncluded false
+#endif
+
+#if defined(_GLIBCXX_FORWARD_LIST) || defined(_FORWARD_LIST_)
+    #define ForwardListIncluded true
+#else
+    #define ForwardListIncluded false
 #endif
 
 
@@ -32,28 +45,40 @@ namespace MadLibrary{
     class Matrix;
 
     //Graph
+    template <typename VertexType,typename VertexData,typename EdgeData>
+    class UniqueGraph;
     template <typename VertexData,typename EdgeData>
     class Graph;
-    template <typename VertexData>
-    class Vertex;
-    template <typename EdgeData>
-    class Edge;
     
     //toCleverString
     
     template <typename DataType>
-    std::string toCleverString(DataType data);
+    std::string toCleverString(DataType& data);
     template <typename DataType>
-    std::string toCleverString(DataType data,uint32_t flag);
-    std::string toCleverString(std::string data);
-    std::string toCleverString(char data);
+    std::string toCleverString(DataType& data,uint32_t flag);
+    std::string toCleverString(const std::string& data);
+    std::string toCleverString(char& data);
     std::string toCleverString(const char* data);
     std::string toCleverString(char* data);
+    template <typename DataType1,typename DataType2>
+    std::string toCleverString(std::pair<DataType1,DataType2>& thePair);
+    template <typename DataType1,typename DataType2>
+    std::string toCleverString(std::map<DataType1,DataType2>& theMap);
     template <typename DataType>
-    std::string toCleverString(std::vector<DataType> vect);
+    std::string toCleverString(std::vector<DataType>& vect);
+    template <typename DataType>
+    std::string toCleverString(std::initializer_list<DataType>& initList);
     #if ListIncluded
         template <typename DataType>
-        std::string toCleverString(std::list<DataType> TheList);
+        std::string toCleverString(std::list<DataType>& TheList);
+    #endif
+    #if ArrayIncluded
+        template <typename DataType, std::size_t Size>
+        std::string toCleverString(std::array<DataType,Size>& TheArray);
+    #endif
+    #if ForwardListIncluded
+        template <typename DataType>
+        std::string toCleverString(std::forward_list<DataType>& TheForwardList);
     #endif
 
     //Dijkstra
@@ -107,8 +132,6 @@ namespace MadLibrary{
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
-            template<DataType>
-            friend std::ostream& operator<<(std::ostream& Os, const Matrix<DataType>& TheMatrix);
             static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
@@ -142,60 +165,32 @@ namespace MadLibrary{
             ~Matrix();
     };
 
-
-    template <typename VertexData>
-    class Vertex{
-        protected:
-            uint32_t ID;
-            VertexData Data;
-        public:
-            Vertex(uint32_t ID,VertexData Data);
-            void SetID(uint32_t ID);
-            uint32_t GetID();
-            void SetData(VertexData Data);
-            VertexData GetData();
-    };
-
-    template <typename EdgeData>
-    class Edge{
-        protected:
-            uint32_t VertexTo,VertexFrom;
-            EdgeData Data;
-        public:
-            Edge(uint32_t VertexFrom, uint32_t VertexTo,EdgeData Data);
-            uint32_t GetVertexFrom();
-            uint32_t GetVertexTo();
-            std::pair<uint32_t,uint32_t> GetEdge();
-            void SetVertexFrom(uint32_t VertexFrom);
-            void SetVertexTo(uint32_t VertexTo);
-            void SetEdge(uint32_t VertexFrom, uint32_t VertexTo);
-            void SetEdge(std::pair<uint32_t,uint32_t> NewEdge);
-            void SetData(EdgeData Data);
-            EdgeData GetData();
-    };
-
+    //Graph
     template <typename VertexData,typename EdgeData>
-    class Graph
-    {
-        protected:
-            std::vector<Vertex<VertexData>> VertexList;
-            std::vector<Edge<EdgeData>> EdgeList;
-            uint32_t IDCount=0;
+    class Graph:public UniqueGraph<uint32_t,VertexData,EdgeData>{
+        private:
+            uint32_t IDcount=0;
         public:
             void AddVertex(VertexData Data);
-            void AddEdge(uint32_t VertexFrom,uint32_t VertexTo,EdgeData Data);
-            VertexData GetVertexData(uint32_t ID);
-            EdgeData GetEdgeData(std::pair<uint32_t,uint32_t> TheEdge);
-            EdgeData GetEdgeData(uint32_t VertexFrom,uint32_t VertexTo);
-            void DeleteVertex(uint32_t VertexID);
-            void DeleteEdge(std::pair<uint32_t,uint32_t> TheEdge);
-            void DeleteEdge(uint32_t VertexFrom,uint32_t VertexTo);
-            std::vector<uint32_t> GetVertexIDs();
-            std::vector<std::pair<uint32_t,uint32_t>> GetEdgeVertices();
-            std::vector<Vertex<VertexData>> GetVertexList();
-            std::vector<Edge<EdgeData>> GetEdgeList();
-            void SetVertexList(std::vector<Vertex<VertexData>> newVertexList);
-            void SetEdgeList(std::vector<Edge<EdgeData>> newEdgeList);
+    };
+
+    template <typename VertexType,typename VertexData,typename EdgeData>
+    class UniqueGraph{
+        protected:
+            std::map<VertexType,VertexData> Vertices;
+            std::map<VertexType,std::map<VertexType,EdgeData>> Edges;
+        public:
+            void AddVertex(VertexType Vertex,VertexData Data);
+            void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
+            void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
+            VertexData GetVertexData(VertexType Vertex);
+            EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);
+            void DeleteVertex(VertexType Vertex);
+            void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);
+            void Dijkstra(VertexType Source,std::vector<EdgeData>& Distance,std::vector<VertexType>& Previous);
+            template<typename Compare> 
+            void Dijkstra(VertexType Source,std::vector<EdgeData>& Distance,std::vector<VertexType>& Previous,Compare CompAlg);
+            void BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices); 
     };
 }
 
