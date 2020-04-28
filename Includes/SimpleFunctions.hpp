@@ -19,6 +19,13 @@ std::string MadLibrary::toCleverString(const std::string& data){
     return theString;
 }
 
+std::string MadLibrary::toCleverString(char data){
+    std::stringstream SStream;
+    SStream<<"\'"<<data<<"\'";
+    std::string theString=SStream.str();
+    return theString;
+}
+
 std::string MadLibrary::toCleverString(char& data){
     std::stringstream SStream;
     SStream<<"\'"<<data<<"\'";

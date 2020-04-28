@@ -3,6 +3,7 @@
 
 #include "MadLibrary.hpp"
 
+///Graph
 //AddVertex
 template <typename VertexData,typename EdgeData>
 void MadLibrary::Graph<VertexData,EdgeData>::AddVertex(VertexData Data){
@@ -10,7 +11,39 @@ void MadLibrary::Graph<VertexData,EdgeData>::AddVertex(VertexData Data){
     this->IDcount++;
 }
 
+//Constructor
+template <typename VertexData,typename EdgeData>
+MadLibrary::Graph<VertexData,EdgeData>::Graph(uint32_t NumberOfVertices, std::vector<VertexData> VertexDatas){
+    for (uint32_t i=0;i<NumberOfVertices;i++){
+        this->Vertices[IDcount]=VertexDatas[IDcount];
+        IDcount++;
+    }
+}
+
+template <typename VertexData,typename EdgeData>
+MadLibrary::Graph<VertexData,EdgeData>::Graph(uint32_t NumberOfVertices){
+    for (uint32_t i=0;i<NumberOfVertices;i++){
+        this->Vertices[IDcount];
+        IDcount++;
+    }
+}
+
+template <typename VertexData,typename EdgeData>
+MadLibrary::Graph<VertexData,EdgeData>::Graph(){
+    return;
+}
+
 ///UniqueGraph
+//GetVertices
+template <typename VertexType,typename VertexData,typename EdgeData>
+std::vector<VertexType> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::GetVertices(){
+    std::vector<VertexType> Vertices;
+    for (auto it=this->Vertices.begin();it!=this->Vertices.end();it++){
+        Vertices.push_back(it->first);
+    }
+    return Vertices;
+}
+
 //AddVertex
 template <typename VertexType,typename VertexData,typename EdgeData>
 void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::AddVertex(VertexType Vertex,VertexData Data){
@@ -130,5 +163,52 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch
     
 }
 
+template <typename VertexType,typename VertexData,typename EdgeData>
+template <typename Function>
+void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction){
+    Vertices.clear();
+    
+    std::queue<VertexType> TheQueue;
 
+    std::vector<VertexType> Visited;
+
+    TheQueue.push(Source);
+    Visited.push_back(Source);
+    Vertices.push_back(Source);
+    while (!TheQueue.empty())
+    {
+        VertexType Current=TheQueue.front();
+        TheQueue.pop();
+
+        TheFunction(this,Current);
+
+        for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
+            if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
+            TheQueue.push(it->first);
+            Vertices.push_back(it->first);
+            Visited.push_back(it->first);
+        }
+    }
+    
+}
+
+//Constructor
+template <typename VertexType,typename VertexData,typename EdgeData>
+MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::UniqueGraph(std::vector<VertexType> Vertecies,std::vector<VertexData> VertexDatas){
+    for (uint32_t i=0;i<Vertices.size();i++){
+        this->Vertices[Vertices[i]]=VertexDatas[i];
+    }
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::UniqueGraph(std::vector<VertexType> Vertecies){
+    for (uint32_t i=0;i<Vertices.size();i++){
+        this->Vertices[Vertices[i]];
+    }
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::UniqueGraph(){
+    return;
+}
 #endif

@@ -51,13 +51,18 @@ namespace MadLibrary{
     class Graph;
     
     //toCleverString
-    
+    enum{
+        CleverStringDecimal,
+        CleverStringHexaDecimal,
+        CleverStringOctal
+    };
     template <typename DataType>
     std::string toCleverString(DataType& data);
     template <typename DataType>
     std::string toCleverString(DataType& data,uint32_t flag);
     std::string toCleverString(const std::string& data);
     std::string toCleverString(char& data);
+    std::string toCleverString(char data);
     std::string toCleverString(const char* data);
     std::string toCleverString(char* data);
     template <typename DataType1,typename DataType2>
@@ -172,6 +177,9 @@ namespace MadLibrary{
             uint32_t IDcount=0;
         public:
             void AddVertex(VertexData Data);
+            Graph(uint32_t NumberOfVertices, std::vector<VertexData> VertexDatas);
+            Graph(uint32_t NumberOfVertices);
+            Graph();
     };
 
     template <typename VertexType,typename VertexData,typename EdgeData>
@@ -180,6 +188,10 @@ namespace MadLibrary{
             std::map<VertexType,VertexData> Vertices;
             std::map<VertexType,std::map<VertexType,EdgeData>> Edges;
         public:
+            UniqueGraph(std::vector<VertexType> Vertecies,std::vector<VertexData> VertexDatas);
+            UniqueGraph(std::vector<VertexType> Vertecies);
+            UniqueGraph();
+            std::vector<VertexType> GetVertices();
             void AddVertex(VertexType Vertex,VertexData Data);
             void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
             void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
@@ -191,6 +203,8 @@ namespace MadLibrary{
             template<typename Compare> 
             void Dijkstra(VertexType Source,std::vector<EdgeData>& Distance,std::vector<VertexType>& Previous,Compare CompAlg);
             void BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices); 
+            template<typename Function>
+            void BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction); 
     };
 }
 
