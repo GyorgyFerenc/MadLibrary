@@ -192,6 +192,67 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch
     
 }
 
+template <typename VertexType,typename VertexData,typename EdgeData>
+std::vector<VertexType> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch(VertexType Source){
+    std::vector<VertexType> Vertices;
+    this->BreadthFirstSearch(Source,Vertices);
+    return Vertices;
+}
+
+//DepthFirstSearch
+template <typename VertexType,typename VertexData,typename EdgeData>
+template<typename Function>
+void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction){
+    Vertices.clear();
+    
+    std::stack<VertexType> TheStack;
+
+    std::vector<VertexType> Visited;
+
+    TheStack.push(Source);
+    Visited.push_back(Source);
+    Vertices.push_back(Source);
+    while (!TheStack.empty())
+    {
+        VertexType Current=TheStack.top();
+        TheStack.pop();
+
+        TheFunction(this,Current);
+
+        for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
+            if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
+            TheStack.push(it->first);
+            Vertices.push_back(it->first);
+            Visited.push_back(it->first);
+        }
+    }
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices){
+    Vertices.clear();
+    
+    std::stack<VertexType> TheStack;
+
+    std::vector<VertexType> Visited;
+
+    TheStack.push(Source);
+    Visited.push_back(Source);
+    Vertices.push_back(Source);
+    while (!TheStack.empty())
+    {
+        VertexType Current=TheStack.top();
+        TheStack.pop();
+
+        for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
+            if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
+            TheStack.push(it->first);
+            Vertices.push_back(it->first);
+            Visited.push_back(it->first);
+        }
+    }
+}
+
 //Constructor
 template <typename VertexType,typename VertexData,typename EdgeData>
 MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::UniqueGraph(std::vector<VertexType> Vertecies,std::vector<VertexData> VertexDatas){
@@ -211,4 +272,5 @@ template <typename VertexType,typename VertexData,typename EdgeData>
 MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::UniqueGraph(){
     return;
 }
+
 #endif

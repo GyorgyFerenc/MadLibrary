@@ -61,6 +61,7 @@
         "forward_list": "cpp",
         "queue": "cpp",
         "map": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "stack": "cpp"
     }
 }

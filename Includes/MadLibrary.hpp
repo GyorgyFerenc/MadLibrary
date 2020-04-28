@@ -18,6 +18,7 @@ TODO:
 #include <bitset>
 #include <queue>
 #include <map>
+#include <stack>
 
 #if defined(_GLIBCXX_LIST) || defined(_LIST_)  
     #define ListIncluded true
@@ -51,39 +52,33 @@ namespace MadLibrary{
     class Graph;
     
     //toCleverString
-    enum{
-        CleverStringDecimal,
-        CleverStringHexaDecimal,
-        CleverStringOctal
-    };
     template <typename DataType>
-    std::string toCleverString(DataType& data);
+    std::string toCleverString(DataType data);
     template <typename DataType>
-    std::string toCleverString(DataType& data,uint32_t flag);
-    std::string toCleverString(const std::string& data);
-    std::string toCleverString(char& data);
+    std::string toCleverString(DataType data,uint32_t flag);
+    std::string toCleverString(const std::string data);
     std::string toCleverString(char data);
     std::string toCleverString(const char* data);
     std::string toCleverString(char* data);
     template <typename DataType1,typename DataType2>
-    std::string toCleverString(std::pair<DataType1,DataType2>& thePair);
+    std::string toCleverString(std::pair<DataType1,DataType2> thePair);
     template <typename DataType1,typename DataType2>
-    std::string toCleverString(std::map<DataType1,DataType2>& theMap);
+    std::string toCleverString(std::map<DataType1,DataType2> theMap);
     template <typename DataType>
-    std::string toCleverString(std::vector<DataType>& vect);
+    std::string toCleverString(std::vector<DataType> vect);
     template <typename DataType>
-    std::string toCleverString(std::initializer_list<DataType>& initList);
+    std::string toCleverString(std::initializer_list<DataType> initList);
     #if ListIncluded
         template <typename DataType>
-        std::string toCleverString(std::list<DataType>& TheList);
+        std::string toCleverString(std::list<DataType> TheList);
     #endif
     #if ArrayIncluded
         template <typename DataType, std::size_t Size>
-        std::string toCleverString(std::array<DataType,Size>& TheArray);
+        std::string toCleverString(std::array<DataType,Size> TheArray);
     #endif
     #if ForwardListIncluded
         template <typename DataType>
-        std::string toCleverString(std::forward_list<DataType>& TheForwardList);
+        std::string toCleverString(std::forward_list<DataType> TheForwardList);
     #endif
 
     //Dijkstra
@@ -202,9 +197,13 @@ namespace MadLibrary{
             void Dijkstra(VertexType Source,std::vector<EdgeData>& Distance,std::vector<VertexType>& Previous);
             template<typename Compare> 
             void Dijkstra(VertexType Source,std::vector<EdgeData>& Distance,std::vector<VertexType>& Previous,Compare CompAlg);
-            void BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices); 
+            void BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices);
+            std::vector<VertexType> BreadthFirstSearch(VertexType Source);
             template<typename Function>
             void BreadthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction); 
+            template<typename Function>
+            void DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction);
+            void DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices);
     };
 }
 
