@@ -273,4 +273,44 @@ MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::UniqueGraph(){
     return;
 }
 
+//GetTopologicalSort
+template <typename VertexType,typename VertexData,typename EdgeData>
+void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::TopologicalSortUtil(VertexType Current, std::vector<VertexType> &Visited, std::stack<VertexType> &TheTopologicalStack){
+    for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
+        if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
+        Visited.push_back(it->first);
+        this->TopologicalSortUtil(it->first,Visited, TheTopologicalStack);
+    }
+    TheTopologicalStack.push(Current);
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::GetTopologicalSort(std::vector<VertexType>& Vertices){
+    Vertices.clear();
+    
+    std::stack<VertexType> TheStack, TheTopologicalStack;
+
+    std::vector<VertexType> Visited;
+
+    for (auto Element=this->Vertices.begin();Element!=this->Vertices.end();Element++){
+
+        VertexType Source=Element->first;
+        if (std::find(Visited.begin(),Visited.end(),Source)==Visited.end()){
+            this->TopologicalSortUtil(Source,Visited, TheTopologicalStack);
+        }
+    }
+
+    while (!TheTopologicalStack.empty())
+    {
+        Vertices.push_back(TheTopologicalStack.top());
+        TheTopologicalStack.pop();
+    }
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+std::vector<VertexType> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::GetTopologicalSort(){
+    std::vector<VertexType> Vertices;
+    this->GetTopologicalSort(Vertices);
+    return Vertices;
+}
 #endif

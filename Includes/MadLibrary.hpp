@@ -5,8 +5,7 @@
 
 /*
 TODO:
-    -Implementalj TopologicalSort, FeszitoFat Graphba
-    -toCleverString Pairekre,Mappokra
+    -Implementalj FeszitoFat Graphba
 */
 #ifndef __MadLibrary_HPP_INCLUDED__
 #define __MadLibrary_HPP_INCLUDED__
@@ -180,6 +179,7 @@ namespace MadLibrary{
     template <typename VertexType,typename VertexData,typename EdgeData>
     class UniqueGraph{
         protected:
+            void TopologicalSortUtil(VertexType Current, std::vector<VertexType> &Visited, std::stack<VertexType> &TheTopologicalStack);
             std::map<VertexType,VertexData> Vertices;
             std::map<VertexType,std::map<VertexType,EdgeData>> Edges;
         public:
@@ -204,6 +204,8 @@ namespace MadLibrary{
             template<typename Function>
             void DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction);
             void DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices);
+            void GetTopologicalSort(std::vector<VertexType>& Vertices);
+            std::vector<VertexType> GetTopologicalSort();
     };
 }
 
