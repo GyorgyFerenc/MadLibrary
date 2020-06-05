@@ -146,18 +146,16 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch
     std::vector<VertexType> Visited;
 
     TheQueue.push(Source);
-    Visited.push_back(Source);
-    Vertices.push_back(Source);
     while (!TheQueue.empty())
     {
         VertexType Current=TheQueue.front();
+        Vertices.push_back(Current);
+        Visited.push_back(Current);
         TheQueue.pop();
 
         for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
             if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
             TheQueue.push(it->first);
-            Vertices.push_back(it->first);
-            Visited.push_back(it->first);
         }
     }
     
@@ -173,11 +171,11 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch
     std::vector<VertexType> Visited;
 
     TheQueue.push(Source);
-    Visited.push_back(Source);
-    Vertices.push_back(Source);
     while (!TheQueue.empty())
     {
         VertexType Current=TheQueue.front();
+        Vertices.push_back(Current);
+        Visited.push_back(Current);
         TheQueue.pop();
 
         TheFunction(this,Current);
@@ -185,8 +183,6 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::BreadthFirstSearch
         for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
             if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
             TheQueue.push(it->first);
-            Vertices.push_back(it->first);
-            Visited.push_back(it->first);
         }
     }
     
@@ -210,20 +206,18 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::DepthFirstSearch(V
     std::vector<VertexType> Visited;
 
     TheStack.push(Source);
-    Visited.push_back(Source);
-    Vertices.push_back(Source);
     while (!TheStack.empty())
     {
         VertexType Current=TheStack.top();
         TheStack.pop();
-
+        Vertices.push_back(Current);
+        Visited.push_back(Current);
         TheFunction(this,Current);
 
         for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
             if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
             TheStack.push(it->first);
-            Vertices.push_back(it->first);
-            Visited.push_back(it->first);
+            
         }
     }
 }
@@ -237,20 +231,25 @@ void MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::DepthFirstSearch(V
     std::vector<VertexType> Visited;
 
     TheStack.push(Source);
-    Visited.push_back(Source);
-    Vertices.push_back(Source);
     while (!TheStack.empty())
     {
         VertexType Current=TheStack.top();
         TheStack.pop();
+        Vertices.push_back(Current);
+        Visited.push_back(Current);
 
         for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
             if (std::find(Visited.begin(),Visited.end(),it->first)!=Visited.end()) continue;
             TheStack.push(it->first);
-            Vertices.push_back(it->first);
-            Visited.push_back(it->first);
         }
     }
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+std::vector<VertexType> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::DepthFirstSearch(VertexType Source){
+    std::vector<VertexType> DFS;
+    this->DepthFirstSearch(Source,DFS);
+    return DFS;
 }
 
 //Constructor
@@ -312,5 +311,78 @@ std::vector<VertexType> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>:
     std::vector<VertexType> Vertices;
     this->GetTopologicalSort(Vertices);
     return Vertices;
+}
+
+//SpanningTree
+template <typename VertexType,typename VertexData,typename EdgeData>
+MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::PrimSpanningTreeGraph(){
+    auto Parents = this->PrimSpanningTreeParent();
+    MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData> newGraph;
+    auto Vertecies = this->GetVertices();
+    for (uint32_t i=0; i < Vertecies.size();i++){
+        newGraph.AddVertex(Vertecies[i],this->GetVertexData(Vertecies[i]));
+    }
+
+    for (auto i = Parents.begin();i!=Parents.end();i++){
+        newGraph.AddEdge(i->second,i->first,this->GetEdgeData(i->second,i->first));
+    }
+    return newGraph;
+}
+
+template <typename VertexType,typename VertexData,typename EdgeData>
+std::map<VertexType,VertexType> MadLibrary::UniqueGraph<VertexType,VertexData,EdgeData>::PrimSpanningTreeParent(){
+    std::map<VertexType,VertexType> Parents;
+
+    std::map<VertexType,EdgeData> Keys;
+    std::map<VertexType,bool> Visited;
+    std::vector<VertexType> TheVertecies = this->GetVertices();
+
+    auto GetMin = [&Keys,&TheVertecies,&Visited,this]()->VertexType{
+        EdgeData Min;
+        VertexType MinIndex;
+        uint32_t g=0;
+        for (g=0;g<TheVertecies.size();g++){
+            if (!Visited[TheVertecies[g]]){
+                Min=Keys[TheVertecies[g]];
+                MinIndex=TheVertecies[g];
+                break;
+            }
+        }
+
+        for (uint32_t i=g;i<TheVertecies.size();i++){
+            if (Keys[TheVertecies[i]]<Min && !Visited[TheVertecies[i]]){
+                Min=Keys[TheVertecies[i]];
+                MinIndex=TheVertecies[i];
+            }
+        }
+        return MinIndex;
+    };
+
+    //std::priority_queue<VertexType, std::vector<VertexType>,decltype(CompAlg)> PriorityQueue(CompAlg);
+
+    for (uint32_t i=0;i<TheVertecies.size();i++){
+        Keys[TheVertecies[i]] = std::numeric_limits<EdgeData>::max();
+        //PriorityQueue.push(TheVertecies[i]);
+    }
+
+    VertexType FristVertex = TheVertecies[0];
+    Keys[FristVertex]=0;
+    for (uint32_t i=0;i<TheVertecies.size()-1;i++)
+    {
+        VertexType Current = GetMin();
+        Visited[Current]=true;
+
+        for (auto it=this->Edges[Current].begin();it!=this->Edges[Current].end();it++){
+            VertexType TheVertex=it->first;
+            EdgeData TheEdgeData=it->second;
+
+            if (!Visited[TheVertex] && TheEdgeData < Keys[TheVertex]){
+                Parents[TheVertex]=Current;
+                Keys[TheVertex]=TheEdgeData;
+            }
+
+        }
+    }
+    return Parents;
 }
 #endif

@@ -204,8 +204,11 @@ namespace MadLibrary{
             template<typename Function>
             void DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices,Function TheFunction);
             void DepthFirstSearch(VertexType Source, std::vector<VertexType>& Vertices);
+            std::vector<VertexType> DepthFirstSearch(VertexType Source);
             void GetTopologicalSort(std::vector<VertexType>& Vertices);
             std::vector<VertexType> GetTopologicalSort();
+            UniqueGraph<VertexType,VertexData,EdgeData> PrimSpanningTreeGraph();
+            std::map<VertexType,VertexType> PrimSpanningTreeParent();
     };
 }
 
