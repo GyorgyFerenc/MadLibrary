@@ -1,46 +1,19 @@
-// CPP program to illustrate 
-// concept of Virtual Functions 
-  
-#include <iostream> 
-using namespace std; 
-  
-class base { 
-public: 
-    virtual void print() 
-    { 
-        cout << "print base class" << endl; 
-    } 
-    virtual base* GetThis(){
-        return this;
-    }
-  
-    void show() 
-    { 
-        cout << "show base class" << endl; 
-    } 
 
-    virtual void ThePrint(){
-        std::cout<<typeid(this->GetThis()).name();
-    }
-}; 
-  
-class derived : public base { 
-public:  
-    derived* GetThis(){
-        return this;
-    }
+#include <direct.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-    void show() 
-    { 
-        cout << "show derived class" << endl; 
-    } 
-}; 
-  
-int main() 
-{ 
-    base* bptr; 
-    derived d; 
-    bptr = &d; 
-  
-    d.ThePrint();
-} 
+int main( void )
+{
+   if( _mkdir( "C:/testtmp/xd" ) == 0 )
+   {
+      printf( "Directory 'C:/testtmp/xd' was successfully created\n" );
+      system( "dir C:/testtmp/xd" );
+      if( _rmdir( "C:/testtmp/xd" ) == 0 )
+        printf( "Directory 'C:/testtmp/xd' was successfully removed\n"  );
+      else
+         printf( "Problem removing directory 'C:/testtmp/xd'\n" );
+   }
+   else
+      printf( "Problem creating directory 'C:/testtmp/xd'\n" );
+}

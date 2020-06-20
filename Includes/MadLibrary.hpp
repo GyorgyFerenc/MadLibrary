@@ -5,12 +5,12 @@
 
 /*
 TODO:
-    -Implementalj FeszitoFat Graphba
 */
 #ifndef __MadLibrary_HPP_INCLUDED__
 #define __MadLibrary_HPP_INCLUDED__
 
 ///Inicializalas
+#include <fstream>
 #include <vector>
 #include <sstream>
 #include <algorithm>
@@ -18,6 +18,7 @@ TODO:
 #include <queue>
 #include <map>
 #include <stack>
+#include <direct.h>
 
 #if defined(_GLIBCXX_LIST) || defined(_LIST_)  
     #define ListIncluded true
@@ -50,6 +51,19 @@ namespace MadLibrary{
     template <typename VertexData,typename EdgeData>
     class Graph;
     
+    ///FileHandler
+    //CheckForFileExists
+    bool CheckForFileExists(const std::string& name);
+
+    ///SimpleFunctions
+    //AppendVectors
+    template <typename DataType>
+    std::vector<DataType> AppendVectors(std::vector<DataType> &First,const std::vector<DataType> &Second);
+
+    //StringParser
+    std::vector<std::string> StringParser(std::string TheString,bool CheckForWhiteSpaces,std::vector<char> OtherCharToCheckFor);
+    std::vector<std::string> StringParser(std::string TheString);
+
     //toCleverString
     template <typename DataType>
     std::string toCleverString(DataType data);

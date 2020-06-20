@@ -3,6 +3,41 @@
 
 #include "MadLibrary.hpp"
 
+//AppendVectors
+template <typename DataType>
+std::vector<DataType> MadLibrary::AppendVectors(std::vector<DataType> &First,const std::vector<DataType> &Second){
+    First.insert(First.end(),Second.begin(),Second.end());
+    return First;
+}
+
+//StringParser
+std::vector<std::string> MadLibrary::StringParser(std::string TheString,bool CheckForWhiteSpaces,std::vector<char> OtherCharToCheckFor){
+    if (CheckForWhiteSpaces) MadLibrary::AppendVectors(OtherCharToCheckFor,{0x20,0x0c,0x0a,0x0d,0x09,0x0b});
+    OtherCharToCheckFor.push_back('\0');
+    std::vector<std::string> Parsed;
+    uint32_t pos1=0;
+    bool FirstSet=false;
+    for (size_t i = 0; i < TheString.size()+1; i++)
+    {
+        if (FirstSet){
+            if (std::find(OtherCharToCheckFor.begin(),OtherCharToCheckFor.end(),TheString[i]) != OtherCharToCheckFor.end()){
+                Parsed.push_back(TheString.substr(pos1,i-pos1));
+                FirstSet=false;
+            }
+        }else{
+            if (std::find(OtherCharToCheckFor.begin(),OtherCharToCheckFor.end(),TheString[i]) == OtherCharToCheckFor.end()){
+                FirstSet=true;
+                pos1=i;
+            }
+        }
+    }
+    
+    return Parsed;
+}
+
+std::vector<std::string> MadLibrary::StringParser(std::string TheString){
+    return MadLibrary::StringParser(TheString,1,{});
+}
 //toCleverString
 template <typename DataType>
 std::string MadLibrary::toCleverString(DataType data){
