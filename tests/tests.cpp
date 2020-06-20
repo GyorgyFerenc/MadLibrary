@@ -1,9 +1,10 @@
 #include <iostream>
-#include <map>
-#include "../Includes/MadLibrary.hpp"
-
+#include <fstream>
+#include <vector>
+#include "../MadLibrary/SimpleFunctions.hpp"
 int main(){
-    std::vector<std::string> Parsed = MadLibrary::StringParser("alm a");
+    std::string asd="PathForControlFile=C:/SecondKeyboard\nTriggerKey=F24";
+    std::vector<std::string> Parsed = MadLibrary::StringParser(asd,1,{'='});
     std::cout<<MadLibrary::toCleverString(Parsed);
 }
 /*

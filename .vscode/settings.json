@@ -63,5 +63,6 @@
         "map": "cpp",
         "xtree": "cpp",
         "stack": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
