@@ -2,10 +2,10 @@
 #include <fstream>
 #include <vector>
 #include "../MadLibrary/SimpleFunctions.hpp"
-int main(){
-    std::string asd="PathForControlFile=C:/SecondKeyboard\nTriggerKey=F24";
-    std::vector<std::string> Parsed = MadLibrary::StringParser(asd,1,{'='});
-    std::cout<<MadLibrary::toCleverString(Parsed);
+
+int main()
+{
+    return 0;
 }
 /*
     MadLibrary::Graph<uint32_t,uint32_t> G(9);

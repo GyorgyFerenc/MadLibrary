@@ -13,28 +13,36 @@
 Then you ready to go.
 
 # Documentation
-## Dijsktra
- 
-```cpp
-template <class DataType>
-void Dijkstra(std::vector<std::vector<DataType>> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
 
-template <class DataType>
-void Dijkstra(MadLibrary::Matrix<DataType> Graph, uint32_t source, std::vector<uint32_t>& previous, std::vector<DataType>& distance);
+## StringParser
+```cpp
+std::vector<std::string> StringParser(std::string TheString);
+std::vector<std::string> StringParser(std::string TheString, bool CheckForWhiteSpaces, std::vector<char> OtherCharToCheckFor);
 ```
-It is a Dijkstra pathfinding algorithm to find the shortest path from the source point to the all other in a graph.
-See: [Dijkstra](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+1. It divides the string into separate parts according to whitespaces.
+2. It divides the string into separate parts according to the given chars.
 
 __Parameters__:
-- std::vector<std::vector<DataType>> Graph: A 2d Adjacency matrix using the std::vector. See: [Adjacency_matrix](https://en.wikipedia.org/wiki/Adjacency_matrix)
-- MadLibrary::Matrix<DataType> Graph: A 2d Adjacency matrix using the MadLibrary::Matrix. See: [Adjacency_matrix](https://en.wikipedia.org/wiki/Adjacency_matrix)
-- uint32_t source: The source node, from where the paths are measured.
-- std::vector<uint32_t>& previous: The std::vector where is the previous nodes are stored.
-- std::vector<DataType>& distance: The std::vector where is the distance from the source are stored.
+- std::string TheString: The string to parse.
+- bool CheckForWhiteSpaces: The string to parse.
 
 __Return Value__:
-    There is no return value.
-    
+    Absolute value of any data.
+
+## AppendVectors
+```cpp
+template <typename DataType>
+std::vector<DataType> AppendVectors(std::vector<DataType> &First, const std::vector<DataType> &Second);
+```
+It appends the second vector to the first, stores it in the first and returns it as well.
+
+__Parameters__:
+- std::vector<DataType> &First: The first vector.
+- std::vector<DataType> &Second: Iterator to the end of the container.
+
+__Return Value__:
+    Returns the combined vector.
+
 ## Abs
 ```cpp
 template<class DataType>
@@ -64,13 +72,15 @@ __Parameters__:
 __Return Value__:
     There is no return value.
 
-    
 ## MergeSort
 ```cpp
 template<typename Iter>
 void MergeSort(Iter beg, Iter end);
+template <class Iter, class Comper>
+void MergeSort(Iter beg, Iter end, Comper comp);
 ```
-Sorting the element of a container.
+1. Sorts the element of a container.
+2. Sorts the element of a container using a custom comper algorithm.
 See: [Merge Sort](https://en.wikipedia.org/wiki/Merge_sort)
 
 __Parameters__:
@@ -173,30 +183,26 @@ template <class DataType>
             std::vector<std::vector<DataType>> vect;
             uint32_t row,col;
         public:
-            template <typename OutputStream>
-            void Plot(OutputStream& Os) const;
-            operator std::vector<std::vector<DataType>>();
-            static Matrix<DataType> ZeroMatrix(uint32_t row,uint32_t col);
+            static Matrix<DataType> ZeroMatrix(uint32_t row, uint32_t col);
             static Matrix<DataType> ZeroMatrix(uint32_t number);
             static Matrix<DataType> IdentityMatrix(uint32_t size);
-            Matrix<DataType> GetInverse();
-            Matrix(const uint32_t row,const uint32_t col, DataType fill);
-            Matrix(const uint32_t row,const uint32_t col);
+            Matrix(const uint32_t row, const uint32_t col, DataType fill);
+            Matrix(const uint32_t row, const uint32_t col);
             Matrix();
-            Matrix(const Matrix& other);
+            Matrix(const Matrix &other);
             void Fill(DataType data);
-            void Resize(const uint32_t row,const uint32_t col);
+            void Resize(const uint32_t row, const uint32_t col);
             void Clean();
-            DataType GetData(uint32_t row,uint32_t col) const;
-            DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
+            DataType GetData(uint32_t row, uint32_t col) const;
             DataType GetDeterminant() const;
+            DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
             uint32_t GetRow() const;
             uint32_t GetColumn() const;
-            std::vector<DataType>& operator[](size_t position);
+            std::vector<DataType> &operator[](size_t position);
             std::vector<DataType> operator[](size_t position) const;
             Matrix<DataType> operator+(const Matrix<DataType> other);
             void operator+=(const Matrix<DataType> other);
-            void operator=(const Matrix<DataType>& other);
+            void operator=(const Matrix<DataType> &other);
             Matrix<DataType> operator*(const Matrix<DataType> other);
             Matrix<DataType> operator*(const DataType Data);
             void operator*=(const Matrix<DataType> other);
@@ -205,6 +211,8 @@ template <class DataType>
             Matrix<DataType> operator/(const DataType Data);
             void operator/=(const Matrix<DataType> other);
             void operator/=(const DataType Data);
+            Matrix<DataType> GetInverse();
+            explicit operator std::vector<std::vector<DataType>>();
             ~Matrix();
     };
 ```
@@ -453,7 +461,12 @@ __Paramters__:
     
 __Return Value__:
     Returns the calculated determinant.
-    
+
+### GetSubDeterminant
+```cpp
+DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
+```
+
 ### Cast Operator
 ```cpp
 operator std::vector<std::vector<DataType>>();
@@ -467,25 +480,6 @@ __Paramters__:
 __Return Value__:
     Returns the 2d std::vector.
 
-### Plot
-```cpp
-template <typename OutputStream>
-void Plot(OutputStream& Os) const;
-```
-
-It writes the matrix to an outputstream.
-
-__Paramters__:
-- OutputStream& Os: The outputstream.
-    
-__Return Value__:
-    There is no return value.
-
-
-### GetSubDeterminant
-```cpp
-DataType GetSubDeterminant(uint32_t row, uint32_t col) const;
-```
 
 It gives the minor of the matrix.
 See: [Minor](https://en.wikipedia.org/wiki/Minor_(linear_algebra))
