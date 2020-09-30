@@ -14,7 +14,26 @@ Then you ready to go.
 
 # Documentation
 
-## StringParser
+- [Simple Functions](#Simple\ /Functions) 
+- [Matrix](##Matrix)
+- [Graph](##Graph)
+
+## Simple Functions
+
+### toCleverString
+```cpp
+template <typename DataType>
+std::string toCleverString(DataType data);
+```
+1. It formats the data into a string.
+
+__Parameters__:
+- DataType data: The data to format.
+
+__Return Value__:
+    The formated string.
+
+### StringParser
 ```cpp
 std::vector<std::string> StringParser(std::string TheString);
 std::vector<std::string> StringParser(std::string TheString, bool CheckForWhiteSpaces, std::vector<char> OtherCharToCheckFor);
@@ -24,12 +43,13 @@ std::vector<std::string> StringParser(std::string TheString, bool CheckForWhiteS
 
 __Parameters__:
 - std::string TheString: The string to parse.
-- bool CheckForWhiteSpaces: The string to parse.
+- bool CheckForWhiteSpaces:If it's true then it looks for whitespaces too, otherwise not.
+- std::vector<char> OtherCharToCheckFor: The vector of chars to look for.
 
 __Return Value__:
-    Absolute value of any data.
+    The vector of strings.
 
-## AppendVectors
+### AppendVectors
 ```cpp
 template <typename DataType>
 std::vector<DataType> AppendVectors(std::vector<DataType> &First, const std::vector<DataType> &Second);
@@ -43,7 +63,7 @@ __Parameters__:
 __Return Value__:
     Returns the combined vector.
 
-## Abs
+### Abs
 ```cpp
 template<class DataType>
 DataType Abs(DataType data);
@@ -56,7 +76,7 @@ __Parameters__:
 __Return Value__:
     Absolute value of any data.
     
-## PolygonArea
+### PolygonArea
 ```cpp
 template<class DataType,class DataType2>
 void PolygonArea(std::vector<DataType> X, std::vector<DataType> Y,DataType2 &temp);
@@ -72,7 +92,7 @@ __Parameters__:
 __Return Value__:
     There is no return value.
 
-## MergeSort
+### MergeSort
 ```cpp
 template<typename Iter>
 void MergeSort(Iter beg, Iter end);
@@ -90,7 +110,7 @@ __Parameters__:
 __Return Value__:
     There is no return value.
 
-## StringToNumber
+### StringToNumber
 ```cpp
 template <class DataType,class RandomAccesIterator>
 void StringToNumber(RandomAccesIterator begin,RandomAccesIterator end,DataType& toData);
@@ -105,7 +125,7 @@ __Parameters__:
 __Return Value__:
     There is no return value.
 
-## NumberSize
+### NumberSize
 ```cpp
 template <class DataType>
 uint32_t NumberSize(DataType Number);
@@ -118,7 +138,7 @@ __Parameters__:
 __Return Value__:
     Return the size of the number.
     
-## SimplePow
+### SimplePow
 ```cpp
 template <class DataType>
 DataType SimplePow(DataType Number,uint32_t exp);
@@ -132,7 +152,7 @@ __Parameters__:
 __Return Value__:
     The new number.
     
-## PrimeCheck
+### PrimeCheck
 ```cpp
 template <class DataType>
 bool PrimeCheck(DataType prime);
@@ -145,7 +165,7 @@ __Parameters__:
 __Return Value__:
     Returns true if it's a prime, otherwise false.
 
-## DeleteDigit
+### DeleteDigit
 ```cpp
 template <class DataType>
 DataType DeleteDigit(DataType Number,uint32_t pos);
@@ -159,7 +179,7 @@ __Parameters__:
 __Return Value__:
     Returns the new number.
 
-## Map
+### Map
 ```cpp
 double Map(double value, double start1, double stop1, double start2, double stop2);
 ```
@@ -218,6 +238,9 @@ template <class DataType>
 ```
 
 It is a container, a representation of a mathematic matrix.
+- DataType: The types of data to store.
+
+See: [Matrix](https://en.wikipedia.org/wiki/Matrix_(mathematics))
 
 ### **Functions**:
 
@@ -537,3 +560,190 @@ __Paramters__:
     
 __Return Value__:
     There is no return value.
+
+## Graph 
+
+```cpp
+    template <typename VertexData, typename EdgeData>
+    class Graph : public UniqueGraph<uint32_t, VertexData, EdgeData>
+    {
+    private:
+        uint32_t IDcount = 0;
+
+    public:
+        void AddVertex(VertexData Data);
+        Graph(uint32_t NumberOfVertices, std::vector<VertexData> VertexDatas);
+        Graph(uint32_t NumberOfVertices);
+        Graph();
+    };
+```
+
+It is a representation of a graph, where the vertices are represented by numbers. This class inherits from the UniqueGraph.
+- VertexData: The type of data to store at the graph's vertex.
+- EdgeData: The type of data to store at the edge between two vertices.
+
+See: [Graph](https://en.wikipedia.org/wiki/Graph_(discrete_mathematics))
+
+### **Functions**:
+
+### Constructors
+```cpp
+Graph(uint32_t NumberOfVertices, std::vector<VertexData> VertexDatas);
+Graph(uint32_t NumberOfVertices);
+Graph();
+```
+1. It creates the graph and assigns the data to vertices.
+2. It creates the graph.
+3. It creates an empty graph.
+    
+__Parameters__:
+- uint32_t NumberOfVertices: the number of vertices.
+- std::vector<VertexData> VertexDatas: the data to assign to the vertices.
+
+__Return Value__:
+    There is no return value.
+
+### AddVertex
+
+```cpp
+void AddVertex(VertexData Data);
+```
+  
+__Parameters__:
+- uint32_t NumberOfVertices: the number of vertices.
+- std::vector<VertexData> VertexDatas: the data to assign to the vertices.
+
+__Return Value__:
+    There is no return value.
+
+## UniqueGraph
+
+```cpp
+    template <typename VertexType, typename VertexData, typename EdgeData>
+    class UniqueGraph
+    {
+    protected:
+        void TopologicalSortUtil(VertexType Current, std::vector<VertexType> &Visited, std::stack<VertexType> &TheTopologicalStack);
+        std::map<VertexType, VertexData> Vertices;
+        std::map<VertexType, std::map<VertexType, EdgeData>> Edges;
+
+    public:
+        UniqueGraph(std::vector<VertexType> Vertecies, std::vector<VertexData> VertexDatas);
+        UniqueGraph(std::vector<VertexType> Vertecies);
+        UniqueGraph();
+        std::vector<VertexType> GetVertices();
+        void AddVertex(VertexType Vertex, VertexData Data);
+        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
+        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
+        VertexData GetVertexData(VertexType Vertex);
+        EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);
+        void DeleteVertex(VertexType Vertex);
+        void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);
+        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous);
+        template <typename Compare>
+        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous, Compare CompAlg);
+        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);
+        std::vector<VertexType> BreadthFirstSearch(VertexType Source);
+        template <typename Function>
+        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction);
+        template <typename Function>
+        void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction);
+        void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);
+        std::vector<VertexType> DepthFirstSearch(VertexType Source);
+        void GetTopologicalSort(std::vector<VertexType> &Vertices);
+        std::vector<VertexType> GetTopologicalSort();
+        UniqueGraph<VertexType, VertexData, EdgeData> PrimSpanningTreeGraph();
+        std::map<VertexType, VertexType> PrimSpanningTreeParent();
+    };
+```
+It is a representation of a graph.
+- VertexType: The type of vertices's indexes.
+- VertexData: The type of data to store at the graph's vertex.
+- EdgeData: The type of data to store at the edge between two vertices.
+
+### **Functions**:
+
+### Constructors
+```cpp
+UniqueGraph(std::vector<VertexType> Vertecies, std::vector<VertexData> VertexDatas);
+UniqueGraph(std::vector<VertexType> Vertecies);
+UniqueGraph();
+```
+1. It creates the graph and assigns the data to vertices.
+2. It creates the graph.
+3. It creates an empty graph.
+    
+__Parameters__:
+- std::vector<VertexType> Vertecies: the indexes of vertices.
+- std::vector<VertexData> VertexDatas: the data to assign to the vertices.
+
+__Return Value__:
+    There is no return value.
+
+### GetVerticess
+```cpp
+std::vector<VertexType> GetVertices();
+```
+It returns the vertex indexes in a vector.
+    
+__Parameters__:
+    There is no parameter.
+
+__Return Value__:
+    Returns the indexes.
+
+### AddVertex
+```cpp
+void AddVertex(VertexType Vertex, VertexData Data);
+```
+It adds the vertex to the graph with the data given.
+    
+__Parameters__:
+- VertexType Vertex: The index of the vertex to add.
+- VertexData Data: The data to store in that index.
+
+__Return Value__:
+    There is no return value.
+
+### AddEdge
+```cpp
+void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
+```
+It adds an edge to the graph with the data given.
+    
+__Parameters__:
+- VertexType VertexFrom: The index of the starting vertex.
+- VertexType VertexTo: The index of the end vertex.
+- EdgeData Data: The data to store.
+
+__Return Value__:
+    There is no return value.
+
+__Return Value__:
+    There is no return value.
+
+### AddBidirectionalEdge
+```cpp
+void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data); 
+```
+It adds a bidirectional edge to the graph with the data given.
+    
+__Parameters__:
+- VertexType VertexFrom: The index of the starting vertex.
+- VertexType VertexTo: The index of the end vertex.
+- EdgeData Data: The data to store.
+
+__Return Value__:
+    There is no return value.
+
+### GetVertexData
+```cpp
+VertexData GetVertexData(VertexType Vertex);
+```
+It returns the data at the specified vertex.
+    
+__Parameters__:
+- VertexType Vertex: The index of the vertex.
+
+__Return Value__:
+    Returns the data stored.

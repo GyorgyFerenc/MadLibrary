@@ -8,6 +8,8 @@
 TODO:
     Map->Unordered Map
     Document it
+    Write Copy Constructor
+    Write operator=
 */
 namespace MadLibrary
 {
@@ -25,10 +27,10 @@ namespace MadLibrary
         uint32_t IDcount = 0;
 
     public:
-        void AddVertex(VertexData Data);
-        Graph(uint32_t NumberOfVertices, std::vector<VertexData> VertexDatas);
-        Graph(uint32_t NumberOfVertices);
-        Graph();
+        void AddVertex(VertexData Data);                                       //Documented
+        Graph(uint32_t NumberOfVertices, std::vector<VertexData> VertexDatas); //Documented
+        Graph(uint32_t NumberOfVertices);                                      //Documented
+        Graph();                                                               //Documented
     };
 
     template <typename VertexType, typename VertexData, typename EdgeData>
@@ -40,14 +42,14 @@ namespace MadLibrary
         std::map<VertexType, std::map<VertexType, EdgeData>> Edges;
 
     public:
-        UniqueGraph(std::vector<VertexType> Vertecies, std::vector<VertexData> VertexDatas);
-        UniqueGraph(std::vector<VertexType> Vertecies);
-        UniqueGraph();
-        std::vector<VertexType> GetVertices();
-        void AddVertex(VertexType Vertex, VertexData Data);
-        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
-        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);
-        VertexData GetVertexData(VertexType Vertex);
+        UniqueGraph(std::vector<VertexType> Vertices, std::vector<VertexData> VertexDatas);   //Documented
+        UniqueGraph(std::vector<VertexType> Vertices);                                        //Documented
+        UniqueGraph();                                                                        //Documented
+        std::vector<VertexType> GetVertices();                                                //Documented
+        void AddVertex(VertexType Vertex, VertexData Data);                                   //Documented
+        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);              //Documented
+        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data); //Documented
+        VertexData GetVertexData(VertexType Vertex);                                          //Documented
         EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);
         void DeleteVertex(VertexType Vertex);
         void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);
@@ -67,6 +69,7 @@ namespace MadLibrary
         UniqueGraph<VertexType, VertexData, EdgeData> PrimSpanningTreeGraph();
         std::map<VertexType, VertexType> PrimSpanningTreeParent();
     };
+
     //AddVertex
     template <typename VertexData, typename EdgeData>
     void MadLibrary::Graph<VertexData, EdgeData>::AddVertex(VertexData Data)
@@ -348,7 +351,7 @@ namespace MadLibrary
 
     //Constructor
     template <typename VertexType, typename VertexData, typename EdgeData>
-    MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::UniqueGraph(std::vector<VertexType> Vertecies, std::vector<VertexData> VertexDatas)
+    MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::UniqueGraph(std::vector<VertexType> Vertices, std::vector<VertexData> VertexDatas)
     {
         for (uint32_t i = 0; i < Vertices.size(); i++)
         {
@@ -357,7 +360,7 @@ namespace MadLibrary
     }
 
     template <typename VertexType, typename VertexData, typename EdgeData>
-    MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::UniqueGraph(std::vector<VertexType> Vertecies)
+    MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::UniqueGraph(std::vector<VertexType> Vertices)
     {
         for (uint32_t i = 0; i < Vertices.size(); i++)
         {
@@ -425,10 +428,10 @@ namespace MadLibrary
     {
         auto Parents = this->PrimSpanningTreeParent();
         MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData> newGraph;
-        auto Vertecies = this->GetVertices();
-        for (uint32_t i = 0; i < Vertecies.size(); i++)
+        auto Vertices = this->GetVertices();
+        for (uint32_t i = 0; i < Vertices.size(); i++)
         {
-            newGraph.AddVertex(Vertecies[i], this->GetVertexData(Vertecies[i]));
+            newGraph.AddVertex(Vertices[i], this->GetVertexData(Vertices[i]));
         }
 
         for (auto i = Parents.begin(); i != Parents.end(); i++)
@@ -445,28 +448,28 @@ namespace MadLibrary
 
         std::map<VertexType, EdgeData> Keys;
         std::map<VertexType, bool> Visited;
-        std::vector<VertexType> TheVertecies = this->GetVertices();
+        std::vector<VertexType> TheVertices = this->GetVertices();
 
-        auto GetMin = [&Keys, &TheVertecies, &Visited, this]() -> VertexType {
+        auto GetMin = [&Keys, &TheVertices, &Visited, this]() -> VertexType {
             EdgeData Min;
             VertexType MinIndex;
             uint32_t g = 0;
-            for (g = 0; g < TheVertecies.size(); g++)
+            for (g = 0; g < TheVertices.size(); g++)
             {
-                if (!Visited[TheVertecies[g]])
+                if (!Visited[TheVertices[g]])
                 {
-                    Min = Keys[TheVertecies[g]];
-                    MinIndex = TheVertecies[g];
+                    Min = Keys[TheVertices[g]];
+                    MinIndex = TheVertices[g];
                     break;
                 }
             }
 
-            for (uint32_t i = g; i < TheVertecies.size(); i++)
+            for (uint32_t i = g; i < TheVertices.size(); i++)
             {
-                if (Keys[TheVertecies[i]] < Min && !Visited[TheVertecies[i]])
+                if (Keys[TheVertices[i]] < Min && !Visited[TheVertices[i]])
                 {
-                    Min = Keys[TheVertecies[i]];
-                    MinIndex = TheVertecies[i];
+                    Min = Keys[TheVertices[i]];
+                    MinIndex = TheVertices[i];
                 }
             }
             return MinIndex;
@@ -474,15 +477,15 @@ namespace MadLibrary
 
         //std::priority_queue<VertexType, std::vector<VertexType>,decltype(CompAlg)> PriorityQueue(CompAlg);
 
-        for (uint32_t i = 0; i < TheVertecies.size(); i++)
+        for (uint32_t i = 0; i < TheVertices.size(); i++)
         {
-            Keys[TheVertecies[i]] = std::numeric_limits<EdgeData>::max();
-            //PriorityQueue.push(TheVertecies[i]);
+            Keys[TheVertices[i]] = std::numeric_limits<EdgeData>::max();
+            //PriorityQueue.push(TheVertices[i]);
         }
 
-        VertexType FristVertex = TheVertecies[0];
+        VertexType FristVertex = TheVertices[0];
         Keys[FristVertex] = 0;
-        for (uint32_t i = 0; i < TheVertecies.size() - 1; i++)
+        for (uint32_t i = 0; i < TheVertices.size() - 1; i++)
         {
             VertexType Current = GetMin();
             Visited[Current] = true;

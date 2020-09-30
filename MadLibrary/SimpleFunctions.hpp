@@ -33,7 +33,7 @@ namespace MadLibrary
     template <typename DataType>
     std::vector<DataType> AppendVectors(std::vector<DataType> &First, const std::vector<DataType> &Second);
 
-    //StringParser
+    //StringParser //Documented
     std::vector<std::string> StringParser(std::string TheString, bool CheckForWhiteSpaces, std::vector<char> OtherCharToCheckFor);
     std::vector<std::string> StringParser(std::string TheString);
 
