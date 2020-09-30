@@ -674,8 +674,8 @@ UniqueGraph();
 3. It creates an empty graph.
     
 __Parameters__:
-- std::vector<VertexType> Vertecies: the indexes of vertices.
-- std::vector<VertexData> VertexDatas: the data to assign to the vertices.
+- std::vector<VertexType> Vertecies: The indexes of vertices.
+- std::vector<VertexData> VertexDatas: The data to assign to the vertices.
 
 __Return Value__:
     There is no return value.
@@ -747,3 +747,129 @@ __Parameters__:
 
 __Return Value__:
     Returns the data stored.
+
+### GetEdgeData
+```cpp
+EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);
+```
+It returns the data at the specified edge.
+    
+__Parameters__:
+- VertexType VertexFrom: The starting vertex.
+- VertexType VertexTo: The end vertex.
+
+__Return Value__:
+    Returns the data stored.
+
+### DeleteVertex
+```cpp
+void DeleteVertex(VertexType Vertex);
+```
+It deletes a vertex from the graph.
+    
+__Parameters__:
+- VertexType Vertex: The index of the vertex.
+
+__Return Value__:
+    There is no return value.
+
+### DeleteEdge
+```cpp
+void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);
+```
+It deletes an edge from the graph.
+    
+__Parameters__:
+- VertexType VertexFrom: The starting vertex.
+- VertexType VertexTo: The end vertex.
+
+__Return Value__:
+    There is no return value.
+
+### Dijkstra
+```cpp
+void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous);
+template <typename Compare>
+void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous, Compare CompAlg); 
+```
+1. It returns the shortest path from the source vertex.
+2. It returns the shortest path from the source vertex, using a custom compare algorithm. The custom algorithm must follow this structure:
+```cpp
+bool CompAlg(std::pair<VertexType, EdgeData> First, std::pair<VertexType, EdgeData> Second){
+    //compare then return true or false
+};
+```
+See: [Dijkstra](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+    
+__Parameters__:
+- VertexType Source: The source vertex.
+- std::vector<EdgeData> &Distance: The distance vector.
+- std::vector<VertexType> &Previous: The Previous vector.
+- Compare CompAlg: The algorithm to compare with.
+
+__Return Value__:
+    There is no return value.
+
+### BreadthFirstSearch
+```cpp
+void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);
+std::vector<VertexType> BreadthFirstSearch(VertexType Source);
+template <typename Function>
+void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction);
+```
+It performs a breadth first search, on the graph.
+1. The indexes of vertices is stored in the Vertices vector, in order of finding them.
+2. Returns the indexes of vertices in a vector, in order of finding them.
+3. The indexes of vertices is stored in the Vertices vector, in order of finding them and calls a function with it. The function must follow this structure:
+```cpp
+auto TheFunction = [/*Any variable to capture*/](auto PointerToTheGraph, uint32_t Current) -> void {
+    //Calculations
+};
+```
+Note:
+- auto PointerToTheGraph: It is a pointer to the graph.
+- uint32_t Current: It is the current vertex.
+
+See: [Breadth First Search](https://en.wikipedia.org/wiki/Breadth-first_search)
+    
+__Parameters__:
+- VertexType Source: The starting vertex.
+- std::vector<VertexType> &Vertices: The vector of stored vertex indexes.
+- Function TheFunction: The custom function to call.
+
+__Return Value__:
+1. There is no return value.
+2. Returns the indexes of vertices in a vector, in order of finding them.
+3. There is no return value.
+
+### DepthFirstSearch
+```cpp
+void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);
+std::vector<VertexType> DepthFirstSearch(VertexType Source);
+template <typename Function>
+void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction); 
+```
+It performs a depth first search, on the graph.
+1. The indexes of vertices is stored in the Vertices vector, in order of finding them.
+2. Returns the indexes of vertices in a vector, in order of finding them.
+3. The indexes of vertices is stored in the Vertices vector, in order of finding them and calls a function with it. The function must follow this structure:
+```cpp
+auto TheFunction = [/*Any variable to capture*/](auto PointerToTheGraph, uint32_t Current) -> void {
+    //Calculations
+};
+```
+Note:
+- auto PointerToTheGraph: It is a pointer to the graph.
+- uint32_t Current: It is the current vertex.
+
+See: [Depth First Search](https://en.wikipedia.org/wiki/Depth-first_search)
+    
+__Parameters__:
+- VertexType Source: The starting vertex.
+- std::vector<VertexType> &Vertices: The vector of stored vertex indexes.
+- Function TheFunction: The custom function to call.
+
+__Return Value__:
+1. There is no return value.
+2. Returns the indexes of vertices in a vector, in order of finding them.
+3. There is no return value.

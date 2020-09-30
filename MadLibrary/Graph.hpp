@@ -10,6 +10,7 @@ TODO:
     Document it
     Write Copy Constructor
     Write operator=
+    Check bfsre
 */
 namespace MadLibrary
 {
@@ -42,28 +43,28 @@ namespace MadLibrary
         std::map<VertexType, std::map<VertexType, EdgeData>> Edges;
 
     public:
-        UniqueGraph(std::vector<VertexType> Vertices, std::vector<VertexData> VertexDatas);   //Documented
-        UniqueGraph(std::vector<VertexType> Vertices);                                        //Documented
-        UniqueGraph();                                                                        //Documented
-        std::vector<VertexType> GetVertices();                                                //Documented
-        void AddVertex(VertexType Vertex, VertexData Data);                                   //Documented
-        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);              //Documented
-        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data); //Documented
-        VertexData GetVertexData(VertexType Vertex);                                          //Documented
-        EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);
-        void DeleteVertex(VertexType Vertex);
-        void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);
-        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous);
+        UniqueGraph(std::vector<VertexType> Vertices, std::vector<VertexData> VertexDatas);                   //Documented
+        UniqueGraph(std::vector<VertexType> Vertices);                                                        //Documented
+        UniqueGraph();                                                                                        //Documented
+        std::vector<VertexType> GetVertices();                                                                //Documented
+        void AddVertex(VertexType Vertex, VertexData Data);                                                   //Documented
+        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);                              //Documented
+        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);                 //Documented
+        VertexData GetVertexData(VertexType Vertex);                                                          //Documented
+        EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);                                     //Documented
+        void DeleteVertex(VertexType Vertex);                                                                 //Documented
+        void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);                                          //Documented
+        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous); //Documented
         template <typename Compare>
-        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous, Compare CompAlg);
-        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);
-        std::vector<VertexType> BreadthFirstSearch(VertexType Source);
+        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous, Compare CompAlg); //Documented
+        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);                                         //Documented
+        std::vector<VertexType> BreadthFirstSearch(VertexType Source);                                                         //Documented
         template <typename Function>
-        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction);
+        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction); //Documented
         template <typename Function>
-        void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction);
-        void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);
-        std::vector<VertexType> DepthFirstSearch(VertexType Source);
+        void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction); //Documented
+        void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);                       //Documented
+        std::vector<VertexType> DepthFirstSearch(VertexType Source);                                       //Documented
         void GetTopologicalSort(std::vector<VertexType> &Vertices);
         std::vector<VertexType> GetTopologicalSort();
         UniqueGraph<VertexType, VertexData, EdgeData> PrimSpanningTreeGraph();
