@@ -14,7 +14,7 @@ Then you ready to go.
 
 # Documentation
 
-- [Simple Functions](#SimpleFunctions) 
+- [Simple Functions](#Simple Functions) 
 - [Matrix](#Matrix)
 - [Graph](#Graph)
 
