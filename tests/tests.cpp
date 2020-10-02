@@ -1,9 +1,13 @@
 #include <iostream>
-#include "../MadLibrary/Matrix.hpp"
+#include "../MadLibrary/Graph.hpp"
+#include "../MadLibrary/SimpleFunctions.hpp"
 
 int main()
 {
-    MadLibrary::Matrix<int> a(2, 2, 1);
-    a[0][0] = 2;
-    std::cout << ;
+    MadLibrary::UniqueGraph<int, int, int> a({0, 1, 2, 3});
+    a.AddBidirectionalEdge(0, 1, 12);
+    a.AddBidirectionalEdge(1, 2, 12);
+    a.AddBidirectionalEdge(0, 2, 12);
+    a.AddBidirectionalEdge(0, 3, 12);
+    std::cout << MadLibrary::toCleverString(a.DepthFirstSearch(0));
 }

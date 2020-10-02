@@ -7,10 +7,11 @@
 /*
 TODO:
     Map->Unordered Map
-    Document it
     Write Copy Constructor
     Write operator=
-    Check bfsre
+    implement Kruskal’s Minimum Spanning Tree Algorithm
+    implement GetEdges -> map
+    implement GetEdgeData(Pairs)
 */
 namespace MadLibrary
 {
@@ -65,10 +66,10 @@ namespace MadLibrary
         void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction); //Documented
         void DepthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);                       //Documented
         std::vector<VertexType> DepthFirstSearch(VertexType Source);                                       //Documented
-        void GetTopologicalSort(std::vector<VertexType> &Vertices);
-        std::vector<VertexType> GetTopologicalSort();
-        UniqueGraph<VertexType, VertexData, EdgeData> PrimSpanningTreeGraph();
-        std::map<VertexType, VertexType> PrimSpanningTreeParent();
+        void GetTopologicalSort(std::vector<VertexType> &Vertices);                                        //Documented
+        std::vector<VertexType> GetTopologicalSort();                                                      //Documented
+        UniqueGraph<VertexType, VertexData, EdgeData> PrimSpanningTreeGraph();                             //Documented
+        std::map<VertexType, VertexType> PrimSpanningTreeParent();                                         //Documented
     };
 
     //AddVertex
@@ -234,11 +235,11 @@ namespace MadLibrary
         std::vector<VertexType> Visited;
 
         TheQueue.push(Source);
+        Visited.push_back(Source);
         while (!TheQueue.empty())
         {
             VertexType Current = TheQueue.front();
             Vertices.push_back(Current);
-            Visited.push_back(Current);
             TheQueue.pop();
 
             for (auto it = this->Edges[Current].begin(); it != this->Edges[Current].end(); it++)
@@ -246,6 +247,7 @@ namespace MadLibrary
                 if (std::find(Visited.begin(), Visited.end(), it->first) != Visited.end())
                     continue;
                 TheQueue.push(it->first);
+                Visited.push_back(it->first);
             }
         }
     }
@@ -259,13 +261,14 @@ namespace MadLibrary
         std::queue<VertexType> TheQueue;
 
         std::vector<VertexType> Visited;
+        Visited.push_back(Source);
 
         TheQueue.push(Source);
         while (!TheQueue.empty())
         {
             VertexType Current = TheQueue.front();
             Vertices.push_back(Current);
-            Visited.push_back(Current);
+
             TheQueue.pop();
 
             TheFunction(this, Current);
@@ -275,6 +278,7 @@ namespace MadLibrary
                 if (std::find(Visited.begin(), Visited.end(), it->first) != Visited.end())
                     continue;
                 TheQueue.push(it->first);
+                Visited.push_back(it->first);
             }
         }
     }
@@ -297,6 +301,7 @@ namespace MadLibrary
         std::stack<VertexType> TheStack;
 
         std::vector<VertexType> Visited;
+        Visited.push_back(Source);
 
         TheStack.push(Source);
         while (!TheStack.empty())
@@ -304,7 +309,7 @@ namespace MadLibrary
             VertexType Current = TheStack.top();
             TheStack.pop();
             Vertices.push_back(Current);
-            Visited.push_back(Current);
+
             TheFunction(this, Current);
 
             for (auto it = this->Edges[Current].begin(); it != this->Edges[Current].end(); it++)
@@ -312,6 +317,7 @@ namespace MadLibrary
                 if (std::find(Visited.begin(), Visited.end(), it->first) != Visited.end())
                     continue;
                 TheStack.push(it->first);
+                Visited.push_back(it->first);
             }
         }
     }
@@ -324,6 +330,7 @@ namespace MadLibrary
         std::stack<VertexType> TheStack;
 
         std::vector<VertexType> Visited;
+        Visited.push_back(Source);
 
         TheStack.push(Source);
         while (!TheStack.empty())
@@ -331,13 +338,13 @@ namespace MadLibrary
             VertexType Current = TheStack.top();
             TheStack.pop();
             Vertices.push_back(Current);
-            Visited.push_back(Current);
 
             for (auto it = this->Edges[Current].begin(); it != this->Edges[Current].end(); it++)
             {
                 if (std::find(Visited.begin(), Visited.end(), it->first) != Visited.end())
                     continue;
                 TheStack.push(it->first);
+                Visited.push_back(it->first);
             }
         }
     }

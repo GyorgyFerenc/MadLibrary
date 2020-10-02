@@ -873,3 +873,34 @@ __Return Value__:
 1. There is no return value.
 2. Returns the indexes of vertices in a vector, in order of finding them.
 3. There is no return value.
+
+### GetTopologicalSort
+```cpp
+void GetTopologicalSort(std::vector<VertexType> &Vertices);
+std::vector<VertexType> GetTopologicalSort();  
+```
+It calculates the topological sort of the graph.
+See: [Topological Sort](https://en.wikipedia.org/wiki/Topological_sorting)
+    
+__Parameters__:
+- std::vector<VertexType> &Vertices: It puts the indexes of vertices in this vector.
+
+__Return Value__:
+1. There is no return value.
+2. Returns the indexes of vertices in a vector.
+
+### PrimSpanningTreeGraph
+```cpp
+UniqueGraph<VertexType, VertexData, EdgeData> PrimSpanningTreeGraph();
+std::map<VertexType, VertexType> PrimSpanningTreeParent();
+```
+It creates a spanning tree using Prim's algorithm for it.
+See: [Minimum Spanning Tree](https://en.wikipedia.org/wiki/Minimum_spanning_tree)
+See: [Prim's algorithm](https://en.wikipedia.org/wiki/Prim%27s_algorithm)
+    
+__Parameters__:
+    There is no parameter.
+
+__Return Value__:
+1. Returns a graph object.
+2. Returns a parent array of the tree.
