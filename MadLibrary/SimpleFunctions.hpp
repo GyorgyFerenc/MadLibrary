@@ -8,6 +8,11 @@
 #include <bitset>
 #include <map>
 
+/*
+    Adj LNKO
+    Adj LKKT: lkkt(a, b) = a * b / lnko(a, b);
+*/
+
 #if defined(_GLIBCXX_LIST) || defined(_LIST_)
 #define ListIncluded true
 #else
