@@ -27,7 +27,7 @@ Then you ready to go.
 template <typename DataType>
 std::string toCleverString(DataType data);
 ```
-1. It formats the data into a string.
+It formats the data into a string. Can be used with every class which has the insertion operator overwritten.
 
 __Parameters__:
 - DataType data: The data to format.

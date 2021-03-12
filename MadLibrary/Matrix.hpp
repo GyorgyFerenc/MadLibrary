@@ -60,7 +60,7 @@ namespace MadLibrary
 
     //operator<<
     template <class DataType>
-    std::ostream &operator<<(std::ostream &Os, const Matrix<DataType> &TheMatrix)
+    std::ostream &operator<<(std::ostream &Os, const Matrix<DataType> &TheMatrix) //Documented
     {
         for (uint32_t i = 0; i < TheMatrix.GetRow(); i++)
         {
@@ -109,13 +109,7 @@ namespace MadLibrary
         Matrix<DataType> temp(size, size, 0);
         for (uint32_t i = 0; i < size; i++)
         {
-            for (uint32_t j = 0; j < size; j++)
-            {
-                if (i == j)
-                {
-                    temp[i][j] = 1;
-                }
-            }
+            temp[i][i] = 1;
         }
         return temp;
     }
