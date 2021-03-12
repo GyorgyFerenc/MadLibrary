@@ -6,9 +6,11 @@
 
 # Installation
  It provides and easy installation.
- Download the Includes folder with the files and put in your project folder, then in your project include the MadLibrary.hpp.
+ Download the Includes folder with the files and put in your project folder, then in your project include what you need.
+
+ For example:
 ```cpp
-#include "Includes/MadLibrary.hpp"
+#include "MadLibrary/Graph.hpp"
 ```
 Then you ready to go.
 
@@ -235,6 +237,9 @@ template <class DataType>
             explicit operator std::vector<std::vector<DataType>>();
             ~Matrix();
     };
+
+    template <class DataType>
+    std::ostream &operator<<(std::ostream &Os, const Matrix<DataType> &TheMatrix)
 ```
 
 It is a container, a representation of a mathematic matrix.
@@ -560,6 +565,20 @@ __Paramters__:
     
 __Return Value__:
     There is no return value.
+
+### Operator<<
+```cpp
+template <class DataType>
+std::ostream &operator<<(std::ostream &Os, const Matrix<DataType> &TheMatrix)
+```
+Overwrite the insertion operator. It serialize the data into a conventional and readable form.
+
+__Parameters__:
+- std::ostream &Os: The output stream.
+- const Matrix<DataType> &TheMatrix: The matrix
+
+__Return Value__:
+    Returns the ostream.
 
 ## Graph 
 
