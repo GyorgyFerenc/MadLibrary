@@ -44,22 +44,22 @@ namespace MadLibrary
         std::map<VertexType, std::map<VertexType, EdgeData>> Edges;
 
     public:
-        UniqueGraph(std::vector<VertexType> Vertices, std::vector<VertexData> VertexDatas);                   //Documented
-        UniqueGraph(std::vector<VertexType> Vertices);                                                        //Documented
-        UniqueGraph();                                                                                        //Documented
-        std::vector<VertexType> GetVertices();                                                                //Documented
-        void AddVertex(VertexType Vertex, VertexData Data);                                                   //Documented
-        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);                              //Documented
-        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);                 //Documented
-        VertexData GetVertexData(VertexType Vertex);                                                          //Documented
-        EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);                                     //Documented
-        void DeleteVertex(VertexType Vertex);                                                                 //Documented
-        void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);                                          //Documented
-        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous); //Documented
+        UniqueGraph(std::vector<VertexType> Vertices, std::vector<VertexData> VertexDatas);                                     //Documented
+        UniqueGraph(std::vector<VertexType> Vertices);                                                                          //Documented
+        UniqueGraph();                                                                                                          //Documented
+        std::vector<VertexType> GetVertices();                                                                                  //Documented
+        void AddVertex(VertexType Vertex, VertexData Data);                                                                     //Documented
+        void AddEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);                                                //Documented
+        void AddBidirectionalEdge(VertexType VertexFrom, VertexType VertexTo, EdgeData Data);                                   //Documented
+        VertexData GetVertexData(VertexType Vertex);                                                                            //Documented
+        EdgeData GetEdgeData(VertexType VertexFrom, VertexType VertexTo);                                                       //Documented
+        void DeleteVertex(VertexType Vertex);                                                                                   //Documented
+        void DeleteEdge(VertexType VertexFrom, VertexType VertexTo);                                                            //Documented
+        void Dijkstra(VertexType Source, std::map<VertexType, EdgeData> &Distance, std::map<VertexType, VertexType> &Previous); //Documented
         template <typename Compare>
-        void Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous, Compare CompAlg); //Documented
-        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);                                         //Documented
-        std::vector<VertexType> BreadthFirstSearch(VertexType Source);                                                         //Documented
+        void Dijkstra(VertexType Source, std::map<VertexType, EdgeData> &Distance, std::map<VertexType, VertexType> &Previous, Compare CompAlg); //Documented
+        void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices);                                                           //Documented
+        std::vector<VertexType> BreadthFirstSearch(VertexType Source);                                                                           //Documented
         template <typename Function>
         void BreadthFirstSearch(VertexType Source, std::vector<VertexType> &Vertices, Function TheFunction); //Documented
         template <typename Function>
@@ -177,7 +177,7 @@ namespace MadLibrary
 
     //Dijkstra
     template <typename VertexType, typename VertexData, typename EdgeData>
-    void MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous)
+    void MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::Dijkstra(VertexType Source, std::map<VertexType, EdgeData> &Distance, std::map<VertexType, VertexType> &Previous)
     {
         auto Compare = [](std::pair<VertexType, EdgeData> First, std::pair<VertexType, EdgeData> Second) -> bool {
             return First.second > Second.second;
@@ -187,22 +187,18 @@ namespace MadLibrary
 
     template <typename VertexType, typename VertexData, typename EdgeData>
     template <typename Compare>
-    void MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::Dijkstra(VertexType Source, std::vector<EdgeData> &Distance, std::vector<VertexType> &Previous, Compare CompAlg)
+    void MadLibrary::UniqueGraph<VertexType, VertexData, EdgeData>::Dijkstra(VertexType Source, std::map<VertexType, EdgeData> &Distance, std::map<VertexType, VertexType> &Previous, Compare CompAlg)
     {
         Distance.clear();
         Previous.clear();
 
-        for (uint32_t i = 0; i < this->Vertices.size(); i++)
-        {
-            Distance.push_back(std::numeric_limits<EdgeData>::max());
-            Previous.push_back(std::numeric_limits<VertexType>::max());
-        }
-
-        Distance[Source] = 0;
+        std::map<VertexType, bool> Saw;
+        Saw[Source] = true;
 
         std::priority_queue<std::pair<VertexType, EdgeData>, std::vector<std::pair<VertexType, EdgeData>>, decltype(CompAlg)> PriorityQueue(CompAlg);
 
-        PriorityQueue.push(std::pair<VertexType, EdgeData>(Source, 0));
+        EdgeData Zero;
+        PriorityQueue.push(std::pair<VertexType, EdgeData>(Source, Zero));
 
         while (!PriorityQueue.empty())
         {
@@ -214,8 +210,9 @@ namespace MadLibrary
                 VertexType TheVertex = it->first;
                 EdgeData TheEdgeData = it->second;
 
-                if (Distance[TheVertex] > Distance[Current] + TheEdgeData)
+                if ((Distance[TheVertex] > Distance[Current] + TheEdgeData) || (!Saw[TheVertex]))
                 {
+                    Saw[TheVertex] = true;
                     Distance[TheVertex] = Distance[Current] + TheEdgeData;
                     Previous[TheVertex] = Current;
                     PriorityQueue.push(std::pair<VertexType, EdgeData>(TheVertex, Distance[TheVertex]));

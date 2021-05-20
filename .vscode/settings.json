@@ -62,7 +62,12 @@
         "queue": "cpp",
         "map": "cpp",
         "xtree": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "bit": "cpp",
+        "compare": "cpp",
+        "functional": "cpp",
+        "numeric": "cpp",
+        "ranges": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
