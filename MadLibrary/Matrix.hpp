@@ -4,8 +4,6 @@
 #include <vector>
 #include "SimpleFunctions.hpp"
 
-//TODO: document operator<<
-
 namespace MadLibrary
 {
     ///INIT

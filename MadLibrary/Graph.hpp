@@ -6,12 +6,18 @@
 
 /*
 TODO:
-    Map->Unordered Map
     Write Copy Constructor
     Write operator=
     implement Kruskal’s Minimum Spanning Tree Algorithm
     implement GetEdges -> map
     implement GetEdgeData(Pairs)
+    Document Dijkstra
+        EdgeData -> operator+, operator>
+    Fix std::vector->std::map stuff
+    
+    Graph:
+        implement ChangeVertexData
+        
 */
 namespace MadLibrary
 {
