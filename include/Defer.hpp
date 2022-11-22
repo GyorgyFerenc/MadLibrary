@@ -34,4 +34,4 @@ class Defer {
 }  // namespace ml
 
 #define defer_init() let __def = ml::Defer()
-#define defer(code_block) __def.add(lambda((), {code_block}))
+#define defer(code_block) __def.add(lambda_ref((), {code_block}))

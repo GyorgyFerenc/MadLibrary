@@ -13,6 +13,7 @@
 #define var_s(variable, type) std::shared_ptr<type> variable
 #define var_w(variable, type) std::weak_ptr<type> variable
 
+#define null(type) std::unique_ptr<type>{};
 #define new(type, ...) std::make_unique<type>(__VA_ARGS__)
 #define new_shared(type, ...) std::make_shared<type>(__VA_ARGS__)
 
