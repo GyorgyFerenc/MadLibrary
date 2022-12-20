@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _GLIBCXX_IOSTREAM
-// MadLanguage extension to c++
+
 namespace ml {
 
 template <class T>

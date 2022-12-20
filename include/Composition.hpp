@@ -17,8 +17,10 @@
 #define composed_of(comp) comp& _##comp
 
 namespace ml {
+
 template <class T, class... Args>
 func combine_composition(Args&... args)->T {
     return T{args...};
 }
+
 }  // namespace ml

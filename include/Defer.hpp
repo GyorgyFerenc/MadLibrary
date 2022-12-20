@@ -6,29 +6,28 @@
 
 namespace ml {
 class Defer {
-    using function_type = std::function<void()>;
-
    public:
     Defer() {
     }
 
-    Defer(function_type fun) {
+    Defer(std::function<void()> fun) {
         add(fun);
     }
 
     ~Defer() {
         while (!s.empty()) {
-            s.top()();
+            auto f = s.top();
+            f();
             s.pop();
         }
     }
 
-    void add(function_type fun) {
+    void add(std::function<void()> fun) {
         s.push(fun);
     }
 
    private:
-    std::stack<function_type> s;
+    std::stack<std::function<void()>> s;
 };
 
 }  // namespace ml
