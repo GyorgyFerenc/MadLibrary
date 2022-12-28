@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef MADLIBRARY_LOGGER
 #define MADLIBRARY_LOGGER
 
