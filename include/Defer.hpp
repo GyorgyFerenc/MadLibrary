@@ -35,6 +35,6 @@ class Defer {
 }  // namespace MadLibrary
 
 #define DEFER_INIT auto __def = MadLibrary::Defer()
-#define DEFER(code_block) __def.add([]() { code_block; })
+#define DEFER(code_block) __def.add([&]() { code_block; })
 
 #endif
