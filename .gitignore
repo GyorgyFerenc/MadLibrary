@@ -4,3 +4,8 @@
 
 # .vscode
 .vscode/**
+
+# playground
+
+playground.cpp
+playground.out
