@@ -1,36 +1,40 @@
 #pragma once
 
+#ifndef MADLIBRARY_DEFER
+#define MADLIBRARY_DEFER
+
 #include <functional>
-#include <iostream>
 #include <stack>
 
-namespace ml {
+namespace MadLibrary {
 class Defer {
    public:
     Defer() {
     }
 
     Defer(std::function<void()> fun) {
-        add(fun);
+        this->add(fun);
     }
 
     ~Defer() {
-        while (!s.empty()) {
-            auto f = s.top();
+        while (!stack.empty()) {
+            auto f = stack.top();
             f();
-            s.pop();
+            stack.pop();
         }
     }
 
     void add(std::function<void()> fun) {
-        s.push(fun);
+        stack.push(fun);
     }
 
    private:
-    std::stack<std::function<void()>> s;
+    std::stack<std::function<void()>> stack;
 };
 
-}  // namespace ml
+}  // namespace MadLibrary
 
-#define defer_init() let __def = ml::Defer()
-#define defer(code_block) __def.add(lambda_ref((), {code_block}))
+#define DEFER_INIT auto __def = MadLibrary::Defer()
+#define DEFER(code_block) __def.add([]() { code_block; })
+
+#endif
