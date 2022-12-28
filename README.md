@@ -11,7 +11,8 @@ It is a header based library
 ``` -->
 
 ```
-┌── example // Set of examples using the library
+┌── documentation // The documentation of everything
+├── example // Set of examples using the library
 ├── experimental // The location of experimental modules 
 │   ├── ExperimentalModule1 // The location of an experimental module
 │   ... // rest of experimental modules
@@ -21,8 +22,13 @@ It is a header based library
     ... // rest of the modules
 ```
 
-## Naming convention
-- Modules are PascalCase
-- Classes, structs are PascalCase
-- Functions are snake_case
-- Variables are snake_case
+## Versioning
+
+The version format is V1.2.3 where 1 is the __major__ version, 2 is the __minor__ version, 3 is the __patch__ version.
+- __Major__ version: Signals backward-incompatible public API changes. This release carries no guarantee that it will be backward compatible with preceding __major__ versions.
+- __Minor__ version: Signals backward-compatible public API changes. This release guarantees backward compatibility and stability.
+- __Patch__ version: Signals changes that don't affect the module's public API or its dependencies. This release guarantees backward compatibility and stability 
+
+## Developer documentation
+
+Developer documentation is [here](documentation/Developer.md)
