@@ -16,6 +16,8 @@
 // Use only inside class methods
 #define THIS_AS(comp) this->__COMPOSITION_IMPLEMENTATION(comp)
 
+// Constructs the underlying component.
+// It must be used inside an initializer list
 #define CONSTRUCT(comp, ...) \
     __COMPOSITION_IMPLEMENTATION(comp) { __VA_ARGS__ }
 
