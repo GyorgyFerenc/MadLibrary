@@ -92,7 +92,7 @@ struct Result {
     }
 
     // Converts the result to another type if it holds an error,
-    //  panics otherwise
+    // panics otherwise
     template <class NewT>
     operator Result<NewT, E>() const {
         if (!is_error()) {
