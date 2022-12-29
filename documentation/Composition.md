@@ -63,9 +63,9 @@ struct LifeComponent {
         this->hp = hp;
     }
 
-    void damage(int damage) {
-        this->hp -= damage;
-        std::cout << "Damage taken: " << damage << std::endl;
+    void heal(int heal) {
+        this->hp += heal;
+        std::cout << "Heal received: " << heal << std::endl;
         std::cout << "New hp: " << this->hp << std::endl;
     }
 
