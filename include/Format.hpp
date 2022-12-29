@@ -84,6 +84,28 @@ std::string format(std::string format, Args... args) {
     return out.to_string();
 }
 
+#if defined(_STL_IOSTREAM_H) || defined(_GLIBCXX_IOSTREAM) || defined(_IOSTREAM_)
+
+/*
+    Prints to the stdout using the MadLibrary::format function
+    and flushes the cout stream.
+*/
+template <class... Args>
+void print(std::string format_str, Args... args) {
+    std::cout << format(format_str, args...) << std::flush;
+}
+
+/*
+    Prints to the stdout using the MadLibrary::format function,
+    adds a newline to the end and flushes the cout stream.
+*/
+template <class... Args>
+void println(std::string format_str, Args... args) {
+    std::cout << format(format_str, args...) << std::endl;
+}
+
+#endif
+
 }  // namespace MadLibrary
 
 #endif
