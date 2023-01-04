@@ -1,6 +1,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -22,6 +23,10 @@ struct FileLogger : MadLibrary::Logger {
     }
 };
 
+namespace Private {
+void handle_signal(int signal);
+};  // namespace Private
+
 namespace MadLibrary {
 
 struct Model {
@@ -41,12 +46,16 @@ struct TUI {
         REGISTER_LOGGER(INFO, new FileLogger);
 
         std::thread{&TUI::user_input_thread_execute, this}.detach();
+
+        // std::signal(SIGINT, Private::handle_signal);
     }
+
     /*
          Starts the tui
      */
     void start() {
         LOG_INFO("TUI Started");
+        this->cursor_off();
         this->no_echo();
         this->go_altscreen();
 
@@ -62,12 +71,15 @@ struct TUI {
 
         // this->clear_screen();
         this->leave_altscreen();
-
         this->echo();
+        this->cursor_on();
+
         LOG_INFO("TUI Ended");
     }
 
    private:
+    friend void handle_signal(int signal);
+
     ModelPtr              model;
     bool                  running = true;
     bool                  need_redraw = true;
@@ -179,9 +191,9 @@ struct TUI {
     }
 
     void clear_screen() const {
-        system("clear");
+        // system("clear");
         LOG_INFO("Clear screen");
-        // std::cout << "\033c" << std::flush;
+        std::cout << "\033c" << std::flush;
     }
 
     void go_altscreen() {
@@ -198,6 +210,16 @@ struct TUI {
         // std::cout << "\e[?1049l" << std::flush;
     }
 
+    void cursor_off() {
+        system("setterm -cursor off");
+        LOG_INFO("Cursor off");
+    }
+
+    void cursor_on() {
+        system("setterm -cursor on");
+        LOG_INFO("Cursor on");
+    }
+
     void no_echo() {
         struct termios old = {0};
         if (tcgetattr(0, &old) < 0) perror("tcsetattr()");
@@ -207,6 +229,7 @@ struct TUI {
         old.c_cc[VTIME] = 0;
         if (tcsetattr(0, TCSANOW, &old) < 0) perror("tcsetattr ICANON");
     }
+
     void echo() {
         struct termios old = {0};
         if (tcgetattr(0, &old) < 0) perror("tcsetattr()");
@@ -222,4 +245,11 @@ struct TUI {
         if (tcsetattr(0, TCSADRAIN, &old) < 0) perror("tcsetattr ~ICANON");
     }
 };
+
 };  // namespace MadLibrary
+
+namespace Private {
+
+void handle_signal(int signal) {
+}
+};  // namespace Private
