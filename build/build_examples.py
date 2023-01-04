@@ -26,7 +26,7 @@ def create_dir(dir: str):
 
 
 def build_example(cpp_file: str, out_file: str):
-    build_line = f"g++ -Wall  -std=c++20 {cpp_file} -o {out_file} -lncurses"
+    build_line = f"g++ -Wall -std=c++20 {cpp_file} -o {out_file}"
     subprocess.run(build_line, shell=True)
 
 
