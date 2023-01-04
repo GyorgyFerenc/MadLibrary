@@ -84,6 +84,10 @@ std::string format(std::string format, Args... args) {
     return out.to_string();
 }
 
+std::string format(std::string format) {
+    return format;
+}
+
 #if defined(_STL_IOSTREAM_H) || defined(_GLIBCXX_IOSTREAM) || defined(_IOSTREAM_)
 
 /*
