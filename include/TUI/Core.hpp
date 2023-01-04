@@ -191,7 +191,7 @@ struct TUI {
     }
 
     void clear_screen() const {
-        system("clear");
+        std::cout << "\033[H\033[2J\033[3J" << std::flush;
         LOG_INFO("Clear screen");
     }
 
