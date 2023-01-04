@@ -191,9 +191,8 @@ struct TUI {
     }
 
     void clear_screen() const {
-        // system("clear");
+        system("clear");
         LOG_INFO("Clear screen");
-        std::cout << "\033c" << std::flush;
     }
 
     void go_altscreen() {
