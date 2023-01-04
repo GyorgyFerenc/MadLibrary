@@ -5,12 +5,17 @@
 
 namespace ml = MadLibrary;
 
-struct TestInput : ml::Model {
-    
-}
+struct TestInput : public ml::Model {
+    std::string draw() override {
+        return "test";
+    }
 
-
+    ml::EventPtr update(ml::EventPtr& event) override {
+        // return ml::DrawEvent::create();
+    }
+};
 
 int main(int argc, char const* argv[]) {
-    return 0;
+    ml::TUI tui{new TestInput};
+    tui.start();
 }

@@ -12,31 +12,31 @@ std::string to_string_forwoard_iter(Iter begin, Iter end);
 };
 
 namespace MadLibrary {
-std::string to_string(int value) {
+std::string to_string(const int value) {
     return std::to_string(value);
 }
-std::string to_string(long value) {
+std::string to_string(const long value) {
     return std::to_string(value);
 }
-std::string to_string(long long value) {
+std::string to_string(const long long value) {
     return std::to_string(value);
 }
-std::string to_string(unsigned value) {
+std::string to_string(const unsigned value) {
     return std::to_string(value);
 }
-std::string to_string(unsigned long value) {
+std::string to_string(const unsigned long value) {
     return std::to_string(value);
 }
-std::string to_string(unsigned long long value) {
+std::string to_string(const unsigned long long value) {
     return std::to_string(value);
 }
-std::string to_string(float value) {
+std::string to_string(const float value) {
     return std::to_string(value);
 }
-std::string to_string(double value) {
+std::string to_string(const double value) {
     return std::to_string(value);
 }
-std::string to_string(long double value) {
+std::string to_string(const long double value) {
     return std::to_string(value);
 }
 
