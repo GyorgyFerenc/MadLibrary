@@ -11,7 +11,7 @@ struct TestInput : public ml::Model {
     }
 
     ml::EventPtr update(ml::EventPtr& event) override {
-        // return ml::DrawEvent::create();
+        return ml::DrawEvent::create();
     }
 };
 

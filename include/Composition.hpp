@@ -21,4 +21,19 @@
 #define CONSTRUCT(comp, ...) \
     __COMPOSITION_IMPLEMENTATION(comp) { __VA_ARGS__ }
 
+#define DISPATCH_INIT(func, ret, ...)                  \
+    template <class self>                              \
+    using func_ptr_##func = ret (*)(__VA_ARGS__);      \
+    template <class T>                                 \
+    func_ptr_##func<T> dispatch_##func(const T& obj) { \
+        throw std::runtime_error{"Not implemented"};   \
+    }
+
+#define DISPATCH(func, type) \
+    inline func_ptr_##func<type> dispatch_##func(const type& obj) { return func; }
+
+// #define DISPATCH_CALL(func, obj) dispatch_##func(obj)(obj)
+#define CALL(func, ...) dispatch_##func(obj)(__VA_ARGS__)
+
+
 #endif

@@ -12,6 +12,10 @@ std::string to_string_forwoard_iter(Iter begin, Iter end);
 };
 
 namespace MadLibrary {
+std::string to_string(std::string value) {
+    return value;
+}
+
 std::string to_string(const int value) {
     return std::to_string(value);
 }
@@ -52,55 +56,67 @@ std::string to_string(T* value) {
     Creates string such: [elem1, elem2, ...]
 */
 template <class T>
-std::string to_string(const std::initializer_list<T>& list) {
-    return Private::to_string_forwoard_iter(list.begin(), list.end());
+std::string to_string(
+    const std::initializer_list<T>& list) {
+    return Private::to_string_forwoard_iter(list.begin(),
+                                            list.end());
 }
 
-#if defined(_STL_VECTOR_H) || defined(_GLIBCXX_VECTOR) || defined(_VECTOR_)
+#if defined(_STL_VECTOR_H) || defined(_GLIBCXX_VECTOR) || \
+    defined(_VECTOR_)
 /*
     Creates string such: [elem1, elem2, ...]
 */
 template <class T>
 std::string to_string(const std::vector<T>& list) {
-    return Private::to_string_forwoard_iter(list.begin(), list.end());
+    return Private::to_string_forwoard_iter(list.begin(),
+                                            list.end());
 }
 
 #endif
 
-#if defined(_STL_ARRAY_H) || defined(_GLIBCXX_ARRAY) || defined(_ARRAY_)
+#if defined(_STL_ARRAY_H) || defined(_GLIBCXX_ARRAY) || \
+    defined(_ARRAY_)
 /*
     Creates string such: [elem1, elem2, ...]
 */
 template <class T, std::size_t size>
 std::string to_string(const std::array<T, size>& list) {
-    return Private::to_string_forwoard_iter(list.begin(), list.end());
+    return Private::to_string_forwoard_iter(list.begin(),
+                                            list.end());
 }
 
 #endif
 
-#if defined(_STL_LIST_H) || defined(_GLIBCXX_LIST) || defined(_LIST_)
+#if defined(_STL_LIST_H) || defined(_GLIBCXX_LIST) || \
+    defined(_LIST_)
 /*
     Creates string such: [elem1, elem2, ...]
 */
 template <class T>
 std::string to_string(const std::list<T>& list) {
-    return Private::to_string_forwoard_iter(list.begin(), list.end());
+    return Private::to_string_forwoard_iter(list.begin(),
+                                            list.end());
 }
 
 #endif
 
-#if defined(_STL_FORWARD_LIST_H) || defined(_GLIBCXX_FORWARD_LIST) || defined(_FORWARD_LIST_)
+#if defined(_STL_FORWARD_LIST_H) ||   \
+    defined(_GLIBCXX_FORWARD_LIST) || \
+    defined(_FORWARD_LIST_)
 /*
     Creates string such: [elem1, elem2, ...]
 */
 template <class T>
 std::string to_string(const std::forward_list<T>& list) {
-    return Private::to_string_forwoard_iter(list.begin(), list.end());
+    return Private::to_string_forwoard_iter(list.begin(),
+                                            list.end());
 }
 
 #endif
 
-#if defined(_STL_UTILITY_H) || defined(_GLIBCXX_UTILITY) || defined(_UTILITY_)
+#if defined(_STL_UTILITY_H) || \
+    defined(_GLIBCXX_UTILITY) || defined(_UTILITY_)
 /*
     Creates string such: first -> second
 */
@@ -113,17 +129,20 @@ std::string to_string(const std::pair<T1, T2>& pair) {
 
 #endif
 
-#if defined(_STL_MAP_H) || defined(_GLIBCXX_MAP) || defined(_MAP_)
+#if defined(_STL_MAP_H) || defined(_GLIBCXX_MAP) || \
+    defined(_MAP_)
 
 template <class T1, class T2>
 std::string to_string(const std::map<T1, T2>& map) {
-    return Private::to_string_forwoard_iter(map.begin(), map.end());
+    return Private::to_string_forwoard_iter(map.begin(),
+                                            map.end());
 }
 
 #endif
 
 /*
-    It expectes a member function: std::string to_string() const;
+    It expectes a member function: std::string to_string()
+   const;
 */
 template <class T>
 std::string to_string(const T data) {
