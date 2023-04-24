@@ -558,6 +558,13 @@ std::string format(const char* fmt, const Arg&... arg) {
     std::stringstream ss;
     (Private::format_helper(characters, arg, ss), ...);
 
+    let len = strlen(fmt);
+
+    while (characters.position < len) {
+        let chr = characters.next();
+        ss << chr;
+    }
+
     return ss.str();
 }
 
@@ -576,7 +583,7 @@ struct Context {
         std::function<void(const Raw&)>   free_raw;
 
         template <class T>
-        Option<T*> allocate() {
+        Option<T*> allocate() const {
             let raw_option = this->allocate_raw(sizeof(T));
             on_none(raw_option) return Option<T*>::None();
 
@@ -585,7 +592,7 @@ struct Context {
         }
 
         template <class T>
-        Option<T*> allocate_array(usize size) {
+        Option<T*> allocate_array(usize size) const {
             let raw_option = this->allocate_raw(sizeof(T) * size);
             on_none(raw_option) return Option<T*>::None();
 
@@ -594,7 +601,7 @@ struct Context {
         }
 
         template <class T>
-        void free(const T* ptr) {
+        void free(const T* ptr) const {
             let raw = Raw{
                 .ptr = (void*)ptr,
                 .len = sizeof(T),
@@ -603,7 +610,7 @@ struct Context {
         }
 
         template <class T>
-        void free_array(const T* ptr, usize size) {
+        void free_array(const T* ptr, usize size) const {
             let raw = Raw{
                 .ptr = (void*)ptr,
                 .len = sizeof(T) * size,
@@ -618,7 +625,7 @@ struct Context {
         std::function<void()>             free_all;
 
         template <class T>
-        Option<T*> allocate() {
+        Option<T*> allocate() const {
             let raw_option = this->allocate_raw(sizeof(T));
             on_none(raw_option) return Option<T*>::None();
 
@@ -683,11 +690,11 @@ struct List {
         memory = allocator.allocate_array<T>(size).unwrap("List: constructor");
     }
 
-    void destroy() {
+    void destroy() const {
         allocator.free_array(memory, capacity);
     }
 
-    void destroy(std::function<void(const T&)> destroy_function) {
+    void destroy(std::function<void(const T&)> destroy_function) const {
         for (usize i = 0; i < length; i++) {
             destroy_function(this->memory[i]);
         }
@@ -700,7 +707,7 @@ struct List {
     }
 
     void add(T element) {
-        if (length + 1 >= capacity) reserve(capacity * 2);
+        if (length + 1 > capacity) reserve(capacity * 2);
 
         this->memory[this->length] = element;
         this->length++;
@@ -721,7 +728,7 @@ struct List {
         return Option<Ref<T>>::Some(Ref<T>{&this->memory[position]});
     }
 
-    T* ptr() {
+    T* ptr() const {
         return this->memory;
     }
 
@@ -759,7 +766,7 @@ struct List {
         return list;
     }
 
-    List<T> clone(std::function<T(const T&)> clone_func) const {
+    List<T> clone(std::function<T(T&)> clone_func) const {
         List<T> list{capacity};
         list.length = length;
 
@@ -808,15 +815,13 @@ void for_each(Iter iter, Function func) {
 
 struct String {
     static String from(const char* cstr) {
-        var context = get_context();
+        usize len = strlen(cstr);
 
         String string;
-        string.allocator = context.allocator;
-        string.len = strlen(cstr);
-        string.char_block =
-            string.allocator.allocate_array<char>(string.len).unwrap("String::from");
-
-        memcpy(string.char_block, cstr, string.len);
+        string.inner.reserve(len);
+        for (usize i = 0; i < len; i++) {
+            string.inner.add(cstr[i]);
+        }
 
         return string;
     }
@@ -826,35 +831,119 @@ struct String {
     }
 
     usize size() const {
-        return len;
+        return inner.size();
     }
 
-    void destroy() {
-        allocator.free_array(char_block, len);
+    void destroy() const {
+        inner.destroy();
     }
 
-    String clone() {
-        return String::from(char_block);
+    String clone() const {
+        String string;
+        string.inner = inner.clone();
+        return string;
     }
 
-    Option<char> at(usize position) {
-        if (position >= len) return Option<char>::None();
+    Option<Ref<char>> at(usize position) const {
+        return inner.at(position);
+    }
 
-        return Option<char>::Some(char_block[position]);
+    char* ptr() const {
+        return inner.ptr();
+    }
+
+    List<char>::Iter iter() {
+        return inner.iter();
     }
 
    private:
-    char* char_block;
-    usize len = 0;
-
-    Context::Allocator allocator;
+    List<char> inner;
 
     friend std::ostream& operator<<(std::ostream& os, const String& string);
 };
 
 std::ostream& operator<<(std::ostream& os, const String& string) {
     for (usize i = 0; i < string.size(); i++) {
-        os << string.char_block[i];
+        os << string.inner.ptr()[i];
+    }
+    return os;
+}
+
+/*
+    Modifyng the String invalidates the view
+*/
+struct StringView {
+    StringView(const String& string) {
+        char_block = string.ptr();
+        len = string.size();
+    }
+
+    StringView(const char* cstr) {
+        char_block = cstr;
+        len = strlen(cstr);
+    }
+
+    StringView(const std::string& str) {
+        char_block = str.data();
+        len = str.size();
+    }
+
+    void shrink_left(usize nr) {
+        // TODO add error ?
+        char_block += nr;
+        len -= nr;
+    }
+
+    void shrink_right(usize nr) {
+        // TODO add error ?
+        len -= nr;
+    }
+
+    Option<StringView> substr(usize start, usize len) const {
+        if (start + len > this->len) {
+            return Option<StringView>::None();
+        }
+
+        StringView view;
+        view.char_block = char_block + start;
+        view.len = len;
+
+        return Option<StringView>::Some(view);
+    }
+
+    usize size() const {
+        return len;
+    }
+
+    bool starts_with(StringView string) const {
+        for (size_t i = 0; i < string.len; i++) {
+            if (string.char_block[i] != this->char_block[i]) return false;
+        }
+        return true;
+    }
+
+    Option<char> at(usize position) const {
+        if (position >= len) return Option<char>::None();
+        return Option<char>::Some(char_block[position]);
+    }
+
+    const char* ptr() const {
+        return char_block;
+    }
+
+    StringView() {
+    }
+
+   private:
+    const char* char_block;
+    usize       len = 0;
+
+    friend std::ostream& operator<<(std::ostream& os, const StringView& string);
+};
+
+std::ostream& operator<<(std::ostream& os, const StringView& string) {
+    for (usize i = 0; i < string.size(); i++) {
+        os << string.ptr()[i];
     }
     return os;
 }
