@@ -1,9 +1,12 @@
 #pragma once
 
-#include <stdint.h>
 #include <sys/mman.h>
 
+#include <cstdint>
+#include <cstring>
 #include <iostream>
+#include <sstream>
+#include <stack>
 #include <unordered_set>
 
 using int8 = int8_t;
@@ -17,8 +20,8 @@ using uint64 = uint64_t;
 using usize = size_t;
 using byte = unsigned char;
 
-#define let const auto
 #define var auto
+#define let auto
 
 #include <functional>
 
@@ -478,189 +481,6 @@ struct TypeAllocator {
     }
 };
 
-template <class T>
-struct Ref {
-    T* ptr;
-    T& deref() {
-        return *ptr;
-    }
-};
-
-#define for_each(variable, iterator, body)                      \
-    {                                                           \
-        var iter = iterator;                                    \
-        var variable##_anonym = iter.next();                    \
-        while (variable##_anonym.is_some()) {                   \
-            var& variable = variable##_anonym.unwrap().deref(); \
-            { body; }                                           \
-            variable##_anonym = iter.next();                    \
-        }                                                       \
-    }
-
-// Dynamic list
-template <class T, class Allocator = BasicAllocator>
-struct List {
-    List() {
-        capacity = 1;
-        length = 0;
-        memory = allocator.allocate_array(1).unwrap("List: constructor");
-    }
-
-    List(usize size) {
-        capacity = size;
-        length = 0;
-        memory = allocator.allocate_array(size).unwrap("List: constructor");
-    }
-
-    void destroy() {
-        allocator.free_array(memory, capacity);
-    }
-
-    void destroy(std::function<void(const T&)> destroy_function) {
-        for (usize i = 0; i < length; i++) {
-            destroy_function(this->memory[i]);
-        }
-
-        allocator.free_array(memory, capacity);
-    }
-
-    void clear() {
-        length = 0;
-    }
-
-    void add(T element) {
-        if (length + 1 >= capacity) reserve(capacity * 2);
-
-        this->memory[this->length] = element;
-        this->length++;
-    }
-
-    void remove(usize position) {
-        for (size_t i = position; i < length - 1; i++) {
-            memory[i] = memory[i + 1];
-        }
-        length -= 1;
-    }
-
-    Option<Ref<T>> at(usize position) const {
-        if (position >= length) {
-            return Option<Ref<T>>::None();
-        }
-
-        return Option<Ref<T>>::Some(Ref<T>{&this->memory[position]});
-    }
-
-    T* ptr() {
-        return this->memory;
-    }
-
-    usize size() const {
-        return length;
-    }
-
-    bool empty() const {
-        return length == 0;
-    }
-
-    void reserve(usize size) {
-        if (size <= this->capacity) return;
-
-        T* new_memory = allocator.allocate_array(size).unwrap("List reserve");
-
-        for (usize i = 0; i < this->length; i++) {
-            new_memory[i] = this->memory[i];
-        }
-
-        allocator.free_array(this->memory, this->capacity);
-
-        this->memory = new_memory;
-        this->capacity = size;
-    }
-
-    List<T, Allocator> clone() const {
-        List<T, Allocator> list{capacity};
-        list.length = length;
-
-        for (usize i = 0; i < length; i++) {
-            list.memory[i] = this->memory[i];
-        }
-
-        return list;
-    }
-
-    List<T, Allocator> clone(std::function<T(const T&)> clone_func) const {
-        List<T, Allocator> list{capacity};
-        list.length = length;
-
-        for (usize i = 0; i < length; i++) {
-            list.memory[i] = clone_func(this->memory[i]);
-        }
-
-        return list;
-    }
-
-    struct Iter {
-        Iter(List<T, Allocator>& list) : list(list) {
-        }
-
-        Option<Ref<T>> next() {
-            let el = list.at(current);
-            current++;
-            return el;
-        }
-
-       private:
-        List<T, Allocator>& list;
-        usize               current = 0;
-    };
-
-    Iter iter() {
-        return Iter{*this};
-    }
-
-   private:
-    T*                          memory;
-    usize                       capacity;
-    usize                       length;
-    TypeAllocator<T, Allocator> allocator;
-};
-
-// TODO: Make it better
-template <class Allocator = BasicAllocator>
-struct DebugAllocator {
-    Option<Raw> allocate(usize size) {
-        let raw = allocator.allocate(size);
-        on_some(raw) list.add(raw.unwrap());
-        return raw;
-    }
-
-    bool own(const Raw& raw) const {
-        return allocator.own(raw);
-    }
-
-    void free(const Raw& raw) {
-        allocator.free(raw);
-
-        for (usize i = 0; i < list.size(); i++) {
-            let mem = list.at(i).unwrap().deref();
-            if (mem.ptr == raw.ptr) list.remove(i);
-        }
-    }
-
-    void free_all() {
-        allocator.free_all();
-        list.clear();
-    }
-
-    bool memory_leak() {
-        return !list.empty();
-    }
-
-   private:
-    Allocator allocator;
-    List<Raw> list;
-};
-
 #include <type_traits>
 
 /*
@@ -750,48 +570,289 @@ template <class... Arg>
 void println_format(const char* fmt, Arg... arg) {
     println(format(fmt, arg...));
 }
+struct Context {
+    struct Allocator {
+        std::function<Option<Raw>(usize)> allocate_raw;
+        std::function<void(const Raw&)>   free_raw;
 
-template <class Allocator = BasicAllocator>
+        template <class T>
+        Option<T*> allocate() {
+            let raw_option = this->allocate_raw(sizeof(T));
+            on_none(raw_option) return Option<T*>::None();
+
+            let raw = raw_option.unwrap();
+            return Option<T*>::Some((T*)raw.ptr);
+        }
+
+        template <class T>
+        Option<T*> allocate_array(usize size) {
+            let raw_option = this->allocate_raw(sizeof(T) * size);
+            on_none(raw_option) return Option<T*>::None();
+
+            let raw = raw_option.unwrap();
+            return Option<T*>::Some((T*)raw.ptr);
+        }
+
+        template <class T>
+        void free(const T* ptr) {
+            let raw = Raw{
+                .ptr = (void*)ptr,
+                .len = sizeof(T),
+            };
+            this->free_raw(raw);
+        }
+
+        template <class T>
+        void free_array(const T* ptr, usize size) {
+            let raw = Raw{
+                .ptr = (void*)ptr,
+                .len = sizeof(T) * size,
+            };
+            this->free_raw(raw);
+        }
+
+    } allocator;
+
+    struct TemporaryAllocator {
+        std::function<Option<Raw>(usize)> allocate_raw;
+        std::function<void()>             free_all;
+
+        template <class T>
+        Option<T*> allocate() {
+            let raw_option = this->allocate_raw(sizeof(T));
+            on_none(raw_option) return Option<T*>::None();
+
+            let raw = raw_option.unwrap();
+            return Option<T*>::Some((T*)raw.ptr);
+        }
+
+    } temporary;
+
+    std::unordered_map<const char*, void*> tags;
+};
+
+namespace Private {
+
+std::stack<Context> create_contexes() {
+    static StackAllocator<> temp_allocator;
+
+    std::stack<Context> contexes;
+    var                 context = Context{};
+    context.allocator.allocate_raw = allocate;
+    context.allocator.free_raw = [](const Raw& raw) { free(raw); };
+    context.temporary.allocate_raw = [](usize size) { return temp_allocator.allocate(size); };
+    context.temporary.free_all = []() { return temp_allocator.free_all(); };
+
+    contexes.push(context);
+
+    return contexes;
+}
+};  // namespace Private
+
+std::stack<Context> contexes = Private::create_contexes();
+
+#define get_context() contexes.top()
+#define set_context(contex) \
+    contexes.push(contex);  \
+    defer(contexes.pop());
+
+template <class T>
+struct Ref {
+    T* ptr;
+    T& deref() {
+        return *ptr;
+    }
+};
+
+// Dynamic list
+template <class T>
+struct List {
+    List() {
+        capacity = 1;
+        length = 0;
+        allocator = get_context().allocator;
+
+        memory = allocator.allocate_array<T>(1).unwrap("List: constructor");
+    }
+
+    List(usize size) {
+        capacity = size;
+        length = 0;
+        allocator = get_context().allocator;
+
+        memory = allocator.allocate_array<T>(size).unwrap("List: constructor");
+    }
+
+    void destroy() {
+        allocator.free_array(memory, capacity);
+    }
+
+    void destroy(std::function<void(const T&)> destroy_function) {
+        for (usize i = 0; i < length; i++) {
+            destroy_function(this->memory[i]);
+        }
+
+        allocator.free_array(memory, capacity);
+    }
+
+    void clear() {
+        length = 0;
+    }
+
+    void add(T element) {
+        if (length + 1 >= capacity) reserve(capacity * 2);
+
+        this->memory[this->length] = element;
+        this->length++;
+    }
+
+    void remove(usize position) {
+        for (size_t i = position; i < length - 1; i++) {
+            memory[i] = memory[i + 1];
+        }
+        length -= 1;
+    }
+
+    Option<Ref<T>> at(usize position) const {
+        if (position >= length) {
+            return Option<Ref<T>>::None();
+        }
+
+        return Option<Ref<T>>::Some(Ref<T>{&this->memory[position]});
+    }
+
+    T* ptr() {
+        return this->memory;
+    }
+
+    usize size() const {
+        return length;
+    }
+
+    bool empty() const {
+        return length == 0;
+    }
+
+    void reserve(usize size) {
+        if (size <= this->capacity) return;
+
+        T* new_memory = allocator.allocate_array<T>(size).unwrap("List reserve");
+
+        for (usize i = 0; i < this->length; i++) {
+            new_memory[i] = this->memory[i];
+        }
+
+        allocator.free_array(this->memory, this->capacity);
+
+        this->memory = new_memory;
+        this->capacity = size;
+    }
+
+    List<T> clone() const {
+        List<T> list{capacity};
+        list.length = length;
+
+        for (usize i = 0; i < length; i++) {
+            list.memory[i] = this->memory[i];
+        }
+
+        return list;
+    }
+
+    List<T> clone(std::function<T(const T&)> clone_func) const {
+        List<T> list{capacity};
+        list.length = length;
+
+        for (usize i = 0; i < length; i++) {
+            list.memory[i] = clone_func(this->memory[i]);
+        }
+
+        return list;
+    }
+
+    struct Iter {
+        Iter(List<T>& list) : list(list) {
+        }
+
+        Option<Ref<T>> next() {
+            let el = list.at(current);
+            current++;
+            return el;
+        }
+
+       private:
+        List<T>& list;
+        usize    current = 0;
+    };
+
+    Iter iter() {
+        return Iter{*this};
+    }
+
+   private:
+    T*                 memory;
+    usize              capacity;
+    usize              length;
+    Context::Allocator allocator;
+};
+
+template <class Iter, class Function>
+void for_each(Iter iter, Function func) {
+    var item_option = iter.next();
+    while (item_option.is_some()) {
+        var& item = item_option.unwrap().deref();
+        func(item);
+        item_option = iter.next();
+    }
+}
+
 struct String {
-    static String<Allocator> from(const char* cstr) {
-        usize len = strlen(cstr);
+    static String from(const char* cstr) {
+        var context = get_context();
 
-        String<Allocator> string;
-        string.char_block = string.allocator.allocate_array(len).unwrap("String from");
+        String string;
+        string.allocator = context.allocator;
+        string.len = strlen(cstr);
+        string.char_block =
+            string.allocator.allocate_array<char>(string.len).unwrap("String::from");
 
-        memcpy(string.char_block, cstr, len);
+        memcpy(string.char_block, cstr, string.len);
 
         return string;
     }
 
-    static String<Allocator> from(const std::string& stl_string) {
-        return String<Allocator>::from(stl_string.c_str());
+    static String from(const std::string& stl_string) {
+        return String::from(stl_string.c_str());
     }
 
     usize size() const {
         return len;
     }
 
-    void destroy() const {
+    void destroy() {
         allocator.free_array(char_block, len);
     }
 
-    String<Allocator> clone() {
-        return String<Allocator>::from(char_block);
+    String clone() {
+        return String::from(char_block);
+    }
+
+    Option<char> at(usize position) {
+        if (position >= len) return Option<char>::None();
+
+        return Option<char>::Some(char_block[position]);
     }
 
    private:
     char* char_block;
     usize len = 0;
 
-    TypeAllocator<char, Allocator> allocator;
+    Context::Allocator allocator;
 
-    template <class Allo>
-    friend std::ostream& operator<<(std::ostream& os, const String<Allo>& string);
+    friend std::ostream& operator<<(std::ostream& os, const String& string);
 };
 
-template <class Allocator>
-std::ostream& operator<<(std::ostream& os, const String<Allocator>& string) {
+std::ostream& operator<<(std::ostream& os, const String& string) {
     for (usize i = 0; i < string.size(); i++) {
         os << string.char_block[i];
     }
