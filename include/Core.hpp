@@ -490,20 +490,20 @@ struct Ref {
 // Dynamic list
 template <class T>
 struct List {
-    List(Allocator* allocator) {
+    List(Allocator& allocator) {
         capacity = 1;
         length = 0;
-        this->allocator = allocator;
+        this->allocator = &allocator;
 
-        memory = allocator->allocate_array<T>(1).unwrap("List: constructor");
+        memory = this->allocator->allocate_array<T>(1).unwrap("List: constructor");
     }
 
-    List(usize size, Allocator* allocator) {
+    List(usize size, Allocator& allocator) {
         capacity = size;
         length = 0;
-        this->allocator = allocator;
+        this->allocator = &allocator;
 
-        memory = allocator->allocate_array<T>(size).unwrap("List: constructor");
+        memory = this->allocator->allocate_array<T>(size).unwrap("List: constructor");
     }
 
     void destroy() const {
@@ -620,7 +620,7 @@ struct List {
 };
 
 template <class Iter, class Function>
-void for_each(Iter iter, Function func) {
+void inline for_each(Iter iter, Function func) {
     var item_option = iter.next();
     while (item_option.is_some()) {
         var& item = item_option.unwrap().deref();
@@ -628,4 +628,3 @@ void for_each(Iter iter, Function func) {
         item_option = iter.next();
     }
 }
-
