@@ -125,8 +125,10 @@ void self_rebuild(std::string source, std::string output) {
 
     char a[100];
     memset(a, 0, 100);
-    while (read(p.from_child, a, 4) > 0) {
+    int read_bytes = 0;
+    while ((read_bytes = read(p.from_child, a, 4)) > 0) {
         print(a);
+        memset(a, 0, read_bytes);
     }
 
     p.join();
