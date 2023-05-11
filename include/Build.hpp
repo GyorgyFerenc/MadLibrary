@@ -85,6 +85,7 @@ struct Target {
 
         let p = Process::open(cmd.c_str()).unwrap();
         p.join();
+        p.destroy();
     }
 };
 
@@ -118,6 +119,26 @@ void self_rebuild(std::string source, std::string output) {
 
     let cmd = "./" + output;
 
+    println("[NOTE] Run new build");
+
     let p = Process::open(cmd.c_str()).unwrap();
+
+    char a[100];
+    memset(a, 0, 100);
+    while (read(p.from_child, a, 4) > 0) {
+        print(a);
+    }
+
     p.join();
+    p.destroy();
+
+    exit(0);
 }
+
+#define replace_me(name)
+
+// void replace_me_in_file(std::string file, std::string name, std::string code) {
+//     std::ifstream     in{file};
+//     std::stringstream buffer;
+//     buffer << source_in.rdbuf();
+// }

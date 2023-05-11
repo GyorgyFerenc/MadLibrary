@@ -9,6 +9,8 @@ struct Process {
     int   from_child, to_child;
 
     static Option<Process> open(const char* cmdline) {
+        // TODO: dont depend on /bin/sh
+
         Process proc;
 
         // pipe[0] -> read, pipe[1] -> write
@@ -18,9 +20,11 @@ struct Process {
         if (pipe(pipe_stdout)) return Option<Process>::None();
 
         pid_t p = fork();
-        if (p < 0) { /* Fork failed */
+        if (p < 0) {
+            // Fork failed
             return Option<Process>::None();
-        } else if (p == 0) { /* child */
+        } else if (p == 0) {
+            // child
             close(pipe_stdin[1]);
             dup2(pipe_stdin[0], 0);
             close(pipe_stdout[0]);
@@ -43,5 +47,10 @@ struct Process {
     void join() {
         int waitstatus;
         waitpid(child_pid, &waitstatus, 0);
+    }
+
+    void destroy() {
+        close(to_child);
+        close(from_child);
     }
 };
