@@ -9,3 +9,7 @@
 
 playground.cpp
 playground.out
+
+# builder
+build.hash
+builder.cpp
