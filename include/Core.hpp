@@ -1,11 +1,13 @@
 #pragma once
 
-#include <cstdlib>
 #include <sys/mman.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stack>
 #include <unordered_set>
@@ -31,7 +33,9 @@ using byte = unsigned char;
 struct defer_implementation {
     std::function<void()> func;
 
-    inline ~defer_implementation() { func(); }
+    inline ~defer_implementation() {
+        func();
+    }
 };
 
 struct defer_dummy {
@@ -49,13 +53,11 @@ struct defer_dummy {
 #define ANONYMOUS_VARIABLE(str) CONCAT(str, __LINE__)
 #endif
 
-#define defer_block                                                            \
-    auto ANONYMOUS_VARIABLE(__defer_instance) = defer_dummy{} + [&]()
-#define defer(body)                                                            \
-    auto ANONYMOUS_VARIABLE(__defer_instance) =                                \
-        defer_implementation{[&]() { body; }};
+#define defer_block auto ANONYMOUS_VARIABLE(__defer_instance) = defer_dummy{} + [&]()
+#define defer(body) \
+    auto ANONYMOUS_VARIABLE(__defer_instance) = defer_implementation{[&]() { body; }};
 
-void panic(const char *text) {
+void panic(const char* text) {
     std::cerr << "panic:" << std::endl;
     std::cerr << text << std::endl;
     exit(1);
@@ -72,7 +74,8 @@ void panic() {
     exit(1);
 }
 
-template <class v, class err> struct Result {
+template <class v, class err>
+struct Result {
     static Result<v, err> Ok(v value) {
         var result = Result<v, err>{};
         result.ok = true;
@@ -95,7 +98,7 @@ template <class v, class err> struct Result {
         return this->value;
     }
 
-    v unwrap(const char *text) const {
+    v unwrap(const char* text) const {
         if (is_error()) {
             panic(text);
         }
@@ -111,7 +114,7 @@ template <class v, class err> struct Result {
         return this->error;
     }
 
-    err unwrap_error(const char *text) const {
+    err unwrap_error(const char* text) const {
         if (is_ok()) {
             panic(text);
         }
@@ -119,14 +122,18 @@ template <class v, class err> struct Result {
         return this->error;
     }
 
-    bool is_ok() { return ok; }
+    bool is_ok() {
+        return ok;
+    }
 
-    bool is_error() { return !ok; }
+    bool is_error() {
+        return !ok;
+    }
 
-  private:
+   private:
     bool ok;
-    v value;
-    err error;
+    v    value;
+    err  error;
 };
 
 #define on_ok(r) if (r.is_ok())
@@ -134,7 +141,8 @@ template <class v, class err> struct Result {
 #define return_on_ok(r, return_value) on_ok(r) return return_value;
 #define return_on_error(r, return_value) on_error(r) return return_value;
 
-template <class v> struct Option {
+template <class v>
+struct Option {
     static Option<v> Some(v value) {
         var option = Option<v>{};
         option.some = true;
@@ -156,7 +164,7 @@ template <class v> struct Option {
         return this->value;
     }
 
-    v unwrap(const char *text) const {
+    v unwrap(const char* text) const {
         if (!this->some) {
             panic(text);
         }
@@ -164,13 +172,17 @@ template <class v> struct Option {
         return this->value;
     }
 
-    bool is_some() const { return some; }
+    bool is_some() const {
+        return some;
+    }
 
-    bool is_none() const { return !some; }
+    bool is_none() const {
+        return !some;
+    }
 
-  private:
+   private:
     bool some;
-    v value;
+    v    value;
 };
 
 #define on_some(r) if (r.is_some())
@@ -185,26 +197,33 @@ template <class v> struct Option {
     Do not question, just run ....
 */
 template <typename T>
-concept HasToString = requires(const T &t) {
-    std::is_member_function_pointer_v<decltype(&T::to_string)>;
-};
-template <HasToString T> void print(const T &obj) {
+concept HasToString =
+    requires(const T& t) { std::is_member_function_pointer_v<decltype(&T::to_string)>; };
+template <HasToString T>
+void print(const T& obj) {
     std::cout << obj.to_string();
 }
 
-template <class T> void print(const T &obj) { std::cout << obj; }
+template <class T>
+void print(const T& obj) {
+    std::cout << obj;
+}
 
-template <class... Arg> void print(Arg... arg) { (print(arg), ...); }
+template <class... Arg>
+void print(Arg... arg) {
+    (print(arg), ...);
+}
 
-template <class... Arg> void println(Arg... arg) {
+template <class... Arg>
+void println(Arg... arg) {
     (print(arg), ...);
     std::cout << std::endl;
 }
 
 namespace Private {
 struct Characters {
-    const char *format;
-    usize position = 0;
+    const char* format;
+    usize       position = 0;
 
     char next() {
         let current = position;
@@ -214,8 +233,7 @@ struct Characters {
 };
 
 template <class T>
-void format_helper(Characters &characters, const T &obj,
-                   std::stringstream &ss) {
+void format_helper(Characters& characters, const T& obj, std::stringstream& ss) {
     while (true) {
         let ch = characters.next();
         if (ch == '%') {
@@ -227,8 +245,7 @@ void format_helper(Characters &characters, const T &obj,
 }
 
 template <HasToString T>
-void format_helper(Characters &characters, const T &obj,
-                   std::stringstream &ss) {
+void format_helper(Characters& characters, const T& obj, std::stringstream& ss) {
     while (true) {
         let ch = characters.next();
         if (ch == '%') {
@@ -238,9 +255,10 @@ void format_helper(Characters &characters, const T &obj,
         ss << ch;
     }
 }
-} // namespace Private
+}  // namespace Private
 
-template <class... Arg> std::string format(const char *fmt, const Arg &...arg) {
+template <class... Arg>
+std::string format(const char* fmt, const Arg&... arg) {
     var characters = Private::Characters{
         .format = fmt,
         .position = 0,
@@ -259,11 +277,13 @@ template <class... Arg> std::string format(const char *fmt, const Arg &...arg) {
     return ss.str();
 }
 
-template <class... Arg> void print_format(const char *fmt, Arg... arg) {
+template <class... Arg>
+void print_format(const char* fmt, Arg... arg) {
     print(format(fmt, arg...));
 }
 
-template <class... Arg> void println_format(const char *fmt, Arg... arg) {
+template <class... Arg>
+void println_format(const char* fmt, Arg... arg) {
     println(format(fmt, arg...));
 }
 
@@ -282,7 +302,7 @@ template <class... Arg> void println_format(const char *fmt, Arg... arg) {
 #define TB 1000 * GB
 
 struct Raw {
-    void *ptr;
+    void* ptr;
     usize len;
 
     Option<Raw> chunck(usize new_len, usize offset = 0) const {
@@ -290,28 +310,27 @@ struct Raw {
             return Option<Raw>::None();
         }
         return Option<Raw>::Some(Raw{
-            .ptr = (byte *)ptr + offset,
+            .ptr = (byte*)ptr + offset,
             .len = new_len,
         });
     }
 
-    template <class T> Option<T *> cast() const {
-        if (this->len < sizeof(T))
-            return Option<T *>::None();
-        return Option<T *>::Some((T *)this->ptr);
+    template <class T>
+    Option<T*> cast() const {
+        if (this->len < sizeof(T)) return Option<T*>::None();
+        return Option<T*>::Some((T*)this->ptr);
     }
 
-    template <class T> Option<T *> cast_array(usize size) const {
-        if (this->len < sizeof(T) * size)
-            return Option<T *>::None();
-        return Option<T *>::Some((T *)this->ptr);
+    template <class T>
+    Option<T*> cast_array(usize size) const {
+        if (this->len < sizeof(T) * size) return Option<T*>::None();
+        return Option<T*>::Some((T*)this->ptr);
     }
 };
 
 Option<Raw> allocate(usize size) {
-    var *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-    if (ptr == (void *)-1) {
+    var* ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    if (ptr == (void*)-1) {
         return Option<Raw>::None();
     }
 
@@ -321,39 +340,45 @@ Option<Raw> allocate(usize size) {
     });
 }
 
-void free(const Raw &raw) { munmap(raw.ptr, raw.len); }
+void free(const Raw& raw) {
+    munmap(raw.ptr, raw.len);
+}
 
 struct Allocator {
     virtual Option<Raw> allocate_raw(usize) = 0;
-    virtual void free_raw(const Raw &) = 0;
+    virtual void        free_raw(const Raw&) = 0;
 
-    template <class T> Option<T *> allocate() {
+    template <class T>
+    Option<T*> allocate() {
         let raw_option = this->allocate_raw(sizeof(T));
-        on_none(raw_option) return Option<T *>::None();
+        on_none(raw_option) return Option<T*>::None();
 
         let raw = raw_option.unwrap();
-        return Option<T *>::Some((T *)raw.ptr);
+        return Option<T*>::Some((T*)raw.ptr);
     }
 
-    template <class T> Option<T *> allocate_array(usize size) {
+    template <class T>
+    Option<T*> allocate_array(usize size) {
         let raw_option = this->allocate_raw(sizeof(T) * size);
-        on_none(raw_option) return Option<T *>::None();
+        on_none(raw_option) return Option<T*>::None();
 
         let raw = raw_option.unwrap();
-        return Option<T *>::Some((T *)raw.ptr);
+        return Option<T*>::Some((T*)raw.ptr);
     }
 
-    template <class T> void free(const T *ptr) {
+    template <class T>
+    void free(const T* ptr) {
         let raw = Raw{
-            .ptr = (void *)ptr,
+            .ptr = (void*)ptr,
             .len = sizeof(T),
         };
         this->free_raw(raw);
     }
 
-    template <class T> void free_array(const T *ptr, usize size) {
+    template <class T>
+    void free_array(const T* ptr, usize size) {
         let raw = Raw{
-            .ptr = (void *)ptr,
+            .ptr = (void*)ptr,
             .len = sizeof(T) * size,
         };
         this->free_raw(raw);
@@ -361,19 +386,22 @@ struct Allocator {
 };
 
 struct BasicAllocator : public Allocator {
-    Option<Raw> allocate_raw(usize size) override { return ::allocate(size); };
+    Option<Raw> allocate_raw(usize size) override {
+        return ::allocate(size);
+    };
 
-    void free_raw(const Raw &raw) override { ::free(raw); };
+    void free_raw(const Raw& raw) override {
+        ::free(raw);
+    };
 };
 
 template <usize max_size = 2 * KiB>
 struct TemporaryAllocator : public Allocator {
     Option<Raw> allocate_raw(usize size) override {
-        if (m_current + size > max_size)
-            m_current = 0;
+        if (m_current + size > max_size) m_current = 0;
 
         Raw raw{
-            .ptr = (void *)(m_memory + m_current),
+            .ptr = (void*)(m_memory + m_current),
             .len = size,
         };
 
@@ -382,17 +410,18 @@ struct TemporaryAllocator : public Allocator {
         return Option<Raw>::Some(raw);
     }
 
-    void free_raw(const Raw &raw) override {}
+    void free_raw(const Raw& raw) override {
+    }
 
-  private:
-    byte m_memory[max_size];
+   private:
+    byte  m_memory[max_size];
     usize m_current = 0;
 };
 
-template <usize max_size = 2 * KiB> struct StackAllocator : public Allocator {
+template <usize max_size = 2 * KiB>
+struct StackAllocator : public Allocator {
     Option<Raw> allocate_raw(usize size) override {
-        if (m_current + size > max_size)
-            return Option<Raw>::None();
+        if (m_current + size > max_size) return Option<Raw>::None();
 
         let raw = Raw{
             .ptr = m_memory + m_current,
@@ -402,16 +431,18 @@ template <usize max_size = 2 * KiB> struct StackAllocator : public Allocator {
         return Option<Raw>::Some(raw);
     }
 
-    void free_raw(const Raw &raw) {
+    void free_raw(const Raw& raw) {
         if (raw.ptr == m_memory + m_current - raw.len) {
             m_current -= raw.len;
         }
     }
 
-    void free_all() { m_current = 0; }
+    void free_all() {
+        m_current = 0;
+    }
 
-  private:
-    byte m_memory[max_size];
+   private:
+    byte  m_memory[max_size];
     usize m_current = 0;
 };
 
@@ -426,7 +457,7 @@ struct DebugAllocator : public Allocator {
         return ::allocate(size);
     };
 
-    void free_raw(const Raw &raw) override {
+    void free_raw(const Raw& raw) override {
         m_allocations -= raw.len;
 
         return ::free(raw);
@@ -434,23 +465,21 @@ struct DebugAllocator : public Allocator {
 
     void panic_on_leak() {
         if (m_allocations != 0)
-            panic(format("Debug allocator definetly lost % bytes",
-                         m_allocations));
+            panic(format("Debug allocator definetly lost % bytes", m_allocations));
     }
 };
 
-template <usize page_size = 2 * KiB> struct PageAllocator : public Allocator {
-
+template <usize page_size = 2 * KiB>
+struct PageAllocator : public Allocator {
     Option<Raw> allocate_raw(usize size) override {
-        if (size > page_size)
-            return Option<Raw>::None();
+        if (size > page_size) return Option<Raw>::None();
 
         if (m_head == nullptr) {
             let raw_option = ::allocate(sizeof(Page));
             on_none(raw_option) return Option<Raw>::None();
             let raw = raw_option.unwrap();
 
-            m_head = (Page *)raw.ptr;
+            m_head = (Page*)raw.ptr;
             m_pos = size;
 
             let allocated_raw = m_head->memory;
@@ -472,7 +501,7 @@ template <usize page_size = 2 * KiB> struct PageAllocator : public Allocator {
 
         let new_page_option = ::allocate(sizeof(Page));
         on_none(new_page_option) return Option<Raw>::None();
-        let new_page = (Page *)new_page_option.unwrap().ptr;
+        let new_page = (Page*)new_page_option.unwrap().ptr;
 
         new_page->next = m_head;
         m_head = new_page;
@@ -486,25 +515,26 @@ template <usize page_size = 2 * KiB> struct PageAllocator : public Allocator {
         });
     };
 
-    void free_raw(const Raw &raw) override{
+    void free_raw(const Raw& raw) override{
 
     };
 
-    void free_all() { destroy_page(m_head); }
+    void free_all() {
+        destroy_page(m_head);
+    }
 
     struct Page {
-        byte memory[page_size];
-        Page *next = nullptr;
+        byte  memory[page_size];
+        Page* next = nullptr;
     };
 
-    void destroy_page(Page *page) {
-        if (page == nullptr)
-            return;
+    void destroy_page(Page* page) {
+        if (page == nullptr) return;
         destroy_page(page->next);
         ::free({.ptr = page, .len = sizeof(Page)});
     }
 
-    Page *m_head = nullptr;
+    Page* m_head = nullptr;
     usize m_pos = 0;
 };
 
@@ -522,53 +552,65 @@ BasicAllocator allocator;
     ADT
 */
 
-/* iter:
- *  iter.next() -> Option<T>
+/*
+ * We need this because a template cannot be a reference
+ * Option<int&> is error;
+ * Option<Ref<int>> is the same as above
  */
-template <class Iter, class Function>
-void inline for_each(Iter iter, Function func) {
-    var item_option = iter.next();
-    while (item_option.is_some()) {
-        var &item = item_option.unwrap().deref();
-        func(item);
-        item_option = iter.next();
+template <class T>
+struct Ref {
+    T*        ptr;
+    inline T& deref() {
+        return *ptr;
     }
-}
+};
 
-template <class T> struct Ref {
-    T *ptr;
-    T &deref() { return *ptr; }
+// Maybe do it with macro ??
+template <class T>
+struct Iter {
+    virtual Option<Ref<T>> next() = 0;
+
+    template <class Function>
+    void inline for_each(Function func) {
+        let item_option = this->next();
+        while (item_option.is_some()) {
+            let& item = item_option.unwrap().deref();
+            func(item);
+            item_option = this->next();
+        }
+    }
 };
 
 // Dynamic list
-template <class T> struct List {
-    static List<T> create(Allocator &allocator) {
+template <class T>
+struct List {
+    static List<T> create(Allocator& allocator) {
         List<T> list;
         list.capacity = 1;
         list.length = 0;
         list.allocator = &allocator;
 
-        list.memory = list.allocator->template allocate_array<T>(1).unwrap(
-            "List: constructor");
+        list.memory = list.allocator->template allocate_array<T>(1).unwrap("List: constructor");
         return list;
     }
 
-    static List<T> create(usize size, Allocator &allocator) {
+    static List<T> create(usize capacity, Allocator& allocator) {
         List<T> list;
-        list.capacity = size;
+        list.capacity = capacity;
         list.length = 0;
         list.allocator = &allocator;
 
-        list.memory = list.allocator->template allocate_array<T>(size).unwrap(
-            "List: constructor");
+        list.memory =
+            list.allocator->template allocate_array<T>(capacity).unwrap("List: constructor");
+
+        return list;
     }
 
     void destroy() const {
-        println("Destroy");
         allocator->free_array(memory, capacity);
     }
 
-    void destroy(std::function<void(const T &)> destroy_function) const {
+    void destroy(std::function<void(const T&)> destroy_function) const {
         for (usize i = 0; i < length; i++) {
             destroy_function(this->memory[i]);
         }
@@ -576,11 +618,12 @@ template <class T> struct List {
         allocator->free_array(memory, capacity);
     }
 
-    void clear() { length = 0; }
+    void clear() {
+        length = 0;
+    }
 
     void add(T element) {
-        if (length + 1 > capacity)
-            reserve(capacity * 2);
+        if (length + 1 > capacity) reserve(capacity * 2);
 
         this->memory[this->length] = element;
         this->length++;
@@ -599,15 +642,21 @@ template <class T> struct List {
         }
         return Option<Ref<T>>::Some(Ref<T>{&this->memory[position]});
     }
-    T *ptr() const { return this->memory; }
-    usize size() const { return length; }
-    bool empty() const { return length == 0; }
-    void reserve(usize size) {
-        if (size <= this->capacity)
-            return;
 
-        T *new_memory =
-            allocator->allocate_array<T>(size).unwrap("List reserve");
+    T* ptr() const {
+        return this->memory;
+    }
+    usize size() const {
+        return length;
+    }
+    bool empty() const {
+        return length == 0;
+    }
+
+    void reserve(usize size) {
+        if (size <= this->capacity) return;
+
+        T* new_memory = allocator->allocate_array<T>(size).unwrap("List reserve");
 
         for (usize i = 0; i < this->length; i++) {
             new_memory[i] = this->memory[i];
@@ -620,46 +669,195 @@ template <class T> struct List {
     }
 
     List<T> clone() const {
-        List<T> list{capacity};
-        list.length = length;
+        return clone(*this->allocator);
+    }
+
+    List<T> clone(Allocator& allocator) const {
+        let list = List<T>::create(this->capacity, allocator);
 
         for (usize i = 0; i < length; i++) {
-            list.memory[i] = this->memory[i];
+            list.add(this->memory[i]);
         }
 
         return list;
     }
 
-    List<T> clone(std::function<T(T &)> clone_func) const {
-        List<T> list{capacity};
-        list.length = length;
+    struct Iter : public ::Iter<T> {
+        Iter(List<T>& list) : list(list){};
 
-        for (usize i = 0; i < length; i++) {
-            list.memory[i] = clone_func(this->memory[i]);
-        }
-
-        return list;
-    }
-
-    struct Iter {
-        Iter(List<T> &list) : list(list) {}
-
-        Option<Ref<T>> next() {
+        Option<Ref<T>> next() override {
             let el = list.at(current);
             current++;
             return el;
         }
 
-      private:
-        List<T> &list;
-        usize current = 0;
+        List<T>& list;
+        usize    current = 0;
     };
 
-    Iter iter() { return Iter{*this}; }
+    Iter iter() {
+        return Iter{*this};
+    }
 
-  private:
-    T *memory;
-    usize capacity;
-    usize length;
-    Allocator *allocator;
+   private:
+    T*         memory;
+    usize      capacity;
+    usize      length;
+    Allocator* allocator;
+};
+
+/*
+ * This implementation uses a linked list
+ */
+template <class T>
+struct Stack {
+    static Stack<T> create(Allocator& alloc) {
+        Stack<T> s;
+        s.m_allocator = &alloc;
+        s.m_head = nullptr;
+        s.m_size = 0;
+
+        return s;
+    }
+
+    void destroy() {
+        let next = m_head;
+        while (next != nullptr) {
+            let temp = next;
+            next = next->next;
+            m_allocator->free(temp);
+        }
+    }
+
+    template <class Func>
+    void destroy(Func func) {
+        let next = m_head;
+        while (next != nullptr) {
+            let temp = next;
+            next = next->next;
+            func(temp->elem);
+            m_allocator->free(temp);
+        }
+    }
+
+    inline Stack<T> clone() {
+        return clone(*m_allocator);
+    }
+
+    inline Stack<T> clone(Allocator& allocator) {
+        let stack = Stack<T>::create(allocator);
+        let next = m_head;
+
+        while (next != nullptr) {
+            stack.push(next->elem);
+            next = next->next;
+        }
+
+        return stack;
+    }
+
+    inline void push(T element) {
+        m_size++;
+
+        if (m_head == nullptr) {
+            m_head = m_allocator->allocate<Node>().unwrap();
+            m_head->elem = element;
+            return;
+        }
+
+        let node = m_allocator->allocate<Node>().unwrap();
+        node->elem = element;
+        node->next = m_head;
+        m_head = node;
+    }
+
+    Option<T> pop() {
+        m_size--;
+
+        if (m_head == nullptr) return Option<T>::None();
+
+        let elem = m_head->elem;
+        let node = m_head;
+        m_head = m_head->next;
+        m_allocator->free(node);
+        return Option<T>::Some(elem);
+    }
+
+    Option<Ref<T>> peek() {
+        if (m_head == nullptr) return Option<Ref<T>>::None();
+        return Option<Ref<T>>::Some(Ref<T>{&m_head->next});
+    }
+
+    usize size() {
+        return size;
+    }
+
+    struct Node {
+        T     elem;
+        Node* next = nullptr;
+    };
+
+    struct Iter : public ::Iter<T> {
+        Node* m_current;
+
+        Option<Ref<T>> next() override {
+            if (m_current == nullptr) return Option<Ref<T>>::None();
+
+            let elem = m_current->elem;
+            m_current = m_current->next;
+            return Option<Ref<T>>::Some(Ref<T>{&elem});
+        }
+    };
+
+    Iter iter() {
+        Iter iter;
+        iter.m_current = m_head;
+        return iter;
+    };
+
+    Allocator* m_allocator;
+    Node*      m_head = nullptr;
+    usize      m_size = 0;
+};
+
+struct String {
+    char* m_ptr = nullptr;
+    usize m_size = 0;
+};
+
+struct StringBuilder {
+    static StringBuilder init(Allocator& allocator) {
+        StringBuilder builder;
+        builder.m_allocator = &allocator;
+
+        return builder;
+    }
+
+    void destroy() {
+    }
+
+    // takes ownership of the string
+    StringBuilder& add(String string) {
+        if (m_ptr == nullptr) {
+            m_size = string.m_size;
+            m_ptr = m_allocator->allocate_array<char>(m_size).unwrap("StringBuilder::add");
+        } else {
+            let old_size = m_size;
+            m_size += string.m_size;
+            let new_ptr = m_allocator->allocate_array<char>(m_size).unwrap("StringBuilder::add");
+
+            for (int i = 0; i < old_size; i++) new_ptr[i] = m_ptr[i];
+
+            m_allocator->free_array(m_ptr, old_size);
+            m_ptr = new_ptr;
+        }
+
+        panic("Implement StringBuilder::add");
+
+        return *this;
+    }
+
+    Allocator* m_allocator;
+    char*      m_ptr = nullptr;
+    usize      m_size = 0;
 };

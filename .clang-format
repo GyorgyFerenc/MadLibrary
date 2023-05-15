@@ -1,2 +1,10 @@
-BasedOnStyle: LLVM
+BasedOnStyle: Google
 IndentWidth: 4
+DerivePointerAlignment: false
+PointerAlignment: Left
+BinPackParameters: false
+BinPackArguments: false
+AlignConsecutiveDeclarations: true
+AllowShortFunctionsOnASingleLine: None
+ColumnLimit: 100
+
