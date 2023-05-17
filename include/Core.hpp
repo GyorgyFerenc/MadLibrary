@@ -1,5 +1,6 @@
 #pragma once
 
+#include <alloca.h>
 #include <sys/mman.h>
 
 #include <cstddef>
@@ -12,6 +13,7 @@
 #include <stack>
 #include <unordered_set>
 
+using uint = unsigned int;
 using int8 = int8_t;
 using int16 = int16_t;
 using int32 = int32_t;
@@ -190,20 +192,6 @@ struct Option {
 #define return_on_some(r, return_value) on_some(r) return return_value;
 #define return_on_none(r, return_value) on_none(r) return return_value;
 
-#include <type_traits>
-
-/*
-    Template meta programing c++ magic shit
-    Do not question, just run ....
-*/
-template <typename T>
-concept HasToString =
-    requires(const T& t) { std::is_member_function_pointer_v<decltype(&T::to_string)>; };
-template <HasToString T>
-void print(const T& obj) {
-    std::cout << obj.to_string();
-}
-
 template <class T>
 void print(const T& obj) {
     std::cout << obj;
@@ -244,17 +232,6 @@ void format_helper(Characters& characters, const T& obj, std::stringstream& ss) 
     }
 }
 
-template <HasToString T>
-void format_helper(Characters& characters, const T& obj, std::stringstream& ss) {
-    while (true) {
-        let ch = characters.next();
-        if (ch == '%') {
-            ss << obj.to_string();
-            break;
-        }
-        ss << ch;
-    }
-}
 }  // namespace Private
 
 template <class... Arg>
@@ -584,99 +561,100 @@ struct Iter {
 // Dynamic list
 template <class T>
 struct List {
-    static List<T> create(Allocator& allocator) {
+    static List<T> create(Allocator* allocator) {
         List<T> list;
-        list.capacity = 1;
-        list.length = 0;
-        list.allocator = &allocator;
+        list.m_capacity = 1;
+        list.m_size = 0;
+        list.m_allocator = allocator;
 
-        list.memory = list.allocator->template allocate_array<T>(1).unwrap("List: constructor");
+        list.m_ptr = list.m_allocator->template allocate_array<T>(1).unwrap("List: constructor");
         return list;
     }
 
-    static List<T> create(usize capacity, Allocator& allocator) {
+    static List<T> create(Allocator* allocator, usize capacity) {
         List<T> list;
-        list.capacity = capacity;
-        list.length = 0;
-        list.allocator = &allocator;
+        list.m_capacity = capacity;
+        list.m_size = 0;
+        list.m_allocator = allocator;
 
-        list.memory =
-            list.allocator->template allocate_array<T>(capacity).unwrap("List: constructor");
+        list.m_ptr =
+            list.m_allocator->template allocate_array<T>(capacity).unwrap("List: constructor");
 
         return list;
     }
 
     void destroy() const {
-        allocator->free_array(memory, capacity);
+        m_allocator->free_array(m_ptr, m_capacity);
     }
 
-    void destroy(std::function<void(const T&)> destroy_function) const {
-        for (usize i = 0; i < length; i++) {
-            destroy_function(this->memory[i]);
+    template <class Func>
+    void destroy(Func destroy_function) const {
+        for (usize i = 0; i < m_size; i++) {
+            destroy_function(this->m_ptr[i]);
         }
 
-        allocator->free_array(memory, capacity);
+        m_allocator->free_array(m_ptr, m_capacity);
     }
 
     void clear() {
-        length = 0;
+        m_size = 0;
     }
 
     void add(T element) {
-        if (length + 1 > capacity) reserve(capacity * 2);
+        if (m_size + 1 > m_capacity) reserve(m_capacity * 2);
 
-        this->memory[this->length] = element;
-        this->length++;
+        this->m_ptr[this->m_size] = element;
+        this->m_size++;
     }
 
     void remove(usize position) {
-        for (size_t i = position; i < length - 1; i++) {
-            memory[i] = memory[i + 1];
+        for (size_t i = position; i < m_size - 1; i++) {
+            m_ptr[i] = m_ptr[i + 1];
         }
-        length -= 1;
+        m_size -= 1;
     }
 
     Option<Ref<T>> at(usize position) const {
-        if (position >= length) {
+        if (position >= m_size) {
             return Option<Ref<T>>::None();
         }
-        return Option<Ref<T>>::Some(Ref<T>{&this->memory[position]});
+        return Option<Ref<T>>::Some(Ref<T>{&this->m_ptr[position]});
     }
 
     T* ptr() const {
-        return this->memory;
+        return this->m_ptr;
     }
     usize size() const {
-        return length;
+        return m_size;
     }
     bool empty() const {
-        return length == 0;
+        return m_size == 0;
     }
 
     void reserve(usize size) {
-        if (size <= this->capacity) return;
+        if (size <= this->m_capacity) return;
 
-        T* new_memory = allocator->allocate_array<T>(size).unwrap("List reserve");
+        T* new_memory = m_allocator->allocate_array<T>(size).unwrap("List reserve");
 
-        for (usize i = 0; i < this->length; i++) {
-            new_memory[i] = this->memory[i];
+        for (usize i = 0; i < this->m_size; i++) {
+            new_memory[i] = this->m_ptr[i];
         }
 
-        allocator->free_array(this->memory, this->capacity);
+        m_allocator->free_array(this->m_ptr, this->m_capacity);
 
-        this->memory = new_memory;
-        this->capacity = size;
+        this->m_ptr = new_memory;
+        this->m_capacity = size;
     }
 
     List<T> clone() const {
-        return clone(*this->allocator);
+        return clone(m_allocator);
     }
 
-    List<T> clone(Allocator& allocator) const {
-        let list = List<T>::create(this->capacity, allocator);
+    List<T> clone(Allocator* allocator) const {
+        let list = List<T>::create(allocator, this->m_capacity);
 
-        for (usize i = 0; i < length; i++) {
-            list.add(this->memory[i]);
+        for (usize i = 0; i < m_size; i++) {
+            list.add(this->m_ptr[i]);
         }
 
         return list;
@@ -699,11 +677,10 @@ struct List {
         return Iter{*this};
     }
 
-   private:
-    T*         memory;
-    usize      capacity;
-    usize      length;
-    Allocator* allocator;
+    T*         m_ptr;
+    usize      m_capacity;
+    usize      m_size;
+    Allocator* m_allocator;
 };
 
 /*
@@ -820,44 +797,119 @@ struct Stack {
     usize      m_size = 0;
 };
 
-struct String {
-    char* m_ptr = nullptr;
-    usize m_size = 0;
+struct CString {
+    const char* string;
+    usize       size;  // not including '\0'
+    Allocator*  m_allocator;
+
+    void destroy() {
+        m_allocator->free_array(string, size + 1);
+    }
 };
 
-struct StringBuilder {
-    static StringBuilder init(Allocator& allocator) {
-        StringBuilder builder;
-        builder.m_allocator = &allocator;
+struct String {
+    List<char> m_list;
 
-        return builder;
+    static String create(Allocator* allocator) {
+        String s;
+        s.m_list = List<char>::create(allocator, 1);
+        return s;
+    }
+
+    static String create(Allocator* allocator, const char* text) {
+        let text_len = strlen(text);
+
+        String s;
+        s.m_list = List<char>::create(allocator, text_len + 1);
+        for (usize i = 0; i < text_len; i++) s.m_list.add(text[i]);
+
+        return s;
     }
 
     void destroy() {
+        m_list.destroy();
     }
 
-    // takes ownership of the string
-    StringBuilder& add(String string) {
-        if (m_ptr == nullptr) {
-            m_size = string.m_size;
-            m_ptr = m_allocator->allocate_array<char>(m_size).unwrap("StringBuilder::add");
-        } else {
-            let old_size = m_size;
-            m_size += string.m_size;
-            let new_ptr = m_allocator->allocate_array<char>(m_size).unwrap("StringBuilder::add");
+    String clone(Allocator* allocator) {
+        String str;
+        str.m_list = m_list.clone(allocator);
+        return str;
+    }
 
-            for (int i = 0; i < old_size; i++) new_ptr[i] = m_ptr[i];
+    String clone() {
+        String str;
+        str.m_list = m_list.clone();
+        return str;
+    }
 
-            m_allocator->free_array(m_ptr, old_size);
-            m_ptr = new_ptr;
+    void append(const char* str) {
+        let str_len = strlen(str);
+        m_list.reserve(size() + str_len + 1);
+
+        for (usize i = 0; i < str_len; i++) m_list.add(str[i]);
+    }
+
+    void append(std::string str) {
+        m_list.reserve(size() + str.size() + 1);
+
+        for (usize i = 0; i < str.size(); i++) {
+            let chr = str.at(i);
+            m_list.add(chr);
         }
-
-        panic("Implement StringBuilder::add");
-
-        return *this;
     }
 
-    Allocator* m_allocator;
-    char*      m_ptr = nullptr;
-    usize      m_size = 0;
+    void append(String str) {
+        m_list.reserve(size() + str.size() + 1);
+
+        for (usize i = 0; i < str.size(); i++) {
+            let chr = str.at(i).unwrap().deref();
+            m_list.add(chr);
+        }
+    }
+
+    inline usize size() const {
+        return m_list.size();
+    }
+
+    /*
+     * this allocates new memory
+     * you need to destroy() it
+     */
+    inline CString c_str(Allocator* allocator) const {
+        let str_size = size();
+
+        let ptr = allocator->allocate_array<char>(str_size + 1).unwrap();
+        memcpy(ptr, m_list.ptr(), str_size);
+        ptr[str_size] = '\0';
+        CString c_str{ptr, str_size, allocator};
+
+        return c_str;
+    }
+
+    /*
+     * this allocates new memory
+     * you need to destroy() it
+     */
+    inline CString c_str() const {
+        return c_str(m_list.m_allocator);
+    }
+
+    inline Option<Ref<char>> at(usize position) {
+        return m_list.at(position);
+    }
+
+    auto iter() {
+        // Maybe do it more nicely?
+        return m_list.iter();
+    }
+
+    friend std::ostream& operator<<(std::ostream&, const String&);
 };
+
+std::ostream& operator<<(std::ostream& os, const String& string) {
+    for (usize i = 0; i < string.size(); i++) {
+        os << string.m_list.ptr()[i];
+    }
+
+    return os;
+}

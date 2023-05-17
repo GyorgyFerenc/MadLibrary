@@ -2,8 +2,10 @@
 
 #include <filesystem>
 #include <fstream>
+#include <tuple>
 #include <vector>
 
+#include "Core.hpp"
 #include "Process.hpp"
 
 struct Target {
@@ -37,8 +39,9 @@ struct Target {
         for (auto&& file : files) {
             auto file_string = file.path().string();
             auto regular_file = file.is_regular_file();
-            auto ends_with_cpp = file_string.ends_with(".cpp");
-            if (regular_file && ends_with_cpp) add_source(file_string);
+            auto ends_with_cpp = ends_with(file_string, ".cpp");
+            auto ends_with_c = ends_with(file_string, ".c");
+            if (regular_file && ends_with_cpp && ends_with_c) add_source(file_string);
         }
     }
 
@@ -83,9 +86,22 @@ struct Target {
         cmd += " -o ";
         cmd += m_output;
 
+        println_format("[NOTE] Building %", m_output);
+
         let p = Process::open(cmd.c_str()).unwrap();
         p.join();
         p.destroy();
+    }
+
+    bool ends_with(std::string text, std::string suffix) {
+        if (text.size() < suffix.size()) return false;
+
+        for (int i = 0; i < suffix.size(); i++) {
+            let text_chr = text[text.size() - 1 - i];
+            let suffix_chr = suffix[suffix.size() - 1 - i];
+            if (suffix_chr != text_chr) return false;
+        }
+        return true;
     }
 };
 
@@ -112,7 +128,6 @@ void self_rebuild(std::string source, std::string output) {
     println("[NOTE] Rebuilding self");
 
     let builder = Target{};
-    builder.add_flag("std=c++20");
     builder.add_source(source);
     builder.set_output(output);
     builder.build();
