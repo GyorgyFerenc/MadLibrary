@@ -216,7 +216,7 @@ struct Characters {
     char next() {
         let current = position;
         position++;
-        return *(format + current);
+        return format[current];
     }
 };
 
