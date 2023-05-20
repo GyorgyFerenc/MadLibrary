@@ -408,7 +408,7 @@ struct StackAllocator : public Allocator {
         return Option<Raw>::Some(raw);
     }
 
-    void free_raw(const Raw& raw) {
+    void free_raw(const Raw& raw) override {
         if (raw.ptr == m_memory + m_current - raw.len) {
             m_current -= raw.len;
         }
