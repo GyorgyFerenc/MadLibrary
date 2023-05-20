@@ -405,6 +405,8 @@ struct StackAllocator : public Allocator {
             .len = size,
         };
 
+        m_current += size;
+
         return Option<Raw>::Some(raw);
     }
 
