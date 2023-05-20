@@ -17,7 +17,17 @@ struct Target {
     std::vector<std::string> m_libraries;
     std::string              m_output;
 
-    static Target from(std::initializer_list<std::string> list) {
+    inline static Target create() {
+        return Target{};
+    }
+
+    inline static Target create(std::string list) {
+        Target t;
+        t.add_source(list);
+        return t;
+    }
+
+    inline static Target create(std::initializer_list<std::string> list) {
         Target t;
         t.add_source(list);
         return t;
@@ -106,6 +116,7 @@ struct Target {
 };
 
 void self_rebuild(std::string source, std::string output) {
+    // TODO add argc and argv
     {
         std::ifstream     source_in{source};
         std::stringstream buffer;
