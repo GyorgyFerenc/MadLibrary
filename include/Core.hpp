@@ -819,8 +819,6 @@ struct CString {
     }
 };
 
-struct StringView;
-
 struct String {
     List<char> m_list;
 
@@ -908,8 +906,25 @@ struct String {
         return c_str(m_list.m_allocator);
     }
 
-    inline Option<Ref<char>> at(usize position) {
+    inline Option<Ref<char>> at(usize position) const {
         return m_list.at(position);
+    }
+
+    Option<String> substring(Allocator* allocator, usize position, usize len) {
+        if (position + len > m_list.size()) return Option<String>::None();
+
+        String str;
+        str.m_list = List<char>::create(allocator);
+        str.m_list.reserve(len);
+
+        for (usize i = 0; i < len; i++) {
+            str.m_list.add(m_list.ptr()[position + i]);
+        }
+        return Option<String>::Some(str);
+    }
+
+    Option<String> substring(usize position, usize len) {
+        return substring(m_list.m_allocator, position, len);
     }
 
     auto iter() {
@@ -941,6 +956,33 @@ struct StringView {
         view.m_start = 0;
         view.m_end = str.size() - 1;  //[m_start, m_end]
         return view;
+    }
+
+    inline StringView clone() {
+        return *this;
+    }
+
+    usize size() {
+        return m_end - m_start + 1;
+    }
+
+    CharOption at(usize position) {
+        if (position > m_end) return CharOption::None();
+        return m_string.at(m_start + position);
+    }
+
+    Option<String> substring(Allocator* allocator, usize position, usize len) {
+        // TODO solve bug
+        if (len > size()) return Option<String>::None();
+
+        return m_string.substring(allocator, position + m_start, len);
+    }
+
+    Option<String> substring(usize position, usize len) {
+        // TODO solve bug
+        if (len > size()) return Option<String>::None();
+
+        return m_string.substring(position + m_start, len);
     }
 
     void remove_prefx(usize number) {
@@ -979,18 +1021,9 @@ struct StringView {
         return true;
     }
 
-    usize size() {
-        return m_end - m_start + 1;
-    }
-
-    CharOption at(usize position) {
-        if (position > m_end) return CharOption::None();
-        return m_string.at(m_start + position);
-    }
-
     struct Iter : public ::Iter<char> {
-        StringView* m_view;
-        usize       m_current = 0;
+        const StringView* m_view;
+        usize             m_current = 0;
 
         inline CharOption next() override {
             if (m_current > m_view->m_end) return CharOption::None();
@@ -1001,10 +1034,17 @@ struct StringView {
         };
     };
 
-    Iter iter() {
+    Iter iter() const {
         Iter it;
         it.m_view = this;
         it.m_current = m_start;
         return it;
     }
+    friend std::ostream& operator<<(std::ostream&, const StringView&);
 };
+
+std::ostream& operator<<(std::ostream& os, const StringView& string) {
+    string.iter().for_each(fn(char chr) { os << chr; });
+
+    return os;
+}
