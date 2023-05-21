@@ -61,19 +61,19 @@ struct defer_dummy {
     auto ANONYMOUS_VARIABLE(__defer_instance) = defer_implementation{[&]() { body; }};
 
 void panic(const char* text) {
-    std::cerr << "panic:" << std::endl;
-    std::cerr << text << std::endl;
+    std::cout << "panic:" << std::endl;
+    std::cout << text << std::endl;
     exit(1);
 }
 
 void panic(std::string text) {
-    std::cerr << "panic:" << std::endl;
-    std::cerr << text << std::endl;
+    std::cout << "panic:" << std::endl;
+    std::cout << text << std::endl;
     exit(1);
 }
 
 void panic() {
-    std::cerr << "panic" << std::endl;
+    std::cout << "panic" << std::endl;
     exit(1);
 }
 
@@ -972,20 +972,18 @@ struct StringView {
     }
 
     Option<String> substring(Allocator* allocator, usize position, usize len) {
-        // TODO solve bug
-        if (len > size()) return Option<String>::None();
+        if (m_start + position + len - 1 > m_end) return Option<String>::None();
 
         return m_string.substring(allocator, position + m_start, len);
     }
 
     Option<String> substring(usize position, usize len) {
-        // TODO solve bug
-        if (len > size()) return Option<String>::None();
+        if (m_start + position + len - 1 > m_end) return Option<String>::None();
 
         return m_string.substring(position + m_start, len);
     }
 
-    void remove_prefx(usize number) {
+    void remove_prefix(usize number) {
         m_start += number;
     }
 
