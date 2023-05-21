@@ -17,7 +17,17 @@ struct Target {
     std::vector<std::string> m_libraries;
     std::string              m_output;
 
-    static Target from(std::initializer_list<std::string> list) {
+    inline static Target create() {
+        return Target{};
+    }
+
+    inline static Target create(std::string list) {
+        Target t;
+        t.add_source(list);
+        return t;
+    }
+
+    inline static Target create(std::initializer_list<std::string> list) {
         Target t;
         t.add_source(list);
         return t;
@@ -88,7 +98,7 @@ struct Target {
 
         println_format("[NOTE] Building %", m_output);
 
-        let p = Process::open(cmd.c_str()).unwrap();
+        let p = Process::open_no_capture(cmd.c_str()).unwrap();
         p.join();
         p.destroy();
     }
@@ -106,6 +116,7 @@ struct Target {
 };
 
 void self_rebuild(std::string source, std::string output) {
+    // TODO add argc and argv
     {
         std::ifstream     source_in{source};
         std::stringstream buffer;
@@ -136,16 +147,7 @@ void self_rebuild(std::string source, std::string output) {
 
     println("[NOTE] Run new build");
 
-    let p = Process::open(cmd.c_str()).unwrap();
-
-    char a[100];
-    memset(a, 0, 100);
-    int read_bytes = 0;
-    while ((read_bytes = read(p.from_child, a, 4)) > 0) {
-        print(a);
-        memset(a, 0, read_bytes);
-    }
-
+    let p = Process::open_no_capture(cmd.c_str()).unwrap();
     p.join();
     p.destroy();
 

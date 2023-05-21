@@ -41,6 +41,26 @@ struct Process {
         return Option<Process>::Some(proc);
     }
 
+    static Option<Process> open_no_capture(const char* cmdline) {
+        // TODO: dont depend on /bin/sh
+        // TODO: Do it better
+
+        Process proc;
+
+        pid_t p = fork();
+        if (p < 0) {
+            // Fork failed
+            return Option<Process>::None();
+        } else if (p == 0) {
+            // child
+            execl("/bin/sh", "sh", "-c", cmdline, NULL);
+            perror("execl");
+            exit(99);
+        }
+
+        return Option<Process>::Some(proc);
+    }
+
     static Option<Process> open(const char* cmdline) {
         // TODO: dont depend on /bin/sh
 

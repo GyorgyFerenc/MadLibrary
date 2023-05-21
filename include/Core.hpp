@@ -9,6 +9,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <regex>
 #include <sstream>
 #include <stack>
 #include <unordered_set>
@@ -60,20 +61,28 @@ struct defer_dummy {
     auto ANONYMOUS_VARIABLE(__defer_instance) = defer_implementation{[&]() { body; }};
 
 void panic(const char* text) {
-    std::cerr << "panic:" << std::endl;
-    std::cerr << text << std::endl;
+    std::cout << "panic:" << std::endl;
+    std::cout << text << std::endl;
     exit(1);
 }
 
 void panic(std::string text) {
-    std::cerr << "panic:" << std::endl;
-    std::cerr << text << std::endl;
+    std::cout << "panic:" << std::endl;
+    std::cout << text << std::endl;
     exit(1);
 }
 
 void panic() {
-    std::cerr << "panic" << std::endl;
+    std::cout << "panic" << std::endl;
     exit(1);
+}
+
+template <class... Arg>
+std::string format(const char* fmt, const Arg&... arg);
+
+template <class... Arg>
+void panic_format(const char* fmt, Arg... arg) {
+    panic(format(fmt, arg...));
 }
 
 template <class v, class err>
@@ -433,6 +442,7 @@ struct DebugAllocator : public Allocator {
 
     Option<Raw> allocate_raw(usize size) override {
         m_allocations += size;
+
         return ::allocate(size);
     };
 
@@ -444,7 +454,7 @@ struct DebugAllocator : public Allocator {
 
     void panic_on_leak() {
         if (m_allocations != 0)
-            panic(format("Debug allocator definetly lost % bytes", m_allocations));
+            panic_format("Debug allocator definetly lost % bytes", m_allocations);
     }
 };
 
@@ -896,8 +906,25 @@ struct String {
         return c_str(m_list.m_allocator);
     }
 
-    inline Option<Ref<char>> at(usize position) {
+    inline Option<Ref<char>> at(usize position) const {
         return m_list.at(position);
+    }
+
+    Option<String> substring(Allocator* allocator, usize position, usize len) {
+        if (position + len > m_list.size()) return Option<String>::None();
+
+        String str;
+        str.m_list = List<char>::create(allocator);
+        str.m_list.reserve(len);
+
+        for (usize i = 0; i < len; i++) {
+            str.m_list.add(m_list.ptr()[position + i]);
+        }
+        return Option<String>::Some(str);
+    }
+
+    Option<String> substring(usize position, usize len) {
+        return substring(m_list.m_allocator, position, len);
     }
 
     auto iter() {
@@ -912,6 +939,110 @@ std::ostream& operator<<(std::ostream& os, const String& string) {
     for (usize i = 0; i < string.size(); i++) {
         os << string.m_list.ptr()[i];
     }
+
+    return os;
+}
+
+struct StringView {
+    String m_string;
+    usize  m_start = 0;  // inclusive
+    usize  m_end;        // inclusive
+
+    using CharOption = Option<Ref<char>>;
+
+    inline static StringView create(String str) {
+        StringView view;
+        view.m_string = str;
+        view.m_start = 0;
+        view.m_end = str.size() - 1;  //[m_start, m_end]
+        return view;
+    }
+
+    inline StringView clone() {
+        return *this;
+    }
+
+    usize size() {
+        return m_end - m_start + 1;
+    }
+
+    CharOption at(usize position) {
+        if (position > m_end) return CharOption::None();
+        return m_string.at(m_start + position);
+    }
+
+    Option<String> substring(Allocator* allocator, usize position, usize len) {
+        if (m_start + position + len - 1 > m_end) return Option<String>::None();
+
+        return m_string.substring(allocator, position + m_start, len);
+    }
+
+    Option<String> substring(usize position, usize len) {
+        if (m_start + position + len - 1 > m_end) return Option<String>::None();
+
+        return m_string.substring(position + m_start, len);
+    }
+
+    void remove_prefix(usize number) {
+        m_start += number;
+    }
+
+    void remove_suffix(usize number) {
+        m_end -= number;
+        if (m_end < 0) m_end = 0;
+    }
+
+    bool starts_with(const char* prefix) {
+        for (usize i = 0; prefix[i] != '\0'; i++) {
+            let chr_option = at(i);
+            on_none(chr_option) return false;
+            let chr = chr_option.unwrap().deref();
+
+            if (prefix[i] != chr) return false;
+        }
+        return true;
+    }
+
+    bool ends_with(const char* suffix) {
+        let suffix_len = strlen(suffix);
+        let self_len = size();
+
+        if (suffix_len > self_len) return false;
+
+        for (usize i = 0; i < suffix_len; i++) {
+            let self_chr = at(self_len - i - 1).unwrap("ends_with").deref();
+            let suffix_chr = suffix[suffix_len - i - 1];
+
+            if (suffix_chr != self_chr) return false;
+        }
+
+        return true;
+    }
+
+    struct Iter : public ::Iter<char> {
+        const StringView* m_view;
+        usize             m_current = 0;
+
+        inline CharOption next() override {
+            if (m_current > m_view->m_end) return CharOption::None();
+            let chr = m_view->m_string.at(m_current);
+
+            m_current++;
+            return chr;
+        };
+    };
+
+    Iter iter() const {
+        Iter it;
+        it.m_view = this;
+        it.m_current = m_start;
+        return it;
+    }
+    friend std::ostream& operator<<(std::ostream&, const StringView&);
+};
+
+std::ostream& operator<<(std::ostream& os, const StringView& string) {
+    string.iter().for_each(fn(char chr) { os << chr; });
 
     return os;
 }
