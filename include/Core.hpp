@@ -3,6 +3,7 @@
 #include <alloca.h>
 #include <sys/mman.h>
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -13,6 +14,8 @@
 #include <sstream>
 #include <stack>
 #include <unordered_set>
+
+#define UNREACHABLE assert(false && "uncreachable");
 
 using uint = unsigned int;
 using int8 = int8_t;
@@ -528,9 +531,9 @@ struct PageAllocator : public Allocator {
 };
 
 /*
-    Ring allocator with 2 KiB of data
+    Ring allocator with 2 MiB of data
 */
-TemporaryAllocator<2 * KiB> temporary_allocator;
+TemporaryAllocator<2 * MiB> temporary_allocator;
 
 /*
     Basic allocator, allocates on heap
@@ -852,6 +855,18 @@ struct String {
         String str;
         str.m_list = m_list.clone();
         return str;
+    }
+
+    void append(bool value) {
+        if (value) {
+            append("true");
+        } else {
+            append("false");
+        }
+    }
+
+    void append(char chr) {
+        m_list.add(chr);
     }
 
     void append(const char* str) {
