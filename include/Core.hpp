@@ -531,9 +531,9 @@ struct PageAllocator : public Allocator {
 };
 
 /*
-    Ring allocator with 2 KiB of data
+    Ring allocator with 2 MiB of data
 */
-TemporaryAllocator<2 * KiB> temporary_allocator;
+TemporaryAllocator<2 * MiB> temporary_allocator;
 
 /*
     Basic allocator, allocates on heap
@@ -863,6 +863,10 @@ struct String {
         } else {
             append("false");
         }
+    }
+
+    void append(char chr) {
+        m_list.add(chr);
     }
 
     void append(const char* str) {
