@@ -575,7 +575,7 @@ struct Ref {
 // Maybe do it with macro ??
 template <class T>
 struct Iter {
-    virtual Option<Ref<T>> next() = 0;
+    inline virtual Option<Ref<T>> next() = 0;
 
     template <class Function>
     void inline for_each(Function func) {
@@ -648,6 +648,10 @@ struct List {
         m_size -= 1;
     }
 
+    inline T& operator[](usize position) {
+        return m_ptr[position];
+    }
+
     Option<Ref<T>> at(usize position) const {
         if (position >= m_size) {
             return Option<Ref<T>>::None();
@@ -698,9 +702,11 @@ struct List {
         Iter(List<T>& list) : list(list){};
 
         Option<Ref<T>> next() override {
-            let el = list.at(current);
-            current++;
-            return el;
+            asm("nop");
+            asm("nop");
+            asm("nop");
+            asm("nop");
+            return list.at(current++);
         }
 
         List<T>& list;
@@ -715,6 +721,72 @@ struct List {
     usize      m_capacity;
     usize      m_size;
     Allocator* m_allocator;
+};
+
+/*
+ * Fixed size array
+ */
+template <class T>
+struct Array {
+    T*    m_ptr;
+    usize m_size;
+
+    Allocator* m_allocator;
+
+    inline static Array<T> create(usize size) {
+        return Array<T>::create(default_context(), size);
+    }
+
+    inline static Array<T> create(Context context, usize size) {
+        return Array<T>{
+            .m_ptr = context.allocator->allocate_array<T>(size).unwrap(),
+            .m_size = size,
+            .m_allocator = context.allocator,
+        };
+    }
+
+    void destroy() const {
+        m_allocator->free_array(m_ptr, m_size);
+    }
+
+    template <class Func>
+    void destroy(Func destroy_function) const {
+        for (usize i = 0; i < m_size; i++) {
+            destroy_function(this->m_ptr[i]);
+        }
+
+        m_allocator->free_array(m_ptr, m_size);
+    }
+
+    inline usize size() {
+        return m_size;
+    }
+
+    inline T& operator[](usize position) {
+        return m_ptr[position];
+    }
+
+    Option<Ref<T>> at(usize position) const {
+        if (position >= m_size) {
+            return Option<Ref<T>>::None();
+        }
+        return Option<Ref<T>>::Some(Ref<T>{&this->m_ptr[position]});
+    }
+
+    struct Iter : public ::Iter<T> {
+        Iter(Array<T>& array) : array(array){};
+
+        Option<Ref<T>> next() override {
+            return array.at(current++);
+        }
+
+        Array<T>& array;
+        usize     current = 0;
+    };
+
+    Iter iter() {
+        return Iter{*this};
+    }
 };
 
 /*
@@ -844,8 +916,60 @@ struct String {
 
     Allocator* m_allocator;
 
+    /*
+     * uses the str's allocator
+     */
+    inline static String from(String str) {
+        return String::from(Context{.allocator = str.m_allocator}, str);
+    }
+
+    static String from(Context context, String string) {
+        let str = String{};
+        str.m_allocator = context.allocator;
+        str.m_size = string.m_size;
+        str.m_str = str.m_allocator->allocate_array<char>(str.m_size).unwrap();
+        memcpy(str.m_str, string.m_str, str.m_size);
+        return str;
+    }
+
+    inline static String from(std::string cpp_str) {
+        return String::from(default_context(), cpp_str);
+    }
+
+    static String from(Context context, std::string cpp_str) {
+        let str = String{};
+        str.m_allocator = context.allocator;
+        str.m_size = cpp_str.size() + 1;
+        str.m_str = str.m_allocator->allocate_array<char>(str.m_size).unwrap();
+        memcpy(str.m_str, cpp_str.data(), str.m_size - 1);
+        str.m_str[str.m_size - 1] = '\0';
+        return str;
+    }
+
+    inline static String from(const char* c_str) {
+        return String::from(default_context(), c_str);
+    }
+
+    static String from(Context context, const char* c_str) {
+        let str = String{};
+        str.m_allocator = context.allocator;
+        str.m_size = strlen(c_str) + 1;
+        str.m_str = str.m_allocator->allocate_array<char>(str.m_size).unwrap();
+        memcpy(str.m_str, c_str, str.m_size - 1);
+        str.m_str[str.m_size - 1] = '\0';
+        return str;
+    }
+
     void destroy() {
         m_allocator->free_array(m_str, m_size);
+    }
+
+    String clone() {
+        return String::from(*this);
+    }
+
+    String clone(Context context) {
+        return String::from(context, *this);
     }
 
     usize size() const {
@@ -980,7 +1104,7 @@ struct StringView {
 
     using CharOption = Option<Ref<char>>;
 
-    inline static StringView create(String str) {
+    inline static StringView from(String str) {
         StringView view;
         view.m_string = str;
         view.m_start = 0;
