@@ -4,23 +4,28 @@
 
 #include "Core.hpp"
 
+namespace ProcessError {
+let PipeError = declare_error();
+let ForkError = declare_error();
+};  // namespace ProcessError
+
 struct Process {
     pid_t child_pid;
     int   from_child, to_child;
 
-    static Option<Process> run(std::function<void()> func) {
+    static Errorable<Process> run(std::function<void()> func) {
         Process proc;
 
         // pipe[0] -> read, pipe[1] -> write
         int pipe_stdin[2], pipe_stdout[2];
 
-        if (pipe(pipe_stdin)) return Option<Process>::None();
-        if (pipe(pipe_stdout)) return Option<Process>::None();
+        if (pipe(pipe_stdin)) return {ProcessError::PipeError};
+        if (pipe(pipe_stdout)) return {ProcessError::PipeError};
 
         pid_t p = fork();
         if (p < 0) {
             // Fork failed
-            return Option<Process>::None();
+            return {ProcessError::ForkError};
         } else if (p == 0) {
             // child
             close(pipe_stdin[1]);
@@ -38,19 +43,19 @@ struct Process {
         close(pipe_stdin[0]);
         close(pipe_stdout[1]);
 
-        return Option<Process>::Some(proc);
+        return {Correct, proc};
     }
 
-    static Option<Process> open_no_capture(const char* cmdline) {
-        // TODO: dont depend on /bin/sh
-        // TODO: Do it better
+    static Errorable<Process> open_no_capture(const char* cmdline) {
+        // TODO(Ferenc): dont depend on /bin/sh
+        // TODO(Ferenc): Do it better
 
         Process proc;
 
         pid_t p = fork();
         if (p < 0) {
             // Fork failed
-            return Option<Process>::None();
+            return {ProcessError::ForkError};
         } else if (p == 0) {
             // child
             execl("/bin/sh", "sh", "-c", cmdline, NULL);
@@ -58,10 +63,10 @@ struct Process {
             exit(99);
         }
 
-        return Option<Process>::Some(proc);
+        return {Correct, proc};
     }
 
-    static Option<Process> open(const char* cmdline) {
+    static Errorable<Process> open(const char* cmdline) {
         // TODO: dont depend on /bin/sh
 
         Process proc;
@@ -69,13 +74,13 @@ struct Process {
         // pipe[0] -> read, pipe[1] -> write
         int pipe_stdin[2], pipe_stdout[2];
 
-        if (pipe(pipe_stdin)) return Option<Process>::None();
-        if (pipe(pipe_stdout)) return Option<Process>::None();
+        if (pipe(pipe_stdin)) return {ProcessError::PipeError};
+        if (pipe(pipe_stdout)) return {ProcessError::PipeError};
 
         pid_t p = fork();
         if (p < 0) {
             // Fork failed
-            return Option<Process>::None();
+            return {ProcessError::ForkError};
         } else if (p == 0) {
             // child
             close(pipe_stdin[1]);
@@ -94,7 +99,7 @@ struct Process {
         close(pipe_stdin[0]);
         close(pipe_stdout[1]);
 
-        return Option<Process>::Some(proc);
+        return {Correct, proc};
     }
 
     void join() {

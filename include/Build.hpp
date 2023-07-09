@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Core.hpp"
+#include "Core/Intrinsics.hpp"
 #include "Process.hpp"
 
 struct Target {
@@ -98,7 +99,9 @@ struct Target {
 
         println_format("[NOTE] Building %", m_output);
 
-        let p = Process::open_no_capture(cmd.c_str()).unwrap();
+        let try_p = Process::open_no_capture(cmd.c_str());
+        let p = unwrap(try_p);
+
         p.join();
         p.destroy();
     }
