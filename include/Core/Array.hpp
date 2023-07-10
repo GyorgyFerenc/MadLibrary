@@ -36,15 +36,19 @@ struct Array {
     T& operator[](usize pos) {
         return this->ptr[pos];
     }
+
+    const T& operator[](usize pos) const {
+        return this->ptr[pos];
+    }
 };
 
 template <class T>
-void destroy(Array<T> array) {
+void destroy(Array<T>& array) {
     array.allocator->template free_array(array.ptr, array.size);
 }
 
 template <class T>
-Array<T> clone(Array<T> array, Context context) {
+Array<T> clone(Array<T>& array, Context context) {
     Array<T> new_array;
 
     new_array.allocator = context.allocator;
@@ -57,8 +61,13 @@ Array<T> clone(Array<T> array, Context context) {
 }
 
 template <class T>
-Array<T> clone(Array<T> array) {
+Array<T> clone(Array<T>& array) {
     return clone(array, Context{.allocator = array.allocator});
+}
+
+template <class T>
+usize size(const Array<T>& array) {
+    return array.size;
 }
 
 /*

@@ -2,9 +2,11 @@
 
 #include <exception>
 
+#include "Array.hpp"
 #include "Context.hpp"
 #include "CoreErrors.hpp"
 #include "Intrinsics.hpp"
+#include "Memory.hpp"
 #include "Pair.hpp"
 
 /*
@@ -139,4 +141,17 @@ Pair<bool, T*> next(ListIter<T>& iter) {
 template <class T>
 inline ListIter<T> iter(List<T>& list) {
     return ListIter<T>{&list};
+}
+
+template <class T>
+Array<T> to_array(List<T>& list, Context context) {
+    let array = Array<T>::create(list.size, context);
+    typed_memcpy(array.ptr, list.ptr, list.size);
+    array.size = list.size;
+    return array;
+}
+
+template <class T>
+Array<T> to_array(List<T>& list) {
+    return to_array(list, Context{.allocator = list.allocator});
 }

@@ -270,3 +270,13 @@ template <class T>
 void typed_memcpy(T* __restrict dest, const T* __restrict src, usize n) {
     memcpy(dest, src, sizeof(T) * n);
 }
+
+/*
+ * It is like memset but takes the type in account
+ */
+template <class T>
+void typed_memset(T* dest, T elem, usize n) {
+    for (usize i = 0; i < n; i++) {
+        dest[i] = elem;
+    }
+}
