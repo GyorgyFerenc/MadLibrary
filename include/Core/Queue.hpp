@@ -1,4 +1,6 @@
 #pragma once
+#include <mutex>
+
 #include "Context.hpp"
 #include "Intrinsics.hpp"
 #include "Memory.hpp"
@@ -60,7 +62,7 @@ void enque(Queue<T>& queue, T element) {
 }
 
 /*
- * this is does not do boundary checking
+ * this does not do boundary checking
  */
 template <class T>
 T deque(Queue<T>& queue) {
@@ -79,4 +81,64 @@ T deque(Queue<T>& queue) {
 template <class T>
 inline bool empty(Queue<T>& queue) {
     return queue.size == 0;
+}
+
+/*
+ * Thread safe wrapper
+ * around Queue<T>
+ * it uses std::mutex
+ */
+template <class T>
+struct SharedQueue {
+    Queue<T>   queue;
+    std::mutex mutex;
+};
+
+template <class T>
+inline void init(SharedQueue<T>& shared_queue, Context context) {
+    shared_queue.queue = Queue<T>::create(context);
+}
+
+template <class T>
+inline void init(SharedQueue<T>& shared_queue) {
+    init(shared_queue, default_context());
+}
+
+template <class T>
+void destroy(SharedQueue<T>& queue) {
+    destroy(queue.queue);
+}
+
+template <class T>
+void enque(SharedQueue<T>& queue, T element) {
+    queue.mutex.lock();
+    enque(queue.queue, element);
+    queue.mutex.unlock();
+}
+
+/*
+ * this does not do boundary checking
+ */
+template <class T>
+T deque(SharedQueue<T>& queue) {
+    queue.mutex.lock();
+    let el = deque(queue.queue);
+    queue.mutex.unlock();
+    return el;
+}
+
+template <class T>
+inline bool empty(SharedQueue<T>& queue) {
+    queue.mutex.lock();
+    let e = empty(queue.queue);
+    queue.mutex.unlock();
+    return e;
+}
+
+template <class T>
+inline usize size(SharedQueue<T>& shared_queue) {
+    shared_queue.mutex.lock();
+    let size = shared_queue.queue.size;
+    shared_queue.mutex.unlock();
+    return size;
 }
