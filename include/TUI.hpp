@@ -1,11 +1,15 @@
 #pragma once
 
+#include <sys/ioctl.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include <atomic>
 #include <cmath>
 #include <condition_variable>
+#include <csignal>
 #include <exception>
+#include <fstream>
 #include <thread>
 
 #include "Core.hpp"
@@ -119,16 +123,38 @@ Error draw(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
     return Correct;
 }
 
+struct Event {
+    enum class Type {
+        Resize,
+        KeyPress,
+    } type;
+
+    char chr;
+};
+
+template <class T>
+void log(T obj) {
+    std::ofstream out{"log", std::ofstream::app};
+    out << obj << std::endl;
+}
+
 /*
  * TODO(Ferenc): Make TUI utf8 complaient
  */
 struct TUI {
-    usize             nr_lines_printed = 0;
-    struct termios    old_termios_state;
-    std::thread       input_thread;
-    SharedQueue<char> charachter_queue;
-    std::atomic_bool  running;
+    usize              nr_lines_printed = 0;
+    std::thread        input_thread;
+    SharedQueue<Event> event_queue;
+
+    // 0 read, 1 write
+    int signal_pipe[2];
+
+    struct termios old_termios_state;
+    struct winsize size;
 };
+
+// TODO(Ferenc): This is a hack do it better
+TUI* tui_ptr;
 
 void set_termios_flags(TUI& tui);
 
@@ -138,15 +164,54 @@ void init(TUI& tui) {
     // hide cursor
     std::cout << "\e[?25l" << std::flush;
 
-    init(tui.charachter_queue);
+    init(tui.event_queue);
     let input_function = [&tui]() {
-        while (tui.running) {
+        // NOTE(Ferenc):
+        // Maybe dup2 to have a copy of the
+        // input fd so I can close that one
+        // in the destroy function
+        while (true) {
             char ch;
             read(0, &ch, 1);
-            enque(tui.charachter_queue, ch);
+            let event = Event{
+                .type = Event::Type::KeyPress,
+                .chr = ch,
+            };
+            enque(tui.event_queue, event);
+            log("KeyPress event fired");
         }
     };
     tui.input_thread = std::thread(input_function);
+
+    // window size
+    ioctl(0, TIOCGWINSZ, &tui.size);
+
+    {  // set up resize handler
+        // TODO(Ferenc): clean this up
+        // this is experimental
+        tui_ptr = &tui;
+
+        pipe(tui_ptr->signal_pipe);
+
+        std::signal(SIGWINCH, [](int sig) {
+            ioctl(0, TIOCGWINSZ, &tui_ptr->size);
+            bool t = true;
+            write(tui_ptr->signal_pipe[1], &t, 1);
+        });
+
+        std::thread t{[&tui]() {
+            while (true) {
+                bool t;
+                read(tui.signal_pipe[0], &t, 1);
+
+                let event = Event{
+                    .type = Event::Type::Resize,
+                };
+                enque(tui.event_queue, event);
+            }
+        }};
+        t.detach();
+    }
 }
 
 void unset_termios_flags(TUI& tui);
@@ -224,12 +289,19 @@ void clear_screen(TUI& tui) {
     tui.nr_lines_printed = 0;
 }
 
+/*
+ * return collumn, row
+ */
+Pair<usize, usize> get_size(TUI& tui) {
+    return {tui.size.ws_col, tui.size.ws_row};
+}
+
 namespace TUIError {
 Error NoKeyPressed = declare_error();
 }
 
-Errorable<char> poll_key(TUI& tui) {
-    if (!empty(tui.charachter_queue)) return {Correct, deque(tui.charachter_queue)};
+Errorable<Event> poll_event(TUI& tui) {
+    if (!empty(tui.event_queue)) return {Correct, deque(tui.event_queue)};
     return {TUIError::NoKeyPressed};
 }
 
@@ -237,8 +309,8 @@ Errorable<char> poll_key(TUI& tui) {
  * Currently busy wait
  * TODO(Ferenc): Implement none busy wait
  */
-char poll_key_wait(TUI& tui) {
+Event poll_event_wait(TUI& tui) {
     while (true) {
-        if (!empty(tui.charachter_queue)) return deque(tui.charachter_queue);
+        if (!empty(tui.event_queue)) return deque(tui.event_queue);
     }
 }
