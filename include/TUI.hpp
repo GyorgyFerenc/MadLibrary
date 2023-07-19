@@ -14,38 +14,122 @@
 
 #include "Core.hpp"
 #include "Core/CoreErrors.hpp"
+#include "Core/Format.hpp"
 #include "Core/Intrinsics.hpp"
 #include "Core/Queue.hpp"
 #include "Core/String.hpp"
 
-struct Pixel;
-void set(Pixel& pixel, const char* utf8_chr);
-void set(Pixel& pixel, const char chr);
-
-struct Pixel {
+struct UTF8Char {
     char utf8_chr[4];
-
-    static inline Pixel create(const char chr) {
-        Pixel pixel;
-        set(pixel, chr);
-        return pixel;
-    }
-
-    static inline Pixel create(const char* utf8_chr) {
-        Pixel pixel;
-        set(pixel, utf8_chr);
-        return pixel;
-    }
 };
 
+void set(UTF8Char& utf8_char, const char* utf8_chr) {
+    // NOTE(Ferenc): utf-8 specification: https://datatracker.ietf.org/doc/html/rfc3629
+    // TODO(Ferenc): Add checking for 10xxxxxx in octets
+    // TODO(Ferenc): Maybe factor out a check if const char* is utf8 character
+
+    usize size = strlen(utf8_chr);
+    if (size > 4) panic("set(UTF8Char,const char*) len is too big");
+
+    utf8_char.utf8_chr[0] = '\0';
+    utf8_char.utf8_chr[1] = '\0';
+    utf8_char.utf8_chr[2] = '\0';
+    utf8_char.utf8_chr[3] = '\0';
+
+    let is_ascii = ((uint8)utf8_chr[0] >> 7) == 0;
+    if (is_ascii) {
+        utf8_char.utf8_chr[0] = utf8_chr[0];
+        return;
+    }
+
+    let is_two_octet = ((uint8)utf8_chr[0] >> 5) == 0b110;
+    if (is_two_octet) {
+        utf8_char.utf8_chr[0] = utf8_chr[0];
+        utf8_char.utf8_chr[1] = utf8_chr[1];
+        return;
+    }
+
+    let is_three_octet = ((uint8)utf8_chr[0] >> 4) == 0b1110;
+    if (is_three_octet) {
+        utf8_char.utf8_chr[0] = utf8_chr[0];
+        utf8_char.utf8_chr[1] = utf8_chr[1];
+        utf8_char.utf8_chr[2] = utf8_chr[2];
+        return;
+    }
+
+    let is_four_octet = ((uint8)utf8_chr[0] >> 3) == 0b11110;
+    if (is_four_octet) {
+        utf8_char.utf8_chr[0] = utf8_chr[0];
+        utf8_char.utf8_chr[1] = utf8_chr[1];
+        utf8_char.utf8_chr[2] = utf8_chr[2];
+        utf8_char.utf8_chr[3] = utf8_chr[3];
+        return;
+    }
+
+    panic("Not unicode");
+}
+
+void set(UTF8Char& utf8_char, const char chr) {
+    utf8_char.utf8_chr[0] = chr;
+    utf8_char.utf8_chr[1] = '\0';
+    utf8_char.utf8_chr[2] = '\0';
+    utf8_char.utf8_chr[3] = '\0';
+}
+
+bool equal(UTF8Char utf8_char, const char chr) {
+    return utf8_char.utf8_chr[0] == chr;
+}
+
+bool equal(UTF8Char utf8_char, const char* other) {
+    let is_ascii = ((uint8)other[0] >> 7) == 0;
+    if (is_ascii) {
+        return utf8_char.utf8_chr[0] == other[0];
+    }
+
+    let is_two_octet = ((uint8)other[0] >> 5) == 0b110;
+    if (is_two_octet) {
+        return utf8_char.utf8_chr[0] == other[0] && utf8_char.utf8_chr[1] == other[1];
+    }
+
+    let is_three_octet = ((uint8)other[0] >> 4) == 0b1110;
+    if (is_three_octet) {
+        return utf8_char.utf8_chr[0] == other[0] && utf8_char.utf8_chr[1] == other[1] &&
+               utf8_char.utf8_chr[2] == other[2];
+    }
+
+    let is_four_octet = ((uint8)other[0] >> 3) == 0b11110;
+    if (is_four_octet) {
+        return utf8_char.utf8_chr[0] == other[0] && utf8_char.utf8_chr[1] == other[1] &&
+               utf8_char.utf8_chr[2] == other[2] && utf8_char.utf8_chr[3] == other[3];
+    }
+    panic("other is not utf8");
+    UNREACHABLE;
+}
+
+bool equal(UTF8Char utf8_char, UTF8Char other) {
+    return utf8_char.utf8_chr[0] == other.utf8_chr[0] &&
+           utf8_char.utf8_chr[1] == other.utf8_chr[1] &&
+           utf8_char.utf8_chr[2] == other.utf8_chr[2] && utf8_char.utf8_chr[3] == other.utf8_chr[3];
+}
+
+std::ostream& operator<<(std::ostream& os, const UTF8Char& utf8_char) {
+    return os << utf8_char.utf8_chr;
+}
+
+struct Pixel {
+    UTF8Char utf8_char;
+};
+
+void set(Pixel& pixel, UTF8Char utf8_char) {
+    pixel.utf8_char = utf8_char;
+}
+
 void set(Pixel& pixel, const char* utf8_chr) {
-    if (strlen(utf8_chr) > 4) panic("set(Pixel,const char*) len is too big");
-    strcpy(pixel.utf8_chr, utf8_chr);
+    set(pixel.utf8_char, utf8_chr);
 }
 
 void set(Pixel& pixel, const char chr) {
-    pixel.utf8_chr[0] = chr;
-    pixel.utf8_chr[1] = '\0';
+    set(pixel.utf8_char, chr);
 }
 
 struct Canvas {
@@ -67,7 +151,8 @@ struct Canvas {
             let try_line = canvas.allocator->allocate_array<Pixel>(width);
             canvas.matrix[i] = unwrap(try_line);
 
-            let space = Pixel::create(' ');
+            Pixel space;
+            set(space, ' ');
             typed_memset(canvas.matrix[i], space, width);
         }
 
@@ -129,18 +214,16 @@ struct Event {
         KeyPress,
     } type;
 
-    char chr;
+    UTF8Char utf8_char;
 };
 
 template <class T>
 void log(T obj) {
+    // TODO(Ferenc): Add Log into the Context api
     std::ofstream out{"log", std::ofstream::app};
     out << obj << std::endl;
 }
 
-/*
- * TODO(Ferenc): Make TUI utf8 complaient
- */
 struct TUI {
     usize              nr_lines_printed = 0;
     std::thread        input_thread;
@@ -170,25 +253,53 @@ void init(TUI& tui) {
         // Maybe dup2 to have a copy of the
         // input fd so I can close that one
         // in the destroy function
+        // utf-8 specification: https://datatracker.ietf.org/doc/html/rfc3629
+
+        int std_in = 0;
+
         while (true) {
-            char ch;
-            read(0, &ch, 1);
+            char ch[4];
+            read(std_in, &ch[0], 1);
+
+            // NOTE(Ferenc): Copy pasta from set(UTF8Char,...)
+            let is_two_octet = ((uint8)ch[0] >> 5) == 0b110;
+            let is_three_octet = ((uint8)ch[0] >> 4) == 0b1110;
+            let is_four_octet = ((uint8)ch[0] >> 3) == 0b11110;
+
+            if (is_two_octet) {
+                read(std_in, &ch[1], 1);
+            } else if (is_three_octet) {
+                read(std_in, &ch[1], 1);
+                read(std_in, &ch[2], 1);
+            } else if (is_four_octet) {
+                read(std_in, &ch[1], 1);
+                read(std_in, &ch[2], 1);
+                read(std_in, &ch[3], 1);
+            }
+
+            UTF8Char utf8_char;
+            set(utf8_char, ch);
+
             let event = Event{
                 .type = Event::Type::KeyPress,
-                .chr = ch,
+                .utf8_char = utf8_char,
             };
+
             enque(tui.event_queue, event);
             log("KeyPress event fired");
         }
     };
     tui.input_thread = std::thread(input_function);
 
-    // window size
-    ioctl(0, TIOCGWINSZ, &tui.size);
-
     {  // set up resize handler
         // TODO(Ferenc): clean this up
         // this is experimental
+
+        // NOTE(Ferenc): this can be multiplexed with the character input thread
+
+        // window size
+        ioctl(0, TIOCGWINSZ, &tui.size);
+
         tui_ptr = &tui;
 
         pipe(tui_ptr->signal_pipe);
@@ -202,11 +313,15 @@ void init(TUI& tui) {
         std::thread t{[&tui]() {
             while (true) {
                 bool t;
-                read(tui.signal_pipe[0], &t, 1);
+                // If read unblocks we have a
+                // resize signal
+                let err = read(tui.signal_pipe[0], &t, 1);
+                if (err == -1) panic("Resize signal thread error");
 
                 let event = Event{
                     .type = Event::Type::Resize,
                 };
+
                 enque(tui.event_queue, event);
             }
         }};
@@ -257,7 +372,7 @@ void unset_termios_flags(TUI& tui) {
 void print_canvas(TUI& tui, Canvas& canvas) {
     for (usize y = 0; y < canvas.height; y++) {
         for (usize x = 0; x < canvas.width; x++) {
-            std::cout << canvas[y][x].utf8_chr;
+            std::cout << canvas[y][x].utf8_char;
         }
         std::cout << std::endl;
     }
