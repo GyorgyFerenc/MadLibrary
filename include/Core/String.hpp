@@ -12,6 +12,8 @@
  * Extracts the number of octets from the utf8 encoding
  */
 uint8 len_of_utf8_from_first_byte(const char chr) {
+    // utf-8 specification: https://datatracker.ietf.org/doc/html/rfc3629
+
     let is_ascii = ((uint8)chr >> 7) == 0;
     if (is_ascii) return 1;
 

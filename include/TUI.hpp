@@ -1,9 +1,12 @@
 #pragma once
 
+#include <bits/types/struct_timeval.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <termios.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <condition_variable>
@@ -125,17 +128,15 @@ struct Event {
     UTF8Char utf8_char;
 };
 
-template <class T>
-void log(T obj) {
-    // TODO(Ferenc): Add Log into the Context api
-    std::ofstream out{"log", std::ofstream::app};
-    out << obj << std::endl;
-}
-
 struct TUI {
     usize              nr_lines_printed = 0;
-    std::thread        input_thread;
     SharedQueue<Event> event_queue;
+    std::thread        input_thread;
+    std::atomic_bool   input_running; /* This creates a kinda busy waiting
+                                         maybe dup2 stdin and close it
+                                         to stop input thread */
+
+    Context context;
 
     // 0 read, 1 write
     int signal_pipe[2];
@@ -149,61 +150,19 @@ TUI* tui_ptr;
 
 void set_termios_flags(TUI& tui);
 
-void init(TUI& tui) {
+void init(TUI& tui, Context context) {
+    tui.context = context;
+
     set_termios_flags(tui);
 
     // hide cursor
     std::cout << "\e[?25l" << std::flush;
 
     init(tui.event_queue);
-    let input_function = [&tui]() {
-        // NOTE(Ferenc):
-        // Maybe dup2 to have a copy of the
-        // input fd so I can close that one
-        // in the destroy function
-        // utf-8 specification: https://datatracker.ietf.org/doc/html/rfc3629
-
-        int std_in = 0;
-
-        while (true) {
-            char ch[4];
-            read(std_in, &ch[0], 1);
-            let nr_of_octets = len_of_utf8_from_first_byte(ch[0]);
-
-            switch (nr_of_octets) {
-                case 2: {
-                    read(std_in, &ch[1], 1);
-                } break;
-                case 3: {
-                    read(std_in, &ch[1], 1);
-                    read(std_in, &ch[2], 1);
-                } break;
-                case 4: {
-                    read(std_in, &ch[1], 1);
-                    read(std_in, &ch[2], 1);
-                    read(std_in, &ch[3], 1);
-                } break;
-            }
-
-            UTF8Char utf8_char;
-            set(utf8_char, ch);
-
-            let event = Event{
-                .type = Event::Type::KeyPress,
-                .utf8_char = utf8_char,
-            };
-
-            enque(tui.event_queue, event);
-            log("KeyPress event fired");
-        }
-    };
-    tui.input_thread = std::thread(input_function);
 
     {  // set up resize handler
-        // TODO(Ferenc): clean this up
-        // this is experimental
-
-        // NOTE(Ferenc): this can be multiplexed with the character input thread
+       // TODO(Ferenc): clean this up
+       // this is experimental
 
         // window size
         ioctl(0, TIOCGWINSZ, &tui.size);
@@ -217,24 +176,86 @@ void init(TUI& tui) {
             bool t = true;
             write(tui_ptr->signal_pipe[1], &t, 1);
         });
+    }
 
-        std::thread t{[&tui]() {
-            while (true) {
+    tui.input_running = true;
+    let input_function = [&tui]() {
+        // NOTE(Ferenc):
+        // Maybe dup2 to have a copy of the
+        // input fd so I can close that one
+        // in the destroy function
+
+        int    std_in = 0;
+        int    pipe_read_end = tui.signal_pipe[0];
+        fd_set stdin_and_signal_pipe;
+        FD_ZERO(&stdin_and_signal_pipe);
+        FD_SET(std_in, &stdin_and_signal_pipe);
+        FD_SET(pipe_read_end, &stdin_and_signal_pipe);
+        int max_fd = pipe_read_end;
+        if (max_fd < std_in) max_fd = std_in;  // NOTE(Ferenc): This shoul always be pipe_read_end
+
+        timeval time;
+        time.tv_usec = 100 * 1000;  // 100 miliseconds
+        time.tv_sec = 0;
+
+        while (tui.input_running) {
+            fd_set  copy_set = stdin_and_signal_pipe;
+            timeval copy_time = time;
+
+            int retval = select(max_fd + 1, &copy_set, NULL, NULL, &copy_time);
+            if (retval < 0) {
+                panic("Error at select");
+            }
+            if (FD_ISSET(std_in, &copy_set)) {
+                // TODO(Ferenc): Add ANSI Keys like up_arrow etc.
+
+                char ch[4];
+                read(std_in, &ch[0], 1);
+                let nr_of_octets = len_of_utf8_from_first_byte(ch[0]);
+
+                switch (nr_of_octets) {
+                    case 2: {
+                        read(std_in, &ch[1], 1);
+                    } break;
+                    case 3: {
+                        read(std_in, &ch[1], 1);
+                        read(std_in, &ch[2], 1);
+                    } break;
+                    case 4: {
+                        read(std_in, &ch[1], 1);
+                        read(std_in, &ch[2], 1);
+                        read(std_in, &ch[3], 1);
+                    } break;
+                }
+
+                UTF8Char utf8_char;
+                set(utf8_char, ch);
+
+                let event = Event{
+                    .type = Event::Type::KeyPress,
+                    .utf8_char = utf8_char,
+                };
+
+                tui.context.logger->log("KeyPress event fired\n");
+                enque(tui.event_queue, event);
+            }
+            if (FD_ISSET(pipe_read_end, &copy_set)) {
                 bool t;
                 // If read unblocks we have a
                 // resize signal
-                let err = read(tui.signal_pipe[0], &t, 1);
+                let err = read(pipe_read_end, &t, 1);
                 if (err == -1) panic("Resize signal thread error");
 
                 let event = Event{
                     .type = Event::Type::Resize,
                 };
 
+                tui.context.logger->log("Resize event fired\n");
                 enque(tui.event_queue, event);
             }
-        }};
-        t.detach();
-    }
+        }
+    };
+    tui.input_thread = std::thread(input_function);
 }
 
 void unset_termios_flags(TUI& tui);
@@ -244,11 +265,8 @@ void destroy(TUI& tui) {
     // show cursor
     std::cout << "\e[?25h" << std::flush;
 
-    // Note(Ferenc): this is a hack I did detach it here not when creating because this needs
-    // to be replaced with proper closing of the thread
-    // but I don't know any way of doing it yet
-    // This should close and stop the thread
-    tui.input_thread.detach();
+    tui.input_running = false;
+    tui.input_thread.join();
 }
 
 /*
