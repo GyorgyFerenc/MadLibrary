@@ -77,7 +77,12 @@ inline Error declare_error() {
     return error++;
 }
 
+namespace CoreError {
+Error OutOfRange = declare_error();
+Error EmptyAcces = declare_error();  // accesing element in an empty container
+Error InvalidOperation = declare_error();
 Error Correct = declare_error();
+}  // namespace CoreError
 
 template <class T>
 struct Errorable {
@@ -87,18 +92,18 @@ struct Errorable {
 
 template <class T>
 inline T unwrap(Errorable<T>& errorable) {
-    if (errorable.error == Correct) return errorable.value;
+    if (errorable.error == CoreError::Correct) return errorable.value;
     panic("unwrap");
     UNREACHABLE;
 }
 
 template <class T>
 inline T unwrap(Errorable<T>& errorable, const char* msg) {
-    if (errorable.error == Correct) return errorable.value;
+    if (errorable.error == CoreError::Correct) return errorable.value;
     panic(msg);
     UNREACHABLE;
 }
 
 #define return_error(errorable) \
-    if (errorable.error != Correct) return {errorable.error};
+    if (errorable.error != CoreError::Correct) return {errorable.error};
 // --- /Error ---

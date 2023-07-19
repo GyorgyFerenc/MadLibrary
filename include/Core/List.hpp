@@ -4,7 +4,6 @@
 
 #include "Array.hpp"
 #include "Context.hpp"
-#include "CoreErrors.hpp"
 #include "Intrinsics.hpp"
 #include "Memory.hpp"
 #include "Pair.hpp"
@@ -118,7 +117,7 @@ T& pop(List<T>& list) {
 template <class T>
 Errorable<T*> at(List<T>& list, usize pos) {
     if (pos >= list.size) return {CoreError::OutOfRange};
-    return {Correct, &list.ptr[pos]};
+    return {CoreError::Correct, &list.ptr[pos]};
 }
 
 template <class T>

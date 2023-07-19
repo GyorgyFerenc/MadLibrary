@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Context.hpp"
-#include "CoreErrors.hpp"
 #include "Intrinsics.hpp"
 #include "Memory.hpp"
 #include "Pair.hpp"
@@ -76,7 +75,7 @@ usize size(const Array<T>& array) {
 template <class T>
 Errorable<T*> at(Array<T>& array, usize pos) {
     if (pos >= array.size) return {CoreError::OutOfRange};
-    return {Correct, &array.ptr[pos]};
+    return {CoreError::Correct, &array.ptr[pos]};
 }
 
 template <class T>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Context.hpp"
-#include "CoreErrors.hpp"
 #include "Intrinsics.hpp"
 /*
  * It uses a linked list to implement the stack
@@ -89,7 +88,7 @@ T& top(Stack<T>& stack) {
 template <class T>
 Errorable<T*> top_safe(Stack<T>& stack) {
     if (stack.size == 0) return {CoreError::EmptyAcces};
-    return {Correct, &stack.head->elem};
+    return {CoreError::Correct, &stack.head->elem};
 }
 
 /*
@@ -117,7 +116,7 @@ Errorable<T> pop_safe(Stack<T>& stack) {
     if (empty(stack)) return {CoreError::InvalidOperation};
 
     let elem = pop(stack);
-    return {Correct, elem};
+    return {CoreError::Correct, elem};
 }
 
 template <class T>

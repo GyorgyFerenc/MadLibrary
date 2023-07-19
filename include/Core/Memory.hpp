@@ -28,7 +28,7 @@ Errorable<Raw> chunck(Raw& raw, usize new_len, usize offset = -1) {
     if (new_len + offset > raw.len) {
         return {MemoryError::NotEnoughSpace};
     }
-    return {Correct,
+    return {CoreError::Correct,
             Raw{
                 .ptr = (byte*)raw.ptr + offset,
                 .len = new_len,
@@ -38,20 +38,20 @@ Errorable<Raw> chunck(Raw& raw, usize new_len, usize offset = -1) {
 template <class T>
 Errorable<T*> cast(Raw& raw) {
     if (raw.len < sizeof(T)) return {MemoryError::NotEnoughSpace};
-    return {Correct, (T*)raw.ptr};
+    return {CoreError::Correct, (T*)raw.ptr};
 }
 
 template <class T>
 Errorable<T*> cast_array(Raw& raw, usize size) {
     if (raw.len < sizeof(T) * size) return {MemoryError::NotEnoughSpace};
-    return {Correct, (T*)raw.ptr};
+    return {CoreError::Correct, (T*)raw.ptr};
 }
 
 Errorable<Raw> allocate(usize size) {
     let* ptr = malloc(size);
     if (ptr == NULL) return {MemoryError::Allocation};
 
-    return {Correct,
+    return {CoreError::Correct,
             Raw{
                 .ptr = ptr,
                 .len = size,
@@ -72,7 +72,7 @@ struct Allocator {
         return_error(raw_option);
 
         let raw = unwrap(raw_option);
-        return {Correct, (T*)raw.ptr};
+        return {CoreError::Correct, (T*)raw.ptr};
     }
 
     template <class T>
@@ -81,7 +81,7 @@ struct Allocator {
         return_error(raw_option);
 
         let raw = unwrap(raw_option);
-        return {Correct, (T*)raw.ptr};
+        return {CoreError::Correct, (T*)raw.ptr};
     }
 
     template <class T>
@@ -125,7 +125,7 @@ struct TemporaryAllocator : public Allocator {
 
         m_current += size;
 
-        return {Correct, raw};
+        return {CoreError::Correct, raw};
     }
 
     void free_raw(const Raw& raw) override {
@@ -148,7 +148,7 @@ struct StackAllocator : public Allocator {
 
         m_current += size;
 
-        return {Correct, raw};
+        return {CoreError::Correct, raw};
     }
 
     void free_raw(const Raw& raw) override {
@@ -204,7 +204,7 @@ struct PageAllocator : public Allocator {
             m_pos = size;
 
             let allocated_raw = m_head->memory;
-            return {Correct,
+            return {CoreError::Correct,
                     Raw{
                         .ptr = allocated_raw,
                         .len = size,
@@ -215,7 +215,7 @@ struct PageAllocator : public Allocator {
             let ptr = m_head->memory + m_pos;
             m_pos += size;
 
-            return {Correct,
+            return {CoreError::Correct,
                     {
                         .ptr = ptr,
                         .len = size,
@@ -232,7 +232,7 @@ struct PageAllocator : public Allocator {
         let ptr = m_head->memory;
         m_pos = size;
 
-        return {Correct,
+        return {CoreError::Correct,
                 Raw{
                     .ptr = ptr,
                     .len = size,

@@ -13,108 +13,10 @@
 #include <thread>
 
 #include "Core.hpp"
-#include "Core/CoreErrors.hpp"
 #include "Core/Format.hpp"
 #include "Core/Intrinsics.hpp"
 #include "Core/Queue.hpp"
 #include "Core/String.hpp"
-
-struct UTF8Char {
-    char utf8_chr[4];
-};
-
-void set(UTF8Char& utf8_char, const char* utf8_chr) {
-    // NOTE(Ferenc): utf-8 specification: https://datatracker.ietf.org/doc/html/rfc3629
-    // TODO(Ferenc): Add checking for 10xxxxxx in octets
-    // TODO(Ferenc): Maybe factor out a check if const char* is utf8 character
-
-    usize size = strlen(utf8_chr);
-    if (size > 4) panic("set(UTF8Char,const char*) len is too big");
-
-    utf8_char.utf8_chr[0] = '\0';
-    utf8_char.utf8_chr[1] = '\0';
-    utf8_char.utf8_chr[2] = '\0';
-    utf8_char.utf8_chr[3] = '\0';
-
-    let is_ascii = ((uint8)utf8_chr[0] >> 7) == 0;
-    if (is_ascii) {
-        utf8_char.utf8_chr[0] = utf8_chr[0];
-        return;
-    }
-
-    let is_two_octet = ((uint8)utf8_chr[0] >> 5) == 0b110;
-    if (is_two_octet) {
-        utf8_char.utf8_chr[0] = utf8_chr[0];
-        utf8_char.utf8_chr[1] = utf8_chr[1];
-        return;
-    }
-
-    let is_three_octet = ((uint8)utf8_chr[0] >> 4) == 0b1110;
-    if (is_three_octet) {
-        utf8_char.utf8_chr[0] = utf8_chr[0];
-        utf8_char.utf8_chr[1] = utf8_chr[1];
-        utf8_char.utf8_chr[2] = utf8_chr[2];
-        return;
-    }
-
-    let is_four_octet = ((uint8)utf8_chr[0] >> 3) == 0b11110;
-    if (is_four_octet) {
-        utf8_char.utf8_chr[0] = utf8_chr[0];
-        utf8_char.utf8_chr[1] = utf8_chr[1];
-        utf8_char.utf8_chr[2] = utf8_chr[2];
-        utf8_char.utf8_chr[3] = utf8_chr[3];
-        return;
-    }
-
-    panic("Not unicode");
-}
-
-void set(UTF8Char& utf8_char, const char chr) {
-    utf8_char.utf8_chr[0] = chr;
-    utf8_char.utf8_chr[1] = '\0';
-    utf8_char.utf8_chr[2] = '\0';
-    utf8_char.utf8_chr[3] = '\0';
-}
-
-bool equal(UTF8Char utf8_char, const char chr) {
-    return utf8_char.utf8_chr[0] == chr;
-}
-
-bool equal(UTF8Char utf8_char, const char* other) {
-    let is_ascii = ((uint8)other[0] >> 7) == 0;
-    if (is_ascii) {
-        return utf8_char.utf8_chr[0] == other[0];
-    }
-
-    let is_two_octet = ((uint8)other[0] >> 5) == 0b110;
-    if (is_two_octet) {
-        return utf8_char.utf8_chr[0] == other[0] && utf8_char.utf8_chr[1] == other[1];
-    }
-
-    let is_three_octet = ((uint8)other[0] >> 4) == 0b1110;
-    if (is_three_octet) {
-        return utf8_char.utf8_chr[0] == other[0] && utf8_char.utf8_chr[1] == other[1] &&
-               utf8_char.utf8_chr[2] == other[2];
-    }
-
-    let is_four_octet = ((uint8)other[0] >> 3) == 0b11110;
-    if (is_four_octet) {
-        return utf8_char.utf8_chr[0] == other[0] && utf8_char.utf8_chr[1] == other[1] &&
-               utf8_char.utf8_chr[2] == other[2] && utf8_char.utf8_chr[3] == other[3];
-    }
-    panic("other is not utf8");
-    UNREACHABLE;
-}
-
-bool equal(UTF8Char utf8_char, UTF8Char other) {
-    return utf8_char.utf8_chr[0] == other.utf8_chr[0] &&
-           utf8_char.utf8_chr[1] == other.utf8_chr[1] &&
-           utf8_char.utf8_chr[2] == other.utf8_chr[2] && utf8_char.utf8_chr[3] == other.utf8_chr[3];
-}
-
-std::ostream& operator<<(std::ostream& os, const UTF8Char& utf8_char) {
-    return os << utf8_char.utf8_chr;
-}
 
 struct Pixel {
     UTF8Char utf8_char;
@@ -175,16 +77,22 @@ void destroy(Canvas& canvas) {
     canvas.allocator->free_array(canvas.matrix, canvas.height);
 }
 
+Error set(Canvas& canvas, usize x, usize y, UTF8Char utf8_chr) {
+    if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
+    set(canvas[y][x], utf8_chr);
+    return CoreError::Correct;
+}
+
 Error set(Canvas& canvas, usize x, usize y, const char* utf8_chr) {
     if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
     set(canvas[y][x], utf8_chr);
-    return Correct;
+    return CoreError::Correct;
 }
 
 Error set(Canvas& canvas, usize x, usize y, const char chr) {
     if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
     set(canvas[y][x], chr);
-    return Correct;
+    return CoreError::Correct;
 }
 
 void fill(Canvas& canvas, const char chr) {
@@ -205,7 +113,7 @@ Error draw(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
         }
     }
 
-    return Correct;
+    return CoreError::Correct;
 }
 
 struct Event {
@@ -260,21 +168,21 @@ void init(TUI& tui) {
         while (true) {
             char ch[4];
             read(std_in, &ch[0], 1);
+            let nr_of_octets = len_of_utf8_from_first_byte(ch[0]);
 
-            // NOTE(Ferenc): Copy pasta from set(UTF8Char,...)
-            let is_two_octet = ((uint8)ch[0] >> 5) == 0b110;
-            let is_three_octet = ((uint8)ch[0] >> 4) == 0b1110;
-            let is_four_octet = ((uint8)ch[0] >> 3) == 0b11110;
-
-            if (is_two_octet) {
-                read(std_in, &ch[1], 1);
-            } else if (is_three_octet) {
-                read(std_in, &ch[1], 1);
-                read(std_in, &ch[2], 1);
-            } else if (is_four_octet) {
-                read(std_in, &ch[1], 1);
-                read(std_in, &ch[2], 1);
-                read(std_in, &ch[3], 1);
+            switch (nr_of_octets) {
+                case 2: {
+                    read(std_in, &ch[1], 1);
+                } break;
+                case 3: {
+                    read(std_in, &ch[1], 1);
+                    read(std_in, &ch[2], 1);
+                } break;
+                case 4: {
+                    read(std_in, &ch[1], 1);
+                    read(std_in, &ch[2], 1);
+                    read(std_in, &ch[3], 1);
+                } break;
             }
 
             UTF8Char utf8_char;
@@ -416,7 +324,7 @@ Error NoKeyPressed = declare_error();
 }
 
 Errorable<Event> poll_event(TUI& tui) {
-    if (!empty(tui.event_queue)) return {Correct, deque(tui.event_queue)};
+    if (!empty(tui.event_queue)) return {CoreError::Correct, deque(tui.event_queue)};
     return {TUIError::NoKeyPressed};
 }
 
