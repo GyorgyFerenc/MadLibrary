@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <csignal>
+#include <ostream>
 #include <thread>
 
 #include "Core.hpp"
@@ -16,7 +17,31 @@
 #include "Core/Queue.hpp"
 #include "Core/String.hpp"
 
+enum class Color {
+    None = 0,
+    Black = 30,
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    White,
+};
+
 struct Pixel {
+    bool bold = false;
+    bool dim = false;  // dim/faint
+    bool italic = false;
+    bool underline = false;
+    bool blinking = false;
+    bool inverse = false;
+    bool hidden = false;
+    bool strike_trough = false;
+
+    Color foreground = Color::None;
+    Color background = Color::None;
+
     UTF8Char utf8_char;
 };
 
@@ -93,6 +118,12 @@ Error set(Canvas& canvas, usize x, usize y, const char chr) {
     return CoreError::Correct;
 }
 
+Error set(Canvas& canvas, usize x, usize y, Pixel pixel) {
+    if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
+    canvas[y][x] = pixel;
+    return CoreError::Correct;
+}
+
 void fill(Canvas& canvas, const char chr) {
     for (usize i = 0; i < canvas.height; i++) {
         for (usize j = 0; j < canvas.width; j++) {
@@ -114,6 +145,7 @@ Error draw(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
     return CoreError::Correct;
 }
 
+// TODO(Ferenc): Give them better names
 enum class Key {
 
     // --- Special Ascii characters ---
@@ -149,7 +181,6 @@ enum class Key {
     GroupSeparator,
     RecordSeparator,
     UnitSeparator,
-    Space,
 
     Del = 127,
 
@@ -192,9 +223,10 @@ struct TUI {
     usize              nr_lines_printed = 0;
     SharedQueue<Event> event_queue;
     std::thread        input_thread;
-    std::atomic_bool   input_running; /* NOTE(Ferenc): This creates a kinda busy
-                                         waiting maybe dup2 stdin and close it
-                                         to stop input thread */
+    std::atomic_bool   input_running = true; /* NOTE(Ferenc): This creates a kinda busy
+                                                 waiting maybe dup2 stdin and close it
+                                                 to stop input thread */
+    bool in_altscreen = false;
 
     // 0 read, 1 write
     int signal_pipe[2];
@@ -234,7 +266,6 @@ void init(TUI& tui) {
         });
     }
 
-    tui.input_running = true;
     let input_function = [&tui]() {
         // NOTE(Ferenc):
         // Maybe dup2 to have a copy of the
@@ -279,7 +310,7 @@ void init(TUI& tui) {
                     } break;
                     case 1: {
                         key = Key::Ascii;
-                        let is_named = (int)Key::Null <= ch[0] && ch[0] <= (int)Key::Space;
+                        let is_named = (int)Key::Null <= ch[0] && ch[0] <= (int)Key::UnitSeparator;
                         if (is_named) key = Key{ch[0]};
                         if (ch[0] == (int)Key::Del) key = Key::Del;
                     } break;
@@ -331,9 +362,6 @@ void init(TUI& tui) {
                         } break;
                     }
                 }
-                std::cout << (int)ch[0] << " " << (int)ch[1] << " " << (int)ch[2] << " "
-                          << (int)ch[3] << " " << std::endl;
-
                 UTF8Char utf8_char;
                 set(utf8_char, ch);
 
@@ -403,7 +431,23 @@ void unset_termios_flags(TUI& tui) {
 void print_canvas(TUI& tui, Canvas& canvas) {
     for (usize y = 0; y < canvas.height; y++) {
         for (usize x = 0; x < canvas.width; x++) {
-            std::cout << canvas[y][x].utf8_char;
+            let pixel = canvas[y][x];
+
+            if (pixel.bold) std::cout << "\033[1m";
+            if (pixel.dim) std::cout << "\033[2m";
+            if (pixel.italic) std::cout << "\033[3m";
+            if (pixel.underline) std::cout << "\033[4m";
+            if (pixel.blinking) std::cout << "\033[5m";
+            if (pixel.inverse) std::cout << "\033[7m";
+            if (pixel.hidden) std::cout << "\033[8m";
+            if (pixel.strike_trough) std::cout << "\033[9m";
+
+            if (pixel.foreground != Color::None)
+                std::cout << "\033[" << (uint32)pixel.foreground << "m";
+            if (pixel.background != Color::None)
+                std::cout << "\033[" << (uint32)pixel.background + 10 << "m";
+
+            std::cout << pixel.utf8_char << "\033[0m";
         }
         std::cout << std::endl;
     }
@@ -426,12 +470,33 @@ void println_string(TUI& tui, String& string) {
 void clear_screen(TUI& tui) {
     // TODO(Ferenc): Make it so it clears only the characters printed
 
+    if (tui.in_altscreen) {
+        std::cout << "\033[2L" << std::flush;
+        std::cout << "\033[H" << std::flush;
+        return;
+    }
+
+    static let clear_line = []() { std::cout << "\033[2K"; };
+    static let move_up = []() { std::cout << "\033[F"; };
+
     for (usize i = 0; i < tui.nr_lines_printed; i++) {
-        std::cout << "\33[2K\033[A\r";
+        move_up();
+        clear_line();
     }
     std::cout << std::flush;
 
     tui.nr_lines_printed = 0;
+}
+
+void go_alt_screen(TUI& tui) {
+    tui.in_altscreen = true;
+    std::cout << "\033[?1049h" << std::flush;
+    std::cout << "\033[H" << std::flush;
+}
+
+void leave_alt_screen(TUI& tui) {
+    tui.in_altscreen = false;
+    std::cout << "\033[?1049l" << std::flush;
 }
 
 /*

@@ -7,6 +7,7 @@
 #include "Intrinsics.hpp"
 #include "Memory.hpp"
 #include "Pair.hpp"
+#include "Queue.hpp"
 
 /*
  * Basic dynamic list
@@ -109,6 +110,13 @@ T& pop(List<T>& list) {
     // a refactor is needed
     list.size--;
     return list.ptr[list.size];
+}
+
+template <class T>
+Errorable<T*> pop_safe(List<T>& list) {
+    if (empty(list)) return {CoreError::OutOfRange};
+    list.size--;
+    return {CoreError::Correct, &list.ptr[list.size]};
 }
 
 /*

@@ -262,6 +262,14 @@ void add(StringBuilder& builder, char chr) {
     add(builder.list, chr);
 }
 
+void add(StringBuilder& builder, UTF8Char utf8_char) {
+    let size = len_of_utf8_from_first_byte(utf8_char.utf8_chr[0]);
+    reserve(builder.list, builder.list.size + size);
+    for (usize i = 0; i < size; i++) {
+        add(builder.list, utf8_char.utf8_chr[i]);
+    }
+}
+
 void add(StringBuilder& builder, const char* chr) {
     let size = strlen(chr);
     reserve(builder.list, builder.list.size + size);
