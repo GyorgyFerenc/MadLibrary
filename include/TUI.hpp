@@ -4,15 +4,9 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <termios.h>
-#include <unistd.h>
 
-#include <algorithm>
 #include <atomic>
-#include <cmath>
-#include <condition_variable>
 #include <csignal>
-#include <exception>
-#include <fstream>
 #include <thread>
 
 #include "Core.hpp"
@@ -119,12 +113,64 @@ Error draw(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
     return CoreError::Correct;
 }
 
+// TODO(Ferenc): add all
+enum class Key {
+
+    Null = 0,
+    StartOfHeading,
+    StartOfText,
+    EndOfText,
+    EndOfTransmition,
+    Enquiry,
+    Acknowledge,
+    Bell,
+    Backspace,
+    Tab,  // horizontal tab
+    LineFeed,
+    VerticalTab,
+    FormFeed,
+    CarriageReturn,
+    ShiftOut,
+    ShiftIn,
+    DataLinkEscape,
+    DeviceControl1,
+    DeviceControl2,
+    DeviceControl3,
+    DeviceControl4,
+    NegativeAcknowledge,
+    SynchronousIdle,
+    EndOfTransBlock,
+    Cancel,
+    EndOfMedium,
+    Substitute,
+    Escape,
+    FileSeparator,
+    GroupSeparator,
+    RecordSeparator,
+    UnitSeparator,
+    Space,
+
+    Ascii,
+    UTF8,
+
+    Up,
+    Down,
+    Right,
+    Left,
+
+    NewLine = LineFeed,
+    Enter = LineFeed,  // Aliasing to enter
+    NewPage = FormFeed,
+
+};
+
 struct Event {
     enum class Type {
         Resize,
         KeyPress,
     } type;
 
+    Key      key;
     UTF8Char utf8_char;
 };
 
@@ -132,11 +178,9 @@ struct TUI {
     usize              nr_lines_printed = 0;
     SharedQueue<Event> event_queue;
     std::thread        input_thread;
-    std::atomic_bool   input_running; /* This creates a kinda busy waiting
-                                         maybe dup2 stdin and close it
+    std::atomic_bool   input_running; /* NOTE(Ferenc): This creates a kinda busy
+                                         waiting maybe dup2 stdin and close it
                                          to stop input thread */
-
-    Context context;
 
     // 0 read, 1 write
     int signal_pipe[2];
@@ -150,9 +194,7 @@ TUI* tui_ptr;
 
 void set_termios_flags(TUI& tui);
 
-void init(TUI& tui, Context context) {
-    tui.context = context;
-
+void init(TUI& tui) {
     set_termios_flags(tui);
 
     // hide cursor
@@ -210,18 +252,30 @@ void init(TUI& tui, Context context) {
                 // TODO(Ferenc): Add ANSI Keys like up_arrow etc.
 
                 char ch[4];
+                let  key = Key::Ascii;
+
                 read(std_in, &ch[0], 1);
                 let nr_of_octets = len_of_utf8_from_first_byte(ch[0]);
 
                 switch (nr_of_octets) {
+                    case 1: {
+                        let is_named = (uint8)Key::Null <= ch[0] && ch[0] <= (uint8)Key::Space;
+                        if (!is_named) {
+                            break;
+                        }
+                        key = Key{ch[0]};
+                    } break;
                     case 2: {
+                        key = Key::UTF8;
                         read(std_in, &ch[1], 1);
                     } break;
                     case 3: {
+                        key = Key::UTF8;
                         read(std_in, &ch[1], 1);
                         read(std_in, &ch[2], 1);
                     } break;
                     case 4: {
+                        key = Key::UTF8;
                         read(std_in, &ch[1], 1);
                         read(std_in, &ch[2], 1);
                         read(std_in, &ch[3], 1);
@@ -233,10 +287,10 @@ void init(TUI& tui, Context context) {
 
                 let event = Event{
                     .type = Event::Type::KeyPress,
+                    .key = key,
                     .utf8_char = utf8_char,
                 };
 
-                tui.context.logger->log("KeyPress event fired\n");
                 enque(tui.event_queue, event);
             }
             if (FD_ISSET(pipe_read_end, &copy_set)) {
@@ -250,7 +304,6 @@ void init(TUI& tui, Context context) {
                     .type = Event::Type::Resize,
                 };
 
-                tui.context.logger->log("Resize event fired\n");
                 enque(tui.event_queue, event);
             }
         }
@@ -320,7 +373,6 @@ void println_string(TUI& tui, String& string) {
 
 void clear_screen(TUI& tui) {
     // TODO(Ferenc): Make it so it clears only the characters printed
-    // std::cout << "\033[H\033[2J\033[3J" << std::flush;
 
     for (usize i = 0; i < tui.nr_lines_printed; i++) {
         std::cout << "\33[2K\033[A\r";
