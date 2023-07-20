@@ -6,7 +6,9 @@
 #include <termios.h>
 
 #include <atomic>
+#include <cerrno>
 #include <csignal>
+#include <memory>
 #include <ostream>
 #include <thread>
 
@@ -17,7 +19,7 @@
 #include "Core/Queue.hpp"
 #include "Core/String.hpp"
 
-enum class Color {
+enum class Color : uint8 {
     None = 0,
     Black = 30,
     Red,
@@ -29,21 +31,96 @@ enum class Color {
     White,
 };
 
+// TODO(Ferenc): pack the bools
 struct Pixel {
-    bool bold = false;
-    bool dim = false;  // dim/faint
-    bool italic = false;
-    bool underline = false;
-    bool blinking = false;
-    bool inverse = false;
-    bool hidden = false;
-    bool strike_trough = false;
+    // bold | dim | italic | underline | blinking | inverse | hidden | strike_trough
+    uint8 tags = 0;
 
     Color foreground = Color::None;
     Color background = Color::None;
 
     UTF8Char utf8_char;
 };
+
+void set_bold(Pixel& pixel) {
+    pixel.tags |= 0b1 << 0;
+}
+void unset_bold(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 0);
+}
+bool is_bold(Pixel& pixel) {
+    return pixel.tags & (0b1 << 0);
+}
+
+void set_dim(Pixel& pixel) {
+    pixel.tags |= 0b1 << 1;
+}
+void unset_dim(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 1);
+}
+bool is_dim(Pixel& pixel) {
+    return pixel.tags & (0b1 << 1);
+}
+
+void set_italic(Pixel& pixel) {
+    pixel.tags |= 0b1 << 2;
+}
+void unset_italic(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 2);
+}
+bool is_italic(Pixel& pixel) {
+    return pixel.tags & (0b1 << 2);
+}
+
+void set_underline(Pixel& pixel) {
+    pixel.tags |= 0b1 << 3;
+}
+void unset_underline(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 3);
+}
+bool is_underline(Pixel& pixel) {
+    return pixel.tags & (0b1 << 3);
+}
+
+void set_blink(Pixel& pixel) {
+    pixel.tags |= 0b1 << 4;
+}
+void unset_blink(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 4);
+}
+bool is_blink(Pixel& pixel) {
+    return pixel.tags & (0b1 << 4);
+}
+
+void set_inverse(Pixel& pixel) {
+    pixel.tags |= 0b1 << 5;
+}
+void unset_inverse(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 5);
+}
+bool is_inverse(Pixel& pixel) {
+    return pixel.tags & (0b1 << 5);
+}
+
+void set_hidden(Pixel& pixel) {
+    pixel.tags |= 0b1 << 6;
+}
+void unset_hidden(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 6);
+}
+bool is_hidden(Pixel& pixel) {
+    return pixel.tags & (0b1 << 6);
+}
+
+void set_strikethrough(Pixel& pixel) {
+    pixel.tags |= 0b1 << 7;
+}
+void unset_strikethrough(Pixel& pixel) {
+    pixel.tags &= ~(0b1 << 7);
+}
+bool is_strikethrough(Pixel& pixel) {
+    return pixel.tags & (0b1 << 7);
+}
 
 void set(Pixel& pixel, UTF8Char utf8_char) {
     pixel.utf8_char = utf8_char;
@@ -63,35 +140,32 @@ struct Canvas {
     usize      height;
     Allocator* allocator;
 
-    static Canvas create(usize width, usize height, Context context) {
-        Canvas canvas;
-        canvas.width = width;
-        canvas.height = height;
-
-        canvas.allocator = context.allocator;
-        let try_matrix = canvas.allocator->allocate_array<Pixel*>(height);
-        canvas.matrix = unwrap(try_matrix);
-
-        for (usize i = 0; i < height; i++) {
-            let try_line = canvas.allocator->allocate_array<Pixel>(width);
-            canvas.matrix[i] = unwrap(try_line);
-
-            Pixel space;
-            set(space, ' ');
-            typed_memset(canvas.matrix[i], space, width);
-        }
-
-        return canvas;
-    }
-
-    static Canvas create(usize width, usize height) {
-        return create(width, height, default_context());
-    }
-
     Pixel* operator[](usize pos) {
         return matrix[pos];
     }
 };
+
+void init(Canvas& canvas, usize width, usize height, Context context) {
+    canvas.width = width;
+    canvas.height = height;
+
+    canvas.allocator = context.allocator;
+    let try_matrix = canvas.allocator->allocate_array<Pixel*>(height);
+    canvas.matrix = unwrap(try_matrix);
+
+    for (usize i = 0; i < height; i++) {
+        let try_line = canvas.allocator->allocate_array<Pixel>(width);
+        canvas.matrix[i] = unwrap(try_line);
+
+        Pixel space;
+        set(space, ' ');
+        typed_memset(canvas.matrix[i], space, width);
+    }
+}
+
+void init(Canvas& canvas, usize width, usize height) {
+    return init(canvas, width, height, default_context());
+}
 
 void destroy(Canvas& canvas) {
     for (usize i = 0; i < canvas.height; i++) {
@@ -132,7 +206,7 @@ void fill(Canvas& canvas, const char chr) {
     }
 }
 
-Error draw(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
+Error draw_canvas_into_canvas(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
     if (x + to_be_drawn.width > canvas.width) return CoreError::OutOfRange;
     if (y + to_be_drawn.height > canvas.height) return CoreError::OutOfRange;
 
@@ -433,14 +507,14 @@ void print_canvas(TUI& tui, Canvas& canvas) {
         for (usize x = 0; x < canvas.width; x++) {
             let pixel = canvas[y][x];
 
-            if (pixel.bold) std::cout << "\033[1m";
-            if (pixel.dim) std::cout << "\033[2m";
-            if (pixel.italic) std::cout << "\033[3m";
-            if (pixel.underline) std::cout << "\033[4m";
-            if (pixel.blinking) std::cout << "\033[5m";
-            if (pixel.inverse) std::cout << "\033[7m";
-            if (pixel.hidden) std::cout << "\033[8m";
-            if (pixel.strike_trough) std::cout << "\033[9m";
+            if (is_bold(pixel)) std::cout << "\033[1m";
+            if (is_dim(pixel)) std::cout << "\033[2m";
+            if (is_italic(pixel)) std::cout << "\033[3m";
+            if (is_underline(pixel)) std::cout << "\033[4m";
+            if (is_blink(pixel)) std::cout << "\033[5m";
+            if (is_inverse(pixel)) std::cout << "\033[7m";
+            if (is_hidden(pixel)) std::cout << "\033[8m";
+            if (is_strikethrough(pixel)) std::cout << "\033[9m";
 
             if (pixel.foreground != Color::None)
                 std::cout << "\033[" << (uint32)pixel.foreground << "m";

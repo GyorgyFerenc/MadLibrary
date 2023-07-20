@@ -161,7 +161,7 @@ struct StackAllocator : public Allocator {
         m_current = 0;
     }
 
-   private:
+    // private:
     byte  m_memory[max_size];
     usize m_current = 0;
 };

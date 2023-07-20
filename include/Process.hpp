@@ -43,7 +43,7 @@ struct Process {
         close(pipe_stdin[0]);
         close(pipe_stdout[1]);
 
-        return {Correct, proc};
+        return {CoreError::Correct, proc};
     }
 
     static Errorable<Process> open_no_capture(const char* cmdline) {
@@ -63,7 +63,7 @@ struct Process {
             exit(99);
         }
 
-        return {Correct, proc};
+        return {CoreError::Correct, proc};
     }
 
     static Errorable<Process> open(const char* cmdline) {
@@ -99,7 +99,7 @@ struct Process {
         close(pipe_stdin[0]);
         close(pipe_stdout[1]);
 
-        return {Correct, proc};
+        return {CoreError::Correct, proc};
     }
 
     void join() {
