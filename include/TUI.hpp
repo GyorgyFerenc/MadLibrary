@@ -12,6 +12,7 @@
 #include "Core.hpp"
 #include "Core/Format.hpp"
 #include "Core/Intrinsics.hpp"
+#include "Core/Memory.hpp"
 #include "Core/Queue.hpp"
 #include "Core/String.hpp"
 
@@ -113,9 +114,9 @@ Error draw(Canvas& canvas, usize x, usize y, Canvas& to_be_drawn) {
     return CoreError::Correct;
 }
 
-// TODO(Ferenc): add all
 enum class Key {
 
+    // --- Special Ascii characters ---
     Null = 0,
     StartOfHeading,
     StartOfText,
@@ -150,13 +151,26 @@ enum class Key {
     UnitSeparator,
     Space,
 
+    Del = 127,
+
+    // --- /Special Ascii characters ---
+
     Ascii,
     UTF8,
 
+    // --- Specific keys on the keyboard ---
     Up,
     Down,
     Right,
     Left,
+    Insert,
+    Delete,  // del key in keyboard
+    Home,
+    End,
+    PageUp,
+    PageDown,
+    BackTab,  // shift+tab
+    // --- /Specific keys on the keyboard ---
 
     NewLine = LineFeed,
     Enter = LineFeed,  // Aliasing to enter
@@ -252,35 +266,73 @@ void init(TUI& tui) {
                 // TODO(Ferenc): Add ANSI Keys like up_arrow etc.
 
                 char ch[4];
-                let  key = Key::Ascii;
+                typed_memset(ch, '\0', 4);
 
-                read(std_in, &ch[0], 1);
-                let nr_of_octets = len_of_utf8_from_first_byte(ch[0]);
+                let key = Key::Ascii;
 
-                switch (nr_of_octets) {
+                // Note(Ferenc): Maybe look into /dev/tty so you can hook into that
+                let retval = read(std_in, &ch[0], 4);
+                switch (retval) {
+                    case 0:
+                    case -1: {
+                        panic("Read error in thread");
+                    } break;
                     case 1: {
-                        let is_named = (uint8)Key::Null <= ch[0] && ch[0] <= (uint8)Key::Space;
-                        if (!is_named) {
-                            break;
-                        }
-                        key = Key{ch[0]};
+                        key = Key::Ascii;
+                        let is_named = (int)Key::Null <= ch[0] && ch[0] <= (int)Key::Space;
+                        if (is_named) key = Key{ch[0]};
+                        if (ch[0] == (int)Key::Del) key = Key::Del;
                     } break;
                     case 2: {
                         key = Key::UTF8;
-                        read(std_in, &ch[1], 1);
                     } break;
                     case 3: {
                         key = Key::UTF8;
-                        read(std_in, &ch[1], 1);
-                        read(std_in, &ch[2], 1);
                     } break;
                     case 4: {
                         key = Key::UTF8;
-                        read(std_in, &ch[1], 1);
-                        read(std_in, &ch[2], 1);
-                        read(std_in, &ch[3], 1);
                     } break;
                 }
+
+                if (ch[0] == '\x1b' && ch[1] == '[') {
+                    switch (ch[2]) {
+                        case 'A': {
+                            key = Key::Up;
+                        } break;
+                        case 'B': {
+                            key = Key::Down;
+                        } break;
+                        case 'C': {
+                            key = Key::Right;
+                        } break;
+                        case 'D': {
+                            key = Key::Left;
+                        } break;
+                        case 'F': {
+                            key = Key::End;
+                        } break;
+                        case 'H': {
+                            key = Key::Home;
+                        } break;
+                        case 'Z': {
+                            key = Key::BackTab;
+                        } break;
+                        case '2': {
+                            if (ch[3] == '~') key = Key::Insert;
+                        } break;
+                        case '3': {
+                            if (ch[3] == '~') key = Key::Delete;
+                        } break;
+                        case '5': {
+                            if (ch[3] == '~') key = Key::PageUp;
+                        } break;
+                        case '6': {
+                            if (ch[3] == '~') key = Key::PageDown;
+                        } break;
+                    }
+                }
+                std::cout << (int)ch[0] << " " << (int)ch[1] << " " << (int)ch[2] << " "
+                          << (int)ch[3] << " " << std::endl;
 
                 UTF8Char utf8_char;
                 set(utf8_char, ch);
