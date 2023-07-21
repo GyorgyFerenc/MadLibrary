@@ -27,3 +27,13 @@ inline void for_each(Iter iter, Func func) {
         a = next(iter);
     }
 }
+
+/*
+ * puts el in [low, high]
+ */
+template <class T>
+T clamp(T el, T low, T high) {
+    if (el <= low) return low;
+    if (el >= high) return high;
+    return el;
+}

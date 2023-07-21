@@ -243,6 +243,7 @@ struct PageAllocator : public Allocator {
 
     void free_all() {
         destroy_page(m_head);
+        m_head = nullptr;
     }
 
     struct Page {

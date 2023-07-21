@@ -284,6 +284,10 @@ void add(StringBuilder& builder, std::string str) {
     for (usize i = 0; i < size; i++) add(builder.list, str[i]);
 }
 
+void clear(StringBuilder& builder) {
+    clear(builder.list);
+}
+
 String build(StringBuilder& builder) {
     add(builder.list, '\0');
     return String{

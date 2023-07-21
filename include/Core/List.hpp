@@ -93,6 +93,34 @@ void add(List<T>& list, T element) {
     list.size++;
 }
 
+template <class T>
+Error insert(List<T>& list, usize pos, T element) {
+    if (list.size <= pos) return CoreError::OutOfRange;
+    list.size++;
+    if (list.size == list.capacity) reserve(list, 2 * list.capacity);
+
+    for (usize i = list.size - 1; i > pos; i--) {
+        list[i] = list[i - 1];
+    }
+
+    list[pos] = element;
+
+    return CoreError::Correct;
+}
+
+template <class T>
+Errorable<T> remove(List<T>& list, usize pos) {
+    if (list.size <= pos) return {CoreError::OutOfRange};
+
+    let element = list.ptr[pos];
+    for (usize i = pos; i < list.size - 1; i++) {
+        list.ptr[i] = list.ptr[i + 1];
+    }
+    list.size--;
+
+    return {CoreError::Correct, element};
+}
+
 /*
  * Does not do boundary checks
  */
@@ -126,6 +154,11 @@ template <class T>
 Errorable<T*> at(List<T>& list, usize pos) {
     if (pos >= list.size) return {CoreError::OutOfRange};
     return {CoreError::Correct, &list.ptr[pos]};
+}
+
+template <class T>
+void clear(List<T>& list) {
+    list.size = 0;
 }
 
 template <class T>

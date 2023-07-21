@@ -2,10 +2,15 @@
 
 #include "Memory.hpp"
 
+struct Logger {
+    virtual void log(const char* c_str) = 0;
+};
+
 // --- Context ---
 struct Context {
     Allocator* allocator;
     Allocator* temp_allocator;
+    Logger*    logger;
 };
 
 inline Context default_context() {

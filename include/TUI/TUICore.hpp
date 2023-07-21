@@ -140,7 +140,7 @@ struct Canvas {
     }
 };
 
-void init(Canvas& canvas, usize width, usize height, Context context) {
+void init(Canvas& canvas, usize height, usize width, Context context) {
     canvas.width = width;
     canvas.height = height;
 
@@ -169,25 +169,25 @@ void destroy(Canvas& canvas) {
     canvas.allocator->free_array(canvas.matrix, canvas.height);
 }
 
-Error set(Canvas& canvas, usize x, usize y, UTF8Char utf8_chr) {
+Error set(Canvas& canvas, usize y, usize x, UTF8Char utf8_chr) {
     if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
     set(canvas[y][x], utf8_chr);
     return CoreError::Correct;
 }
 
-Error set(Canvas& canvas, usize x, usize y, const char* utf8_chr) {
+Error set(Canvas& canvas, usize y, usize x, const char* utf8_chr) {
     if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
     set(canvas[y][x], utf8_chr);
     return CoreError::Correct;
 }
 
-Error set(Canvas& canvas, usize x, usize y, const char chr) {
+Error set(Canvas& canvas, usize y, usize x, const char chr) {
     if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
     set(canvas[y][x], chr);
     return CoreError::Correct;
 }
 
-Error set(Canvas& canvas, usize x, usize y, Pixel pixel) {
+Error set(Canvas& canvas, usize y, usize x, Pixel pixel) {
     if (y >= canvas.height || x >= canvas.width) return CoreError::OutOfRange;
     canvas[y][x] = pixel;
     return CoreError::Correct;
@@ -539,11 +539,11 @@ void println_string(TUI& tui, String& string) {
 void clear_screen(TUI& tui) {
     // TODO(Ferenc): Make it so it clears only the characters printed
 
-    if (tui.in_altscreen) {
-        std::cout << "\033[2L" << std::flush;
-        std::cout << "\033[H" << std::flush;
-        return;
-    }
+    // if (tui.in_altscreen) {
+    //     std::cout << "\033[2L" << std::flush;
+    //     std::cout << "\033[H" << std::flush;
+    //     return;
+    // }
 
     static let clear_line = []() { std::cout << "\033[2K"; };
     static let move_up = []() { std::cout << "\033[F"; };
@@ -569,10 +569,10 @@ void leave_alt_screen(TUI& tui) {
 }
 
 /*
- * return collumn, row
+ * return row, collumn
  */
 Pair<usize, usize> get_size(TUI& tui) {
-    return {tui.size.ws_col, tui.size.ws_row};
+    return {tui.size.ws_row, tui.size.ws_col};
 }
 
 namespace TUIError {
