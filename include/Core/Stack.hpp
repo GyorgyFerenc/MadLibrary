@@ -2,6 +2,7 @@
 
 #include "Context.hpp"
 #include "Intrinsics.hpp"
+#include "Memory.hpp"
 /*
  * It uses a linked list to implement the stack
  * if you need a list based implementation just use List
@@ -15,33 +16,28 @@ struct Stack {
 
     Node*      head = nullptr;
     usize      size = 0;
-    Allocator* allocator;
-
-    static Stack<T> create(Context context) {
-        Stack<T> stack;
-        stack.allocator = context.allocator;
-
-        return stack;
-    }
-
-    static Stack<T> create() {
-        return create(default_context());
-    }
+    IAllocator allocator;
 };
+
+template <class T>
+static Stack<T> init(Stack<T>& stack, Context context) {
+    stack.allocator = context.allocator;
+    return stack;
+}
 
 template <class T>
 void destroy(Stack<T>& stack) {
     let ptr = stack.head;
     while (ptr != nullptr) {
         let tmp = ptr->next;
-        stack.allocator->template free(ptr);
+        free(stack.allocator, ptr);
         ptr = tmp;
     }
 }
 
 template <class T>
 void push(Stack<T>& stack, T element) {
-    let try_node = stack.allocator->template allocate<typename Stack<T>::Node>();
+    let try_node = allocate<typename Stack<T>::Node>(stack.allocator);
     let node = unwrap(try_node, "stack push");
     node->elem = element;
     node->next = stack.head;
@@ -66,11 +62,6 @@ Stack<T> clone(Stack<T>& stack, Context context) {
     Private::clone_aux(stack.head, new_stack);
 
     return new_stack;
-}
-
-template <class T>
-Stack<T> clone(Stack<T>& stack) {
-    return clone(stack, Context{.allocator = stack.allocator});
 }
 
 /*

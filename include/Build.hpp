@@ -150,17 +150,10 @@ void self_rebuild(std::string source, std::string output) {
 
     println("[NOTE] Run new build");
 
-    let p = Process::open_no_capture(cmd.c_str()).unwrap();
+    let try_p = Process::open_no_capture(cmd.c_str());
+    let p = unwrap(try_p);
     p.join();
     p.destroy();
 
     exit(0);
 }
-
-#define replace_me(name)
-
-// void replace_me_in_file(std::string file, std::string name, std::string code) {
-//     std::ifstream     in{file};
-//     std::stringstream buffer;
-//     buffer << source_in.rdbuf();
-// }

@@ -7,8 +7,10 @@
 
 #include <atomic>
 #include <cerrno>
+#include <condition_variable>
 #include <csignal>
 #include <memory>
+#include <mutex>
 #include <ostream>
 #include <thread>
 
@@ -26,7 +28,6 @@ enum class Color : uint8 {
     White,
 };
 
-// TODO(Ferenc): pack the bools
 struct Pixel {
     // bold | dim | italic | underline | blinking | inverse | hidden | strike_trough
     uint8 tags = 0;
@@ -133,7 +134,7 @@ struct Canvas {
     Pixel**    matrix;
     usize      width;
     usize      height;
-    Allocator* allocator;
+    IAllocator allocator;
 
     Pixel* operator[](usize pos) {
         return matrix[pos];
@@ -145,11 +146,11 @@ void init(Canvas& canvas, usize height, usize width, Context context) {
     canvas.height = height;
 
     canvas.allocator = context.allocator;
-    let try_matrix = canvas.allocator->allocate_array<Pixel*>(height);
+    let try_matrix = allocate_array<Pixel*>(canvas.allocator, height);
     canvas.matrix = unwrap(try_matrix);
 
     for (usize i = 0; i < height; i++) {
-        let try_line = canvas.allocator->allocate_array<Pixel>(width);
+        let try_line = allocate_array<Pixel>(canvas.allocator, width);
         canvas.matrix[i] = unwrap(try_line);
 
         Pixel space;
@@ -158,15 +159,11 @@ void init(Canvas& canvas, usize height, usize width, Context context) {
     }
 }
 
-void init(Canvas& canvas, usize width, usize height) {
-    return init(canvas, width, height, default_context());
-}
-
 void destroy(Canvas& canvas) {
     for (usize i = 0; i < canvas.height; i++) {
-        canvas.allocator->free_array(canvas.matrix[i], canvas.width);
+        free_array(canvas.allocator, canvas.matrix[i], canvas.width);
     }
-    canvas.allocator->free_array(canvas.matrix, canvas.height);
+    free_array(canvas.allocator, canvas.matrix, canvas.height);
 }
 
 Error set(Canvas& canvas, usize y, usize x, UTF8Char utf8_chr) {
@@ -288,14 +285,19 @@ struct Event {
     UTF8Char utf8_char;
 };
 
+namespace TUI {
+
 struct TUI {
-    usize              nr_lines_printed = 0;
-    SharedQueue<Event> event_queue;
-    std::thread        input_thread;
-    std::atomic_bool   input_running = true; /* NOTE(Ferenc): This creates a kinda busy
-                                                 waiting maybe dup2 stdin and close it
-                                                 to stop input thread */
+    usize            nr_lines_printed = 0;
+    Queue<Event>     event_queue;
+    std::thread      input_thread;
+    std::atomic_bool input_running = true; /* NOTE(Ferenc): This creates a kinda busy
+                                               waiting maybe dup2 stdin and close it
+                                               to stop input thread */
     bool in_altscreen = false;
+
+    std::mutex              event_mutex;  // These to used for polling
+    std::condition_variable event_cond_var;
 
     // 0 read, 1 write
     int signal_pipe[2];
@@ -304,38 +306,31 @@ struct TUI {
     struct winsize size;
 };
 
-// TODO(Ferenc): This is a hack do it better
-TUI* tui_ptr;
+TUI tui;
 
-void set_termios_flags(TUI& tui);
+void set_termios_flags();
+void unset_termios_flags();
 
-void init(TUI& tui) {
-    set_termios_flags(tui);
+void init(Context context) {
+    set_termios_flags();
 
     // hide cursor
     std::cout << "\e[?25l" << std::flush;
 
-    init(tui.event_queue);
+    init(tui.event_queue, context);
 
     {  // set up resize handler
-       // TODO(Ferenc): clean this up
-       // this is experimental
-
         // window size
         ioctl(0, TIOCGWINSZ, &tui.size);
-
-        tui_ptr = &tui;
-
-        pipe(tui_ptr->signal_pipe);
-
+        pipe(tui.signal_pipe);
         std::signal(SIGWINCH, [](int sig) {
-            ioctl(0, TIOCGWINSZ, &tui_ptr->size);
+            ioctl(0, TIOCGWINSZ, &tui.size);
             bool t = true;
-            write(tui_ptr->signal_pipe[1], &t, 1);
+            write(tui.signal_pipe[1], &t, 1);
         });
     }
 
-    let input_function = [&tui]() {
+    let input_function = []() {
         // NOTE(Ferenc):
         // Maybe dup2 to have a copy of the
         // input fd so I can close that one
@@ -359,12 +354,9 @@ void init(TUI& tui) {
             timeval copy_time = time;
 
             int retval = select(max_fd + 1, &copy_set, NULL, NULL, &copy_time);
-            if (retval < 0) {
-                panic("Error at select");
-            }
-            if (FD_ISSET(std_in, &copy_set)) {
-                // TODO(Ferenc): Add ANSI Keys like up_arrow etc.
+            if (retval < 0) panic("Error at select");
 
+            if (FD_ISSET(std_in, &copy_set)) {
                 char ch[4];
                 typed_memset(ch, '\0', 4);
 
@@ -440,7 +432,11 @@ void init(TUI& tui) {
                     .utf8_char = utf8_char,
                 };
 
-                enque(tui.event_queue, event);
+                {
+                    std::unique_lock<std::mutex> locker(tui.event_mutex);
+                    enque(tui.event_queue, event);
+                }
+                tui.event_cond_var.notify_one();
             }
             if (FD_ISSET(pipe_read_end, &copy_set)) {
                 bool t;
@@ -453,17 +449,19 @@ void init(TUI& tui) {
                     .type = Event::Type::Resize,
                 };
 
-                enque(tui.event_queue, event);
+                {
+                    std::unique_lock<std::mutex> locker(tui.event_mutex);
+                    enque(tui.event_queue, event);
+                }
+                tui.event_cond_var.notify_one();
             }
         }
     };
     tui.input_thread = std::thread(input_function);
 }
 
-void unset_termios_flags(TUI& tui);
-
-void destroy(TUI& tui) {
-    unset_termios_flags(tui);
+void destroy() {
+    unset_termios_flags();
     // show cursor
     std::cout << "\e[?25h" << std::flush;
 
@@ -476,7 +474,7 @@ void destroy(TUI& tui) {
  * so the terminal can be behave
  * in the expected way
  */
-void set_termios_flags(TUI& tui) {
+void set_termios_flags() {
     if (tcgetattr(0, &tui.old_termios_state) < 0) perror("Tset_termios_flags: ermios tcgetattr()");
     struct termios new_state = tui.old_termios_state;
     new_state.c_lflag &= ~ICANON;
@@ -492,12 +490,12 @@ void set_termios_flags(TUI& tui) {
  * Reset the termios state
  * for the default one
  */
-void unset_termios_flags(TUI& tui) {
+void unset_termios_flags() {
     struct termios old = tui.old_termios_state;
     if (tcsetattr(0, TCSADRAIN, &old) < 0) perror("unset_termios_flags: Termios tcsetattr");
 }
 
-void print_canvas(TUI& tui, Canvas& canvas) {
+void print_canvas(Canvas& canvas) {
     for (usize y = 0; y < canvas.height; y++) {
         for (usize x = 0; x < canvas.width; x++) {
             let pixel = canvas[y][x];
@@ -510,7 +508,6 @@ void print_canvas(TUI& tui, Canvas& canvas) {
             if (is_inverse(pixel)) std::cout << "\033[7m";
             if (is_hidden(pixel)) std::cout << "\033[8m";
             if (is_strikethrough(pixel)) std::cout << "\033[9m";
-
             if (pixel.foreground != Color::None)
                 std::cout << "\033[" << (uint32)pixel.foreground << "m";
             if (pixel.background != Color::None)
@@ -523,28 +520,20 @@ void print_canvas(TUI& tui, Canvas& canvas) {
     tui.nr_lines_printed += canvas.height;
 }
 
-void print_string(TUI& tui, String& string) {
+void print_string(String& string) {
     std::cout << string << std::flush;
     for (usize i = 0; i < size(string); i++) {
         if (string[i] == '\n') tui.nr_lines_printed++;
     }
 }
 
-void println_string(TUI& tui, String& string) {
-    print_string(tui, string);
+void println_string(String& string) {
+    print_string(string);
     std::cout << std::endl;
     tui.nr_lines_printed++;
 }
 
-void clear_screen(TUI& tui) {
-    // TODO(Ferenc): Make it so it clears only the characters printed
-
-    // if (tui.in_altscreen) {
-    //     std::cout << "\033[2L" << std::flush;
-    //     std::cout << "\033[H" << std::flush;
-    //     return;
-    // }
-
+void clear_screen() {
     static let clear_line = []() { std::cout << "\033[2K"; };
     static let move_up = []() { std::cout << "\033[F"; };
 
@@ -557,13 +546,13 @@ void clear_screen(TUI& tui) {
     tui.nr_lines_printed = 0;
 }
 
-void go_alt_screen(TUI& tui) {
+void go_alt_screen() {
     tui.in_altscreen = true;
     std::cout << "\033[?1049h" << std::flush;
     std::cout << "\033[H" << std::flush;
 }
 
-void leave_alt_screen(TUI& tui) {
+void leave_alt_screen() {
     tui.in_altscreen = false;
     std::cout << "\033[?1049l" << std::flush;
 }
@@ -571,25 +560,23 @@ void leave_alt_screen(TUI& tui) {
 /*
  * return row, collumn
  */
-Pair<usize, usize> get_size(TUI& tui) {
+Pair<usize, usize> get_size() {
     return {tui.size.ws_row, tui.size.ws_col};
 }
 
-namespace TUIError {
 Error NoKeyPressed = declare_error();
-}
 
-Errorable<Event> poll_event(TUI& tui) {
+Errorable<Event> poll_event() {
     if (!empty(tui.event_queue)) return {CoreError::Correct, deque(tui.event_queue)};
-    return {TUIError::NoKeyPressed};
+    return {NoKeyPressed};
 }
 
-/*
- * Currently busy wait
- * TODO(Ferenc): Implement none busy wait
- */
-Event poll_event_wait(TUI& tui) {
-    while (true) {
-        if (!empty(tui.event_queue)) return deque(tui.event_queue);
-    }
+Event poll_event_wait() {
+    std::unique_lock<std::mutex> locker(tui.event_mutex);
+    tui.event_cond_var.wait(locker, [&]() { return !empty(tui.event_queue); });
+
+    if (empty(tui.event_queue)) panic("poll_event_wait: queue should not be empty");
+
+    return deque(tui.event_queue);
 }
+};  // namespace TUI

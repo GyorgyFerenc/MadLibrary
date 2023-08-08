@@ -132,29 +132,6 @@ std::ostream& operator<<(std::ostream& os, const UTF8Char& utf8_char) {
 struct String {
     Array<char> array;
 
-    inline static String create(usize size, Context context) {
-        String str;
-        str.array = Array<char>::create(size + 1, context);  // because of '\0'
-        str.array[size] = '\0';
-        return str;
-    }
-
-    inline static String create(usize size) {
-        return create(size, default_context());
-    }
-
-    static String from(const char* c_str, Context context) {
-        let size = strlen(c_str);
-        let str = String::create(size, context);
-        typed_memcpy(str.array.ptr, c_str, size);
-        str[size] = '\0';
-        return str;
-    }
-
-    static String from(const char* c_str) {
-        return from(c_str, default_context());
-    }
-
     char& operator[](usize pos) {
         return array[pos];
     }
@@ -163,6 +140,18 @@ struct String {
     }
 };
 
+void init(String& str, usize size, Context context) {
+    init(str.array, size + 1, context);
+    str.array[size] = '\0';
+}
+
+void init_from(String str, const char* c_str, Context context) {
+    let size = strlen(c_str);
+    init(str, size, context);
+    typed_memcpy(str.array.ptr, c_str, size);
+    str[size] = '\0';
+}
+
 void destroy(String& str) {
     destroy(str.array);
 }
@@ -170,12 +159,6 @@ void destroy(String& str) {
 String clone(String& str, Context context) {
     String new_str;
     new_str.array = clone(str.array, context);
-    return new_str;
-}
-
-String clone(String& str) {
-    String new_str;
-    new_str.array = clone(str.array);
     return new_str;
 }
 
@@ -211,7 +194,9 @@ std::ostream& operator<<(std::ostream& os, const String& string) {
 Array<UTF8Char> to_utf8_array(String& str, Context context) {
     usize nr_of_octets = size_utf8(str);
 
-    let   array = Array<UTF8Char>::create(nr_of_octets, context);
+    Array<UTF8Char> array;
+    init(array, nr_of_octets, context);
+
     usize array_i = 0;
     for (usize i = 0; i < size(str);) {
         let len = len_of_utf8_from_first_byte(str[i]);
@@ -241,21 +226,18 @@ StringIter iter(String& str) {
 
 struct StringBuilder {
     List<char> list;
-
-    static inline StringBuilder create(Context context) {
-        return {
-            .list = List<char>::create(context),
-        };
-    }
-    static inline StringBuilder create() {
-        return {
-            .list = List<char>::create(),
-        };
-    }
 };
+
+void init(StringBuilder& builder, Context context) {
+    init(builder.list, context);
+}
 
 void destroy(StringBuilder& builder) {
     destroy(builder.list);
+}
+
+void reserve(StringBuilder& builder, usize new_capacity) {
+    reserve(builder.list, new_capacity);
 }
 
 void add(StringBuilder& builder, char chr) {
@@ -288,9 +270,13 @@ void clear(StringBuilder& builder) {
     clear(builder.list);
 }
 
-String build(StringBuilder& builder) {
+String build(StringBuilder& builder, Context context) {
     add(builder.list, '\0');
     return String{
-        .array = to_array(builder.list),
+        .array = to_array(builder.list, context),
     };
+}
+
+void reverse(StringBuilder& builder) {
+    reverse(builder.list);
 }

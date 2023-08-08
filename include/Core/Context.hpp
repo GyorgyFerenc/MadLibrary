@@ -1,28 +1,22 @@
 #pragma once
 
+#include "Logger.hpp"
 #include "Memory.hpp"
 
-struct Logger {
-    virtual void log(const char* c_str) = 0;
-};
+// TODO(Ferenc): Add logger to context
 
 // --- Context ---
 struct Context {
-    Allocator* allocator;
-    Allocator* temp_allocator;
-    Logger*    logger;
+    IAllocator allocator;
+    ILogger    logger;
 };
 
 inline Context default_context() {
-    // Ring allocator with 2 MiB of data
-    static TemporaryAllocator<2 * MiB> temporary_allocator;
-
     // Basic allocator, allocates on heap
     static BasicAllocator allocator;
 
     static let context = Context{
-        .allocator = &allocator,
-        .temp_allocator = &temporary_allocator,
+        .allocator = to_interface(allocator),
     };
 
     return context;

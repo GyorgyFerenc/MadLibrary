@@ -7,7 +7,6 @@
 #include "Intrinsics.hpp"
 #include "Memory.hpp"
 #include "Pair.hpp"
-#include "Queue.hpp"
 
 /*
  * Basic dynamic list
@@ -17,22 +16,7 @@ struct List {
     T*         ptr;
     usize      size;
     usize      capacity;
-    Allocator* allocator;
-
-    static List<T> create(Context context) {
-        List<T> list;
-        list.allocator = context.allocator;
-        list.size = 0;
-        list.capacity = 1;
-        let try_ptr = list.allocator->template allocate_array<T>(1);
-        list.ptr = unwrap(try_ptr);
-
-        return list;
-    }
-
-    static List<T> create() {
-        return List<T>::create(default_context());
-    }
+    IAllocator allocator;
 
     /*
      * This does not do boundary checking
@@ -44,8 +28,17 @@ struct List {
 };
 
 template <class T>
+void init(List<T>& list, Context context) {
+    list.allocator = context.allocator;
+    list.size = 0;
+    list.capacity = 1;
+    let try_ptr = allocate_array<T>(list.allocator, 1);
+    list.ptr = unwrap(try_ptr);
+}
+
+template <class T>
 void destroy(List<T>& list) {
-    list.allocator->template free_array(list.ptr, list.capacity);
+    free_array(list.allocator, list.ptr, list.capacity);
 }
 
 template <class T>
@@ -53,18 +46,13 @@ List<T> clone(List<T> list, Context context) {
     List<T> new_list;
 
     new_list.allocator = context.allocator;
-    let try_ptr = new_list.allocator->template allocate_array<T>(list.capacity);
+    let try_ptr = allocate_array<T>(new_list.allocator, list.capacity);
     new_list.ptr = unwrap(try_ptr);
     typed_memcpy(new_list.ptr, list.ptr, list.size);
 
     new_list.size = list.size;
     new_list.capacity = list.capacity;
     return new_list;
-}
-
-template <class T>
-List<T> clone(List<T> list) {
-    return clone(list, Context{.allocator = list.allocator});
 }
 
 /*
@@ -75,10 +63,10 @@ template <class T>
 void reserve(List<T>& list, usize new_capacity) {
     if (new_capacity <= list.capacity) return;
 
-    let try_ptr = list.allocator->template allocate_array<T>(new_capacity);
+    let try_ptr = allocate_array<T>(list.allocator, new_capacity);
     let ptr = unwrap(try_ptr, "upsize");
     typed_memcpy(ptr, list.ptr, list.size);
-    list.allocator->template free_array(list.ptr, list.capacity);
+    free_array(list.allocator, list.ptr, list.capacity);
     list.ptr = ptr;
     list.capacity = new_capacity;
 }
@@ -167,6 +155,27 @@ inline bool empty(List<T>& list) {
 }
 
 template <class T>
+Array<T> to_array(List<T>& list, Context context) {
+    Array<T> array;
+    init(array, list.size, context);
+    typed_memcpy(array.ptr, list.ptr, list.size);
+    array.size = list.size;
+    return array;
+}
+
+/*
+ * Reverses the list inplace
+ */
+template <class T>
+void reverse(List<T>& list) {
+    for (usize i = 0; i < list.size / 2; i++) {
+        T temp = list[i];
+        list[i] = list[list.size - i - 1];
+        list[list.size - i - 1] = temp;
+    }
+}
+
+template <class T>
 struct ListIter {
     List<T>* list;
     usize    current = 0;
@@ -181,17 +190,4 @@ Pair<bool, T*> next(ListIter<T>& iter) {
 template <class T>
 inline ListIter<T> iter(List<T>& list) {
     return ListIter<T>{&list};
-}
-
-template <class T>
-Array<T> to_array(List<T>& list, Context context) {
-    let array = Array<T>::create(list.size, context);
-    typed_memcpy(array.ptr, list.ptr, list.size);
-    array.size = list.size;
-    return array;
-}
-
-template <class T>
-Array<T> to_array(List<T>& list) {
-    return to_array(list, Context{.allocator = list.allocator});
 }

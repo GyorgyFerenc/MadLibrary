@@ -5,8 +5,7 @@
 #include "Intrinsics.hpp"
 #include "Memory.hpp"
 
-// TODO(Ferenc): Implement it
-// rewrite it using list maybe?
+// TODO(Ferenc): Rewrite it using list maybe?
 
 /*
  * Current implementation uses a linked list
@@ -23,33 +22,30 @@ struct Queue {
 
     usize size = 0;
 
-    Allocator*      allocator;
-    static Queue<T> create(Context context) {
-        Queue<T> q;
-        q.head = nullptr;
-        q.tail = nullptr;
-        q.size = 0;
-        q.allocator = context.allocator;
-        return q;
-    }
-    static Queue<T> create() {
-        return create(default_context());
-    }
+    IAllocator allocator;
 };
+
+template <class T>
+void init(Queue<T>& queue, Context context) {
+    queue.head = nullptr;
+    queue.tail = nullptr;
+    queue.size = 0;
+    queue.allocator = context.allocator;
+}
 
 template <class T>
 void destroy(Queue<T>& queue) {
     typename Queue<T>::Node* ptr = queue.head;
     while (ptr != nullptr) {
         let tmp = ptr->next;
-        queue.allocator->template free(ptr);
+        free(queue.allocator, ptr);
         ptr = tmp;
     }
 }
 
 template <class T>
 void enque(Queue<T>& queue, T element) {
-    let try_node = queue.allocator->template allocate<typename Queue<T>::Node>();
+    let try_node = allocate<typename Queue<T>::Node>(queue.allocator);
     let node = unwrap(try_node);
     node->next = nullptr;
     node->elem = element;
@@ -73,7 +69,7 @@ T deque(Queue<T>& queue) {
 
     queue.head = queue.head->next;
     if (tmp == queue.tail) queue.tail = nullptr;
-    queue.allocator->template free(tmp);
+    free(queue.allocator, tmp);
 
     return elem;
 }
@@ -97,11 +93,6 @@ struct SharedQueue {
 template <class T>
 inline void init(SharedQueue<T>& shared_queue, Context context) {
     shared_queue.queue = Queue<T>::create(context);
-}
-
-template <class T>
-inline void init(SharedQueue<T>& shared_queue) {
-    init(shared_queue, default_context());
 }
 
 template <class T>

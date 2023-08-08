@@ -12,21 +12,7 @@ template <class T>
 struct Array {
     usize      size = 0;
     T*         ptr;
-    Allocator* allocator;
-
-    inline static Array<T> create(usize size, Context context) {
-        Array<T> array;
-        array.size = size;
-        array.allocator = context.allocator;
-        let try_ptr = context.allocator->allocate_array<T>(size);
-        array.ptr = unwrap(try_ptr);
-
-        return array;
-    }
-
-    inline static Array<T> create(usize size) {
-        return create(size, default_context());
-    }
+    IAllocator allocator;
 
     /*
      * This does not do boundary checking
@@ -42,8 +28,16 @@ struct Array {
 };
 
 template <class T>
+void init(Array<T>& array, usize size, Context context) {
+    array.size = size;
+    array.allocator = context.allocator;
+    let try_ptr = allocate_array<T>(context.allocator, size);
+    array.ptr = unwrap(try_ptr);
+}
+
+template <class T>
 void destroy(Array<T>& array) {
-    array.allocator->template free_array(array.ptr, array.size);
+    free_array(array.allocator, array.ptr, array.size);
 }
 
 template <class T>
@@ -51,17 +45,12 @@ Array<T> clone(Array<T>& array, Context context) {
     Array<T> new_array;
 
     new_array.allocator = context.allocator;
-    let try_ptr = new_array.allocator->template allocate_array<T>(array.size);
+    let try_ptr = allocate_array<T>(new_array.allocator, array.size);
     new_array.ptr = unwrap(try_ptr);
     typed_memcpy(new_array.ptr, array.ptr, array.size);
 
     new_array.size = array.size;
     return new_array;
-}
-
-template <class T>
-Array<T> clone(Array<T>& array) {
-    return clone(array, Context{.allocator = array.allocator});
 }
 
 template <class T>
@@ -99,4 +88,3 @@ template <class T>
 inline ArrayIter<T> iter(Array<T>& array) {
     return ArrayIter<T>{&array};
 }
-// template <class T>
