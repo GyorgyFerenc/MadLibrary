@@ -146,12 +146,12 @@ void init(Canvas& canvas, usize height, usize width, Context context) {
     canvas.height = height;
 
     canvas.allocator = context.allocator;
-    let try_matrix = allocate_array<Pixel*>(canvas.allocator, height);
-    canvas.matrix = unwrap(try_matrix);
+    let try_matrix = IAllocator_::allocate_array<Pixel*>(canvas.allocator, height);
+    canvas.matrix = Errorable_::unwrap(try_matrix);
 
     for (usize i = 0; i < height; i++) {
-        let try_line = allocate_array<Pixel>(canvas.allocator, width);
-        canvas.matrix[i] = unwrap(try_line);
+        let try_line = IAllocator_::allocate_array<Pixel>(canvas.allocator, width);
+        canvas.matrix[i] = Errorable_::unwrap(try_line);
 
         Pixel space;
         set(space, ' ');
@@ -161,9 +161,9 @@ void init(Canvas& canvas, usize height, usize width, Context context) {
 
 void destroy(Canvas& canvas) {
     for (usize i = 0; i < canvas.height; i++) {
-        free_array(canvas.allocator, canvas.matrix[i], canvas.width);
+        IAllocator_::free_array(canvas.allocator, canvas.matrix[i], canvas.width);
     }
-    free_array(canvas.allocator, canvas.matrix, canvas.height);
+    IAllocator_::free_array(canvas.allocator, canvas.matrix, canvas.height);
 }
 
 Error set(Canvas& canvas, usize y, usize x, UTF8Char utf8_chr) {

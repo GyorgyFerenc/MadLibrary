@@ -33,7 +33,8 @@ The version format is V1.2.3 where 1 is the __major__ version, 2 is the __minor_
 
 ## License
 
-The curent version (V0.x.x) is licensed under the Creative Commons Attribution 4.0 International License. To view a copy of this license, visit [this link](https://creativecommons.org/licenses/by/4.0/.), here is the [legal code](https://creativecommons.org/licenses/by/4.0/legalcode).
+The curent version (V0.x.x) is licensed under the Creative Commons Attribution 4.0 International License. 
+To view a copy of this license, visit [this link](https://creativecommons.org/licenses/by/4.0/.), here is the [legal code](https://creativecommons.org/licenses/by/4.0/legalcode).
 
 ## Developer documentation
 

@@ -27,26 +27,34 @@ struct Array {
     }
 };
 
+namespace Array_ {
 template <class T>
-void init(Array<T>& array, usize size, Context context) {
-    array.size = size;
-    array.allocator = context.allocator;
-    let try_ptr = allocate_array<T>(context.allocator, size);
-    array.ptr = unwrap(try_ptr);
+void init(Array<T>* array, usize size, Context context) {
+    array->size = size;
+    array->allocator = context.allocator;
+    let try_ptr = IAllocator_::allocate_array<T>(context.allocator, size);
+    array->ptr = Errorable_::unwrap(try_ptr);
 }
 
 template <class T>
-void destroy(Array<T>& array) {
-    free_array(array.allocator, array.ptr, array.size);
+Array<T> create(usize size, Context context) {
+    Array<T> array;
+    init(&array, size, context);
+    return array;
 }
 
 template <class T>
-Array<T> clone(Array<T>& array, Context context) {
+void destroy(Array<T>* array) {
+    IAllocator_::free_array(array->allocator, array->ptr, array->size);
+}
+
+template <class T>
+Array<T> clone(Array<T> array, Context context) {
     Array<T> new_array;
 
     new_array.allocator = context.allocator;
-    let try_ptr = allocate_array<T>(new_array.allocator, array.size);
-    new_array.ptr = unwrap(try_ptr);
+    let try_ptr = IAllocator_::allocate_array<T>(new_array.allocator, array.size);
+    new_array.ptr = Errorable_::unwrap(try_ptr);
     typed_memcpy(new_array.ptr, array.ptr, array.size);
 
     new_array.size = array.size;
@@ -54,7 +62,7 @@ Array<T> clone(Array<T>& array, Context context) {
 }
 
 template <class T>
-usize size(const Array<T>& array) {
+usize size(Array<T> array) {
     return array.size;
 }
 
@@ -62,29 +70,38 @@ usize size(const Array<T>& array) {
  * It errors if the pos is out of range
  */
 template <class T>
-Errorable<T*> at(Array<T>& array, usize pos) {
+Errorable<T*> at(Array<T> array, usize pos) {
     if (pos >= array.size) return {CoreError::OutOfRange};
     return {CoreError::Correct, &array.ptr[pos]};
 }
 
 template <class T>
-inline bool empty(Array<T>& array) {
+inline bool empty(Array<T> array) {
     return array.size == 0;
 }
 
+}  // namespace Array_
 template <class T>
 struct ArrayIter {
     Array<T>* array;
     usize     current = 0;
 };
 
+namespace ArrayIter_ {
 template <class T>
-Pair<bool, T*> next(ArrayIter<T>& iter) {
-    if (iter.current == iter.array->size) return {false};
-    return {true, &(*iter.array)[iter.current++]};
+Pair<bool, T*> next(ArrayIter<T>* iter) {
+    if (iter->current == iter->array->size) return {false};
+    return {true, &(*iter->array)[iter->current++]};
 }
+}  // namespace ArrayIter_
 
+namespace Array_ {
+/*
+ * Iter needs the address as a reference to the array
+ * it iterates over
+ */
 template <class T>
-inline ArrayIter<T> iter(Array<T>& array) {
-    return ArrayIter<T>{&array};
+inline ArrayIter<T> iter(Array<T>* array) {
+    return ArrayIter<T>{array};
 }
+}  // namespace Array_

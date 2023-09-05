@@ -16,7 +16,7 @@ inline Context default_context() {
     static BasicAllocator allocator;
 
     static let context = Context{
-        .allocator = to_interface(allocator),
+        .allocator = BasicAllocator_::to_interface(&allocator),
     };
 
     return context;

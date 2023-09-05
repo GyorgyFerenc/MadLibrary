@@ -90,20 +90,59 @@ struct Errorable {
     T     value;
 };
 
+namespace Errorable_ {
 template <class T>
-inline T unwrap(Errorable<T>& errorable) {
+inline T unwrap(Errorable<T> errorable) {
     if (errorable.error == CoreError::Correct) return errorable.value;
-    panic("unwrap");
+    panic("Errorable_::unwrap()");
     UNREACHABLE;
 }
 
 template <class T>
-inline T unwrap(Errorable<T>& errorable, const char* msg) {
+inline T unwrap(Errorable<T> errorable, const char* msg) {
     if (errorable.error == CoreError::Correct) return errorable.value;
     panic(msg);
     UNREACHABLE;
 }
+}  // namespace Errorable_
 
+/*
+ * Returns the error if it is an error
+ */
 #define return_error(errorable) \
     if (errorable.error != CoreError::Correct) return {errorable.error};
 // --- /Error ---
+
+template <class T>
+struct Option {
+    bool some;
+    T    value;
+};
+
+namespace Option_ {
+
+template <class T>
+inline Option<T> some(T value) {
+    return {true, value};
+}
+
+template <class T>
+inline Option<T> none() {
+    return {false};
+}
+
+template <class T>
+inline T unwrap(Option<T> option) {
+    if (option.error == CoreError::Correct) return option.value;
+    panic("Option_::unwrap()");
+    UNREACHABLE;
+}
+
+template <class T>
+inline T unwrap(Option<T> option, const char* msg) {
+    if (option.error == CoreError::Correct) return option.value;
+    panic(msg);
+    UNREACHABLE;
+}
+
+}  // namespace Option_

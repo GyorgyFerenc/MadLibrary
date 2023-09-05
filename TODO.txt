@@ -1,0 +1,19 @@
+Option:
+    - [ ] Add more monadic functions
+Errorable:
+    - [ ] Add more monadic functions
+
+- [ ] Add logger
+- [ ] Rewrite Allocators to use only one function
+- [ ] Add resize for Allocators
+- [ ] Add HashMap
+- [ ] Add HashSet
+- [ ] Add format library
+    - [ ] add to_string functions
+- [ ] Implement ListQueue
+- [ ] Add better build api
+- [ ] String add better utf8 support
+- [ ] Add file library
+- [ ] Add networking
+- [ ] Add Multi threading
+    - [ ] Add synchronization

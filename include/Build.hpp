@@ -100,7 +100,7 @@ struct Target {
         println_format("[NOTE] Building %", m_output);
 
         let try_p = Process::open_no_capture(cmd.c_str());
-        let p = unwrap(try_p);
+        let p = Errorable_::unwrap(try_p);
 
         p.join();
         p.destroy();
@@ -151,7 +151,7 @@ void self_rebuild(std::string source, std::string output) {
     println("[NOTE] Run new build");
 
     let try_p = Process::open_no_capture(cmd.c_str());
-    let p = unwrap(try_p);
+    let p = Errorable_::unwrap(try_p);
     p.join();
     p.destroy();
 

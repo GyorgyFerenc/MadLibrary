@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstring>
+
 #include "Array.hpp"
 #include "Context.hpp"
-#include "Format.hpp"
+// #include "Format.hpp"
 #include "Intrinsics.hpp"
 #include "List.hpp"
 #include "Memory.hpp"
@@ -140,25 +142,38 @@ struct String {
     }
 };
 
-void init(String& str, usize size, Context context) {
-    init(str.array, size + 1, context);
-    str.array[size] = '\0';
+namespace String_ {
+void init(String* str, usize size, Context context) {
+    Array_::init(&str->array, size + 1, context);
+    str->array[size] = '\0';
 }
 
-void init_from(String str, const char* c_str, Context context) {
+String create(usize size, Context context) {
+    String str;
+    init(&str, size, context);
+    return str;
+}
+
+void init_from(String* str, const char* c_str, Context context) {
     let size = strlen(c_str);
     init(str, size, context);
-    typed_memcpy(str.array.ptr, c_str, size);
-    str[size] = '\0';
+    typed_memcpy(str->array.ptr, c_str, size);
+    str->array[size] = '\0';
 }
 
-void destroy(String& str) {
-    destroy(str.array);
+String from(const char* c_str, Context context) {
+    String str;
+    init_from(&str, c_str, context);
+    return str;
 }
 
-String clone(String& str, Context context) {
+void destroy(String* str) {
+    Array_::destroy(&str->array);
+}
+
+String clone(String str, Context context) {
     String new_str;
-    new_str.array = clone(str.array, context);
+    new_str.array = Array_::clone(str.array, context);
     return new_str;
 }
 
@@ -166,11 +181,11 @@ String clone(String& str, Context context) {
  * This gives back the byte size without the '\0'
  * Not the actual lenght if the string consists of utf8 characters
  */
-usize size(const String& str) {
-    return size(str.array) - 1;  // because of '\0'
+usize size(String str) {
+    return str.array.size - 1;  // because of '\0'
 }
 
-usize size_utf8(const String& str) {
+usize size_utf8(String str) {
     usize nr_of_octets = 0;
     for (usize i = 0; i < size(str);) {
         let len = len_of_utf8_from_first_byte(str[i]);
@@ -180,22 +195,14 @@ usize size_utf8(const String& str) {
     return nr_of_octets;
 }
 
-char* c_str(const String& str) {
+char* c_str(String str) {
     return str.array.ptr;
 }
 
-std::ostream& operator<<(std::ostream& os, const String& string) {
-    for (usize i = 0; i < size(string); i++) {
-        os << string[i];
-    }
-    return os;
-}
-
-Array<UTF8Char> to_utf8_array(String& str, Context context) {
+Array<UTF8Char> to_utf8_array(String str, Context context) {
     usize nr_of_octets = size_utf8(str);
 
-    Array<UTF8Char> array;
-    init(array, nr_of_octets, context);
+    let array = Array_::create<UTF8Char>(nr_of_octets, context);
 
     usize array_i = 0;
     for (usize i = 0; i < size(str);) {
@@ -212,71 +219,78 @@ Array<UTF8Char> to_utf8_array(String& str, Context context) {
     return array;
 }
 
-Array<UTF8Char> to_utf8_array(String& str) {
+Array<UTF8Char> to_utf8_array(String str) {
     return to_utf8_array(str,
                          Context{
                              .allocator = str.array.allocator,
                          });
 }
-
-using StringIter = ArrayIter<char>;
-StringIter iter(String& str) {
-    return iter(str.array);
-}
+}  // namespace String_
 
 struct StringBuilder {
     List<char> list;
 };
 
-void init(StringBuilder& builder, Context context) {
-    init(builder.list, context);
+namespace StringBuilder_ {
+void init(StringBuilder* builder, Context context) {
+    List_::init(&builder->list, context);
 }
 
-void destroy(StringBuilder& builder) {
-    destroy(builder.list);
+StringBuilder create(Context context) {
+    StringBuilder builder;
+    init(&builder, context);
+    return builder;
 }
 
-void reserve(StringBuilder& builder, usize new_capacity) {
-    reserve(builder.list, new_capacity);
+void destroy(StringBuilder* builder) {
+    List_::destroy(&builder->list);
 }
 
-void add(StringBuilder& builder, char chr) {
-    add(builder.list, chr);
+void reserve(StringBuilder* builder, usize new_capacity) {
+    List_::reserve(&builder->list, new_capacity);
 }
 
-void add(StringBuilder& builder, UTF8Char utf8_char) {
+void add(StringBuilder* builder, char chr) {
+    List_::add(&builder->list, chr);
+}
+
+void add(StringBuilder* builder, String str) {
+    let size = String_::size(str);
+    List_::reserve(&builder->list, builder->list.size + size);
+
+    for (usize i = 0; i < size; i++) {
+        List_::add(&builder->list, str[i]);
+    }
+}
+
+void add(StringBuilder* builder, UTF8Char utf8_char) {
     let size = len_of_utf8_from_first_byte(utf8_char.utf8_chr[0]);
-    reserve(builder.list, builder.list.size + size);
+    List_::reserve(&builder->list, builder->list.size + size);
     for (usize i = 0; i < size; i++) {
-        add(builder.list, utf8_char.utf8_chr[i]);
+        List_::add(&builder->list, utf8_char.utf8_chr[i]);
     }
 }
 
-void add(StringBuilder& builder, const char* chr) {
+void add(StringBuilder* builder, const char* chr) {
     let size = strlen(chr);
-    reserve(builder.list, builder.list.size + size);
+    List_::reserve(&builder->list, builder->list.size + size);
     for (usize i = 0; i < size; i++) {
-        add(builder.list, chr[i]);
+        List_::add(&builder->list, chr[i]);
     }
 }
 
-void add(StringBuilder& builder, std::string str) {
-    let size = str.size();
-    reserve(builder.list, builder.list.size + size);
-    for (usize i = 0; i < size; i++) add(builder.list, str[i]);
+void clear(StringBuilder* builder) {
+    List_::clear(&builder->list);
 }
 
-void clear(StringBuilder& builder) {
-    clear(builder.list);
-}
-
-String build(StringBuilder& builder, Context context) {
-    add(builder.list, '\0');
+String build(StringBuilder builder, Context context) {
+    List_::add(&builder.list, '\0');
     return String{
-        .array = to_array(builder.list, context),
+        .array = List_::to_array(builder.list, context),
     };
 }
 
-void reverse(StringBuilder& builder) {
-    reverse(builder.list);
+void reverse(StringBuilder* builder) {
+    List_::reverse(&builder->list);
 }
+};  // namespace StringBuilder_

@@ -1,9 +1,12 @@
 #pragma once
 #include <alloca.h>
+#include <bits/fs_fwd.h>
+#include <unistd.h>
 
 #include <cstddef>
+#include <cstring>
 
-#include "Format.hpp"
+#include "Context.hpp"
 #include "Intrinsics.hpp"
 
 #define KiB 1024
@@ -16,35 +19,36 @@
 #define GB 1000 * MB
 #define TB 1000 * GB
 
-struct Raw {
-    void* ptr;
-    usize len;
-};
-
 namespace MemoryError {
 Error NotEnoughSpace = declare_error();
 Error Allocation = declare_error();
 }  // namespace MemoryError
 
-Errorable<Raw> chunck(Raw& raw, usize new_len, usize offset = -1) {
-    if (new_len + offset > raw.len) {
+struct Raw {
+    void* ptr;
+    usize len;
+};
+
+namespace Raw_ {
+Errorable<Raw> chunck(Raw* raw, usize new_len, usize offset = -1) {
+    if (new_len + offset > raw->len) {
         return {MemoryError::NotEnoughSpace};
     }
     return {CoreError::Correct,
             Raw{
-                .ptr = (byte*)raw.ptr + offset,
+                .ptr = (byte*)raw->ptr + offset,
                 .len = new_len,
             }};
 }
 
 template <class T>
-Errorable<T*> cast(Raw& raw) {
+Errorable<T*> cast(Raw raw) {
     if (raw.len < sizeof(T)) return {MemoryError::NotEnoughSpace};
     return {CoreError::Correct, (T*)raw.ptr};
 }
 
 template <class T>
-Errorable<T*> cast_array(Raw& raw, usize size) {
+Errorable<T*> cast_array(Raw raw, usize size) {
     if (raw.len < sizeof(T) * size) return {MemoryError::NotEnoughSpace};
     return {CoreError::Correct, (T*)raw.ptr};
 }
@@ -60,44 +64,46 @@ Errorable<Raw> allocate(usize size) {
             }};
 }
 
-void free(const Raw& raw) {
-    free(raw.ptr);
+void free(Raw raw) {
+    ::free(raw.ptr);
 }
+}  // namespace Raw_
 
 struct IAllocator {
     void* obj;
     Errorable<Raw> (*allocate_raw)(void* obj, usize);
-    void (*free_raw)(void* obj, const Raw&);
+    void (*free_raw)(void* obj, Raw);
 };
 
-Errorable<Raw> allocate_raw(IAllocator& allocator, usize size) {
+namespace IAllocator_ {
+Errorable<Raw> allocate_raw(IAllocator allocator, usize size) {
     return allocator.allocate_raw(allocator.obj, size);
 }
 
-void free_raw(IAllocator& allocator, const Raw& raw) {
+void free_raw(IAllocator allocator, Raw raw) {
     allocator.free_raw(allocator.obj, raw);
 }
 
 template <class T>
-Errorable<T*> allocate(IAllocator& allocator) {
+Errorable<T*> allocate(IAllocator allocator) {
     let raw_option = allocate_raw(allocator, sizeof(T));
     return_error(raw_option);
 
-    let raw = unwrap(raw_option);
+    let raw = Errorable_::unwrap(raw_option);
     return {CoreError::Correct, (T*)raw.ptr};
 }
 
 template <class T>
-Errorable<T*> allocate_array(IAllocator& allocator, usize size) {
+Errorable<T*> allocate_array(IAllocator allocator, usize size) {
     let raw_option = allocate_raw(allocator, sizeof(T) * size);
     return_error(raw_option);
 
-    let raw = unwrap(raw_option);
+    let raw = Errorable_::unwrap(raw_option);
     return {CoreError::Correct, (T*)raw.ptr};
 }
 
 template <class T>
-void free(IAllocator& allocator, const T* ptr) {
+void free(IAllocator allocator, T* ptr) {
     let raw = Raw{
         .ptr = (void*)ptr,
         .len = sizeof(T),
@@ -106,32 +112,35 @@ void free(IAllocator& allocator, const T* ptr) {
 }
 
 template <class T>
-void free_array(IAllocator& allocator, const T* ptr, usize size) {
+void free_array(IAllocator allocator, T* ptr, usize size) {
     let raw = Raw{
         .ptr = (void*)ptr,
         .len = sizeof(T) * size,
     };
     free_raw(allocator, raw);
 }
+}  // namespace IAllocator_
 
 struct BasicAllocator {};
 
-Errorable<Raw> allocate_raw(BasicAllocator& basic_allocator, usize size) {
-    return ::allocate(size);
+namespace BasicAllocator_ {
+Errorable<Raw> allocate_raw(BasicAllocator* basic_allocator, usize size) {
+    return Raw_::allocate(size);
 };
 
-void free_raw(BasicAllocator& basic_allocator, const Raw& raw) {
-    ::free(raw);
+void free_raw(BasicAllocator* basic_allocator, Raw raw) {
+    Raw_::free(raw);
 };
 
-IAllocator to_interface(BasicAllocator& basic_allocator) {
+IAllocator to_interface(BasicAllocator* basic_allocator) {
     return IAllocator{
-        .obj = &basic_allocator,
+        .obj = basic_allocator,
         .allocate_raw = [](void* obj,
-                           usize size) { return allocate_raw(*(BasicAllocator*)obj, size); },
-        .free_raw = [](void* obj, const Raw& raw) { free_raw(*(BasicAllocator*)obj, raw); },
+                           usize size) { return allocate_raw((BasicAllocator*)obj, size); },
+        .free_raw = [](void* obj, Raw raw) { free_raw((BasicAllocator*)obj, raw); },
     };
 }
+}  // namespace BasicAllocator_
 
 template <usize max_size = 2 * KiB>
 struct TemporaryAllocator {
@@ -139,36 +148,37 @@ struct TemporaryAllocator {
     usize current = 0;
 };
 
+namespace TemporaryAllocator_ {
 template <usize max_size>
-Errorable<Raw> allocate_raw(TemporaryAllocator<>& temp_allocator, usize size) {
-    if (temp_allocator.current + size > max_size) temp_allocator.current = 0;
+Errorable<Raw> allocate_raw(TemporaryAllocator<>* temp_allocator, usize size) {
+    if (temp_allocator->current + size > max_size) temp_allocator->current = 0;
 
     Raw raw{
-        .ptr = (void*)(temp_allocator.memory + temp_allocator.current),
+        .ptr = (void*)(temp_allocator->memory + temp_allocator->current),
         .len = size,
     };
 
-    temp_allocator.current += size;
+    temp_allocator->current += size;
 
     return {CoreError::Correct, raw};
 }
 
 template <usize max_size>
-void free_raw(TemporaryAllocator<>& temp_allocator, const Raw& raw) {
+void free_raw(TemporaryAllocator<>* temp_allocator, const Raw& raw) {
 }
 
 template <usize max_size>
-IAllocator to_interface(TemporaryAllocator<>& temp_allocator) {
+IAllocator to_interface(TemporaryAllocator<>* temp_allocator) {
     return IAllocator{
-        .obj = &temp_allocator,
+        .obj = temp_allocator,
         .allocate_raw =
             [](void* obj, usize size) {
-                return allocate_raw(*(TemporaryAllocator<max_size>*)obj, size);
+                return allocate_raw((TemporaryAllocator<max_size>*)obj, size);
             },
-        .free_raw = [](void*      obj,
-                       const Raw& raw) { free_raw(*(TemporaryAllocator<max_size>*)obj, raw); },
+        .free_raw = [](void* obj, Raw raw) { free_raw((TemporaryAllocator<max_size>*)obj, raw); },
     };
 }
+}  // namespace TemporaryAllocator_
 
 template <usize max_size = 2 * KiB>
 struct StackAllocator {
@@ -176,44 +186,45 @@ struct StackAllocator {
     usize current = 0;
 };
 
+namespace StackAllocator_ {
 template <usize max_size>
-Errorable<Raw> allocate_raw(StackAllocator<max_size>& stack_allocator, usize size) {
-    if (stack_allocator.current + size > max_size) return {MemoryError::NotEnoughSpace};
+Errorable<Raw> allocate_raw(StackAllocator<max_size>* stack_allocator, usize size) {
+    if (stack_allocator->current + size > max_size) return {MemoryError::NotEnoughSpace};
 
     let raw = Raw{
-        .ptr = stack_allocator.memory + stack_allocator.current,
+        .ptr = stack_allocator->memory + stack_allocator->current,
         .len = size,
     };
 
-    stack_allocator.current += size;
+    stack_allocator->current += size;
 
     return {CoreError::Correct, raw};
 }
 
 template <usize max_size>
-void free_raw(StackAllocator<max_size>& stack_allocator, const Raw& raw) {
-    if (raw.ptr == stack_allocator.memory + stack_allocator.current - raw.len) {
-        stack_allocator.current -= raw.len;
+void free_raw(StackAllocator<max_size>* stack_allocator, const Raw& raw) {
+    if (raw.ptr == stack_allocator->memory + stack_allocator->current - raw.len) {
+        stack_allocator->current -= raw.len;
     }
 }
 
 template <usize max_size>
-void free_all(StackAllocator<max_size>& stack_allocator) {
-    stack_allocator.current = 0;
+void free_all(StackAllocator<max_size>* stack_allocator) {
+    stack_allocator->current = 0;
 }
 
 template <usize max_size>
-IAllocator to_interface(StackAllocator<max_size>& stack_allocator) {
+IAllocator to_interface(StackAllocator<max_size>* stack_allocator) {
     return IAllocator{
-        .obj = &stack_allocator,
+        .obj = stack_allocator,
         .allocate_raw =
             [](void* obj, usize size) {
-                return allocate_raw(*(StackAllocator<max_size>*)obj, size);
+                return allocate_raw((StackAllocator<max_size>*)obj, size);
             },
-        .free_raw = [](void*      obj,
-                       const Raw& raw) { free_raw(*(StackAllocator<max_size>*)obj, raw); },
+        .free_raw = [](void* obj, Raw raw) { free_raw((StackAllocator<max_size>*)obj, raw); },
     };
 }
+}  // namespace StackAllocator_
 
 // TODO(Ferenc): add DebugAllocator
 
@@ -228,19 +239,20 @@ struct PageAllocator {
     usize pos = 0;
 };
 
+namespace PageAllocator_ {
 template <usize page_size>
-Errorable<Raw> allocate_raw(PageAllocator<page_size>& page_allocator, usize size) {
+Errorable<Raw> allocate_raw(PageAllocator<page_size>* page_allocator, usize size) {
     if (size > page_size) return {MemoryError::NotEnoughSpace};
 
-    if (page_allocator.head == nullptr) {
-        let raw_option = ::allocate(sizeof(PageAllocator<page_size>::Page));
+    if (page_allocator->head == nullptr) {
+        let raw_option = Raw_::allocate(sizeof(PageAllocator<page_size>::Page));
         return_error(raw_option);
-        let raw = unwrap(raw_option);
+        let raw = Errorable_::unwrap(raw_option);
 
-        page_allocator.head = (typename PageAllocator<page_size>::Page*)raw.ptr;
-        page_allocator.pos = size;
+        page_allocator->head = (typename PageAllocator<page_size>::Page*)raw.ptr;
+        page_allocator->pos = size;
 
-        let allocated_raw = page_allocator.head->memory;
+        let allocated_raw = page_allocator->head->memory;
         return {CoreError::Correct,
                 Raw{
                     .ptr = allocated_raw,
@@ -248,9 +260,9 @@ Errorable<Raw> allocate_raw(PageAllocator<page_size>& page_allocator, usize size
                 }};
     }
 
-    if (page_allocator.pos + size <= page_size) {
-        let ptr = page_allocator.head->memory + page_allocator.pos;
-        page_allocator.pos += size;
+    if (page_allocator->pos + size <= page_size) {
+        let ptr = page_allocator->head->memory + page_allocator->pos;
+        page_allocator->pos += size;
 
         return {CoreError::Correct,
                 {
@@ -259,15 +271,16 @@ Errorable<Raw> allocate_raw(PageAllocator<page_size>& page_allocator, usize size
                 }};
     }
 
-    let new_page_option = ::allocate(sizeof(PageAllocator<page_size>::Page));
+    let new_page_option = Raw_::allocate(sizeof(PageAllocator<page_size>::Page));
     return_error(new_page_option);
-    let new_page = (typename PageAllocator<page_size>::Page*)unwrap(new_page_option).ptr;
+    let new_page =
+        (typename PageAllocator<page_size>::Page*)Errorable_::unwrap(new_page_option).ptr;
 
-    new_page->next = page_allocator.head;
-    page_allocator.head = new_page;
+    new_page->next = page_allocator->head;
+    page_allocator->head = new_page;
 
-    let ptr = page_allocator.head->memory;
-    page_allocator.pos = size;
+    let ptr = page_allocator->head->memory;
+    page_allocator->pos = size;
 
     return {CoreError::Correct,
             Raw{
@@ -277,7 +290,7 @@ Errorable<Raw> allocate_raw(PageAllocator<page_size>& page_allocator, usize size
 };
 
 template <usize page_size>
-void free_raw(PageAllocator<page_size>& page_allocator, const Raw& raw){};
+void free_raw(PageAllocator<page_size>* page_allocator, const Raw& raw){};
 
 template <usize page_size>
 void destroy_page(typename PageAllocator<page_size>::Page* page) {
@@ -287,23 +300,24 @@ void destroy_page(typename PageAllocator<page_size>::Page* page) {
 }
 
 template <usize page_size>
-void free_all(PageAllocator<page_size>& page_allocator) {
-    destroy_page(page_allocator.head);
-    page_allocator.head = nullptr;
+void free_all(PageAllocator<page_size>* page_allocator) {
+    destroy_page(page_allocator->head);
+    page_allocator->head = nullptr;
 }
 
 template <usize page_size>
-IAllocator to_interface(PageAllocator<page_size>& page_allocator) {
+IAllocator to_interface(PageAllocator<page_size>* page_allocator) {
     return IAllocator{
-        .obj = &page_allocator,
+        .obj = page_allocator,
         .allocate_raw =
             [](void* obj, usize size) {
                 return allocate_raw(*(PageAllocator<page_size>*)obj, size);
             },
-        .free_raw = [](void*      obj,
-                       const Raw& raw) { free_raw(*(PageAllocator<page_size>*)obj, raw); },
+        .free_raw = [](void* obj, Raw raw) { free_raw(*(PageAllocator<page_size>*)obj, raw); },
     };
 }
+}  // namespace PageAllocator_
+
 
 // --- /Allocators ---
 
