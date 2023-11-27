@@ -1,7 +1,7 @@
 # Contentions
 
 - Everything is snake_case by default.
-- Struct names are CamelCase.
+- Struct names are Camel_Case.
 - Code is procedural.
 - Data is data, functions are functions.
 - If sometimes objects are needed (e.g. List) they are written as struct with the fields,

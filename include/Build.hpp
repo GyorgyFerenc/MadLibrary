@@ -1,158 +1,162 @@
 #pragma once
 
-#include <filesystem>
-#include <fstream>
-#include <tuple>
-#include <vector>
-
 #include "Core.hpp"
-#include "Process.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
 
-struct Target {
-    // TODO Do it better lol
 
-    std::vector<std::string> m_sources;
-    std::vector<std::string> m_flag;
-    std::vector<std::string> m_search_folder;
-    std::vector<std::string> m_libraries;
-    std::string              m_output;
-
-    inline static Target create() {
-        return Target{};
-    }
-
-    inline static Target create(std::string list) {
-        Target t;
-        t.add_source(list);
-        return t;
-    }
-
-    inline static Target create(std::initializer_list<std::string> list) {
-        Target t;
-        t.add_source(list);
-        return t;
-    }
-
-    void add_source(std::initializer_list<std::string> list) {
-        for (auto&& source : list) {
-            add_source(source);
-        }
-    }
-
-    void add_source(std::string source) {
-        m_sources.push_back(source);
-    }
-
-    void add_source_folder(std::string path) {
-        namespace fs = std::filesystem;
-        auto files = fs::directory_iterator{path};
-        for (auto&& file : files) {
-            auto file_string = file.path().string();
-            auto regular_file = file.is_regular_file();
-            auto ends_with_cpp = ends_with(file_string, ".cpp");
-            auto ends_with_c = ends_with(file_string, ".c");
-            if (regular_file && ends_with_cpp && ends_with_c) add_source(file_string);
-        }
-    }
-
-    void add_flag(std::string flag) {
-        m_flag.push_back(flag);
-    }
-
-    void add_search_folder(std::string path) {
-        m_search_folder.push_back(path);
-    }
-
-    void set_output(std::string output) {
-        m_output = output;
-    }
-
-    void add_library(std::string library) {
-        m_libraries.push_back(library);
-    }
-
-    void build() {
-        std::string cmd = "g++ ";
-        for (auto&& source : m_sources) {
-            cmd += " ";
-            cmd += source;
-        }
-
-        for (auto&& flag : m_flag) {
-            cmd += " -";
-            cmd += flag;
-        }
-
-        for (auto&& search : m_search_folder) {
-            cmd += " -I";
-            cmd += search;
-        }
-
-        for (auto&& library : m_libraries) {
-            cmd += " -l";
-            cmd += library;
-        }
-
-        cmd += " -o ";
-        cmd += m_output;
-
-        println_format("[NOTE] Building %", m_output);
-
-        let try_p = Process::open_no_capture(cmd.c_str());
-        let p = Errorable_::unwrap(try_p);
-
-        p.join();
-        p.destroy();
-    }
-
-    bool ends_with(std::string text, std::string suffix) {
-        if (text.size() < suffix.size()) return false;
-
-        for (int i = 0; i < suffix.size(); i++) {
-            let text_chr = text[text.size() - 1 - i];
-            let suffix_chr = suffix[suffix.size() - 1 - i];
-            if (suffix_chr != text_chr) return false;
-        }
-        return true;
-    }
+enum class Compiler{
+    GCC,
 };
 
-void self_rebuild(std::string source, std::string output) {
-    // TODO add argc and argv
-    {
-        std::ifstream     source_in{source};
-        std::stringstream buffer;
-        buffer << source_in.rdbuf();
-        let new_hash = std::hash<std::string>{}(buffer.str());
+struct Target {
+    Allocator allocator;
+    Dynamic_Array<const char*>                    args;
+    Dynamic_Array<const char*>                    linked_files;
+    Dynamic_Array<const char*>                    linked_search_directories;
+    Dynamic_Array<const char*>                    include_search_directories;
+    Dynamic_Array<Pair<const char*, const char*>> macros;
 
-        std::size_t   saved_hash;
-        std::ifstream in_build_hash{"build.hash"};
+    Compiler compiler = Compiler::GCC;
+    bool debug        = false;
+    bool all_warnings = false;
+    const char* output;
+};
 
-        if (in_build_hash.good())
-            in_build_hash >> saved_hash;
-        else
-            saved_hash = 0;
+namespace Target_ {
 
-        if (new_hash == saved_hash) return;
-
-        std::ofstream out_build_hash{"build.hash"};
-        out_build_hash << new_hash;
-    }
-    println("[NOTE] Rebuilding self");
-
-    let builder = Target{};
-    builder.add_source(source);
-    builder.set_output(output);
-    builder.build();
-
-    let cmd = "./" + output;
-
-    println("[NOTE] Run new build");
-
-    let try_p = Process::open_no_capture(cmd.c_str());
-    let p = Errorable_::unwrap(try_p);
-    p.join();
-    p.destroy();
-
-    exit(0);
+Target create(Allocator allocator){
+    return {
+        .allocator                  = allocator,
+        .args                       = Dynamic_Array_::create<const char*>(allocator),
+        .linked_files               = Dynamic_Array_::create<const char*>(allocator),
+        .linked_search_directories  = Dynamic_Array_::create<const char*>(allocator),
+        .include_search_directories = Dynamic_Array_::create<const char*>(allocator),
+        .macros                     = Dynamic_Array_::create<Pair<const char*, const char*>>(allocator),
+    };
 }
+
+void destory(Target* target){
+    Dynamic_Array_::destroy(&target->args);
+    Dynamic_Array_::destroy(&target->linked_files);
+    Dynamic_Array_::destroy(&target->linked_search_directories);
+    Dynamic_Array_::destroy(&target->include_search_directories);
+    Dynamic_Array_::destroy(&target->macros);
+}
+
+void add_arg(Target* target, const char* arg){
+    Dynamic_Array_::append(&target->args, arg);
+}
+
+void add_source(Target* target, const char* source){
+    add_arg(target, source);
+}
+
+void link_file(Target* target, const char* file){
+    Dynamic_Array_::append(&target->linked_files, file);
+}
+
+void add_link_search_directory(Target* target, const char* dir){
+    Dynamic_Array_::append(&target->linked_search_directories, dir);
+}
+
+void add_include_search_directory(Target* target, const char* dir){
+    Dynamic_Array_::append(&target->include_search_directories, dir);
+}
+
+void define_macro(Target* target, const char* macro, const char* value){
+    Dynamic_Array_::append(&target->macros, {macro, value});
+}
+
+void compile(Target target){
+    using namespace String_Builder_;
+    let builder = String_Builder_::create(target.allocator);
+
+    const char* link_file_flag;
+    const char* output_flag;
+    const char* link_search_directory_flag;
+    const char* include_search_directory_flag;
+    const char* debug_flag;
+    const char* all_warnings_flag;
+    const char* macro_definition_flag;
+
+    switch (target.compiler) {
+    case Compiler::GCC:{
+        add_c_str(&builder, "g++ ");
+        link_file_flag = "-l";
+        output_flag = "-o";
+        link_search_directory_flag = "-L";
+        include_search_directory_flag = "-I";
+        debug_flag = "-g";
+        all_warnings_flag = "-Wall";
+        macro_definition_flag = "-D";
+    }break;
+    }
+
+    For_Each(Dynamic_Array_::iter(target.macros)){
+        add_c_str(&builder, macro_definition_flag);
+        add_c_str(&builder, " ");
+        let [macro, value] = it.value;
+        add_c_str(&builder, macro);
+        add_c_str(&builder, "=");
+        add_c_str(&builder, value);
+        add_c_str(&builder, " ");
+    }
+
+    For_Each(Dynamic_Array_::iter(target.include_search_directories)){
+        add_c_str(&builder, include_search_directory_flag);
+        add_c_str(&builder, " ");
+        add_c_str(&builder, it.value);
+        add_c_str(&builder, " ");
+    }
+     
+    For_Each(Dynamic_Array_::iter(target.args)){
+        add_c_str(&builder, it.value);
+        add_c_str(&builder, " ");
+    }
+
+    add_c_str(&builder, output_flag);
+    add_c_str(&builder, " ");
+    add_c_str(&builder, target.output);
+    add_c_str(&builder, " ");
+
+    For_Each(Dynamic_Array_::iter(target.linked_search_directories)){
+        add_c_str(&builder, link_search_directory_flag);
+        add_c_str(&builder, " ");
+        add_c_str(&builder, it.value);
+        add_c_str(&builder, " ");
+    }
+
+    For_Each(Dynamic_Array_::iter(target.linked_files)){
+        add_c_str(&builder, link_file_flag);
+        add_c_str(&builder, " ");
+        add_c_str(&builder, it.value);
+        add_c_str(&builder, " ");
+    }
+
+    if (target.all_warnings){
+        add_c_str(&builder, all_warnings_flag);
+        add_c_str(&builder, " ");
+    }
+
+    if (target.debug){
+        add_c_str(&builder, debug_flag);
+        add_c_str(&builder, " ");
+    }
+
+
+
+    let command = build(builder, target.allocator);
+    defer(String_::destroy(&command));
+    let c_str = String_::c_str_unsafe(command, target.allocator);
+    defer(Allocator_::free_array(target.allocator, c_str, command.size + 1));
+
+    printf("[Running]: %s\n", c_str);
+    system(c_str);
+}
+
+
+
+}
+

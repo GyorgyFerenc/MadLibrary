@@ -27,7 +27,6 @@ using usize = std::size_t;
 #define let auto
 #define cast(type) (type)
 
-// --- DEFER ---
 #include <functional>
 struct defer_implementation {
     std::function<void()> func;
@@ -55,9 +54,7 @@ struct defer_dummy {
 #define defer_block auto ANONYMOUS_VARIABLE(__defer_instance) = defer_dummy{} + [&]()
 #define defer(body) \
     auto ANONYMOUS_VARIABLE(__defer_instance) = defer_implementation{[&]() { body; }};
-// --- /DEFER ---
 
-// --- PANIC ---
 void panic(const char* text) {
     printf("%s\n",text);
     assert(false && "panic");
@@ -66,7 +63,6 @@ void panic(const char* text) {
 void panic() {
     assert(false && "panic");
 }
-// --- /PANIC ---
 
 // --- Error ---
 using Error = u32;
@@ -121,25 +117,29 @@ struct Option {
 namespace Option_ {
 
 template <class T>
-inline Option<T> some(T value) {
+inline 
+Option<T> some(T value) {
     return {true, value};
 }
 
 template <class T>
-inline Option<T> none() {
+inline 
+Option<T> none() {
     return {false};
 }
 
 template <class T>
-inline T unwrap(Option<T> option) {
-    if (option.error == Core_Error::Correct) return option.value;
+inline 
+T unwrap(Option<T> option) {
+    if (option.some) return option.value;
     panic("Option_::unwrap()");
     UNREACHABLE;
 }
 
 template <class T>
-inline T unwrap(Option<T> option, const char* msg) {
-    if (option.error == Core_Error::Correct) return option.value;
+inline 
+T unwrap(Option<T> option, const char* msg) {
+    if (option.some) return option.value;
     panic(msg);
     UNREACHABLE;
 }
@@ -201,9 +201,21 @@ Error free_all(Allocator allocator){
 
 template<class T>
 inline
-Errorable<T*> allocate(Allocator allocator){
+Errorable<T*> allocate(Allocator allocator, T value = {}){
     let try_ptr = allocate_raw(allocator, sizeof(T));
-    return {try_ptr.error, (T*)try_ptr.value};
+    return_error(try_ptr);
+    let t_ptr = (T*)try_ptr.value;
+    *t_ptr = value;
+    return {try_ptr.error, t_ptr};
+}
+
+template<class T>
+inline
+T* allocate_unwrap(Allocator allocator, T value = {}){
+    let try_ptr = allocate_raw(allocator, sizeof(T));
+    let t_ptr = (T*)Errorable_::unwrap(try_ptr);
+    *t_ptr = value;
+    return t_ptr;
 }
 
 template<class T>
@@ -278,7 +290,6 @@ struct Arena_Allocator{
     usize size;
     usize position = 0;
 };
-
 
 namespace Arena_Allocator_ {
 
@@ -576,7 +587,8 @@ Pair<T1, T2> create(T1 first, T2 second){
 
 
 
-#define For_Each(iter) for (let it = iter; it.next();) 
+#define For_Each(iter)     for (let  it = iter; it.next();) 
+#define For_Each_Ref(iter) for (let& it = iter; it.next();) 
 
 struct Range{
     int closed_low;
@@ -600,14 +612,16 @@ Range create(int closed_low, int open_high){
 
 };
 
-
 template <class T>
 struct Array{
     T* ptr;
     usize size;
     Allocator allocator;
-};
 
+    T& operator[](usize idx){
+        return ptr[idx];
+    }
+};
 
 template<class T>
 struct Array_Iter{
@@ -617,7 +631,7 @@ struct Array_Iter{
     T value;
     T* value_ptr;
     usize count = 0;
-    usize idx;
+    usize idx; 
 
 
     inline
@@ -660,6 +674,23 @@ Array_Iter<T> iter(Array<T> array){
     };
 }
 
+/*
+ * This used so any data can be easily 
+ * aliasad as an array of bytes
+ * e. g.
+ * ```cpp
+ *  u32 a = 12;
+ *  let bytes = Array_::alias_data(&a); // it is the bytes of a;
+ * ```
+ */
+template<class T>
+Array<u8> alias_bytes_of(T* data){
+    return {
+        .ptr  = (u8*) data,
+        .size = sizeof(T),
+    };
+}
+
 };
 
 
@@ -689,8 +720,6 @@ void destroy(Dynamic_Array<T>* array){
     Allocator_::free_array(array->allocator, array->ptr, array->capacity);
 }
 
-
-
 template <class T>
 Error reserve(Dynamic_Array<T>* array, usize new_capacity){
     if (array->capacity >= new_capacity) return Core_Error::Correct;
@@ -705,7 +734,7 @@ Error reserve(Dynamic_Array<T>* array, usize new_capacity){
 template <class T>
 usize append(Dynamic_Array<T>* array, T value){
     if (array->size + 1 > array->capacity) {
-        let err = reserve(array, 2 * array->capacity);
+        reserve(array, 2 * array->capacity);
     }
 
     usize pos = array->size;
@@ -731,69 +760,12 @@ Array_Iter<T> iter(Dynamic_Array<T> array){
 
 };
 
-/*
- * Strings are UTF-8 encoded
- * .size is size in bytes
- */
-using String = Array<u8>;
 // Rune is on 4 bytes representing a unicode code point
 using Rune   = u32;
 
-namespace String_{
+namespace Rune_{
 
-
-inline 
-String create(Allocator allocator, usize size){
-    return Array_::create<u8>(allocator, size);
-}
-
-inline
-void destroy(String* str){
-    Array_::destroy(str);
-}
-
-inline
-String alias(const char* c_str){
-    return String{
-        .ptr = (u8*)c_str,
-        .size = strlen(c_str),
-    };
-}
-
-inline
-String clone_from(Allocator allocator, const char* c_str){
-    let size = strlen(c_str);
-    let str = String_::create(allocator, size);
-    memcpy((void*)str.ptr, (void*)c_str, size);
-    return str;
-}
-
-/*
- * The length of the string
- * mesaured by the nr of runes in it
- *
- * O(str.size)
- *
- * https://www.rfc-editor.org/rfc/rfc3629
- */
-inline
-usize rune_length(String str){
-    if (str.size == 0) return 0;
-    usize len = 0;   
-    usize i = 0;
-
-    while (i < str.size) {
-        let b = str.ptr[i];
-        if      ((b >> 7) == 0)       i++;
-        else if ((b >> 5) == 0b110)   i += 2;
-        else if ((b >> 4) == 0b1110)  i += 3;
-        else if ((b >> 3) == 0b11110) i += 4;
-        len++;
-    }
-    return len;
-}
-
-usize encode_rune_to_utf8(Rune rune, u8* ptr){
+usize encode_to_utf8(Rune rune, u8* ptr){
     u8 rune_least1_byte = 0;
     u8 rune_least2_byte = 0;
     u8 rune_least3_byte = 0;
@@ -855,7 +827,7 @@ usize encode_rune_to_utf8(Rune rune, u8* ptr){
 }
 
 inline
-Pair<Rune, usize> decode_rune_from_utf8(u8* encoded){
+Pair<Rune, usize> decode_from_utf8(u8* encoded){
     Rune rune = {0};
     u32 b = encoded[0];
     usize size = 0;
@@ -889,15 +861,177 @@ Pair<Rune, usize> decode_rune_from_utf8(u8* encoded){
     return {rune, size};
 }
 
+bool whitespace(Rune rune){
+    switch (rune) {
+        case 0x0A:   return true;
+        case 0x20:   return true;
+        case 0xA0:   return true;
+        case 0x1680: return true;
+        case 0x202F: return true;
+        case 0x205F: return true;
+        case 0x3000: return true;
+        case 0x2028: return true;
+        case 0x2029: return true;
+    }
+    if (0x2000 <= rune && rune <= 0x200A) return true;
+    return false;
+}
+
+bool digit(Rune rune){
+    return '0' <= rune && rune <= '9';
+}
+
+};
+
+
+/*
+ * Strings are UTF-8 encoded
+ * .size is size in bytes
+ */
+using String = Array<u8>;
+
+namespace String_{
+
+//TODO(Ferenc): Add a string starts with function
+
+inline 
+String create(Allocator allocator, usize size){
+    return Array_::create<u8>(allocator, size);
+}
+
+inline
+void destroy(String* str){
+    Array_::destroy(str);
+}
+
+inline
+String alias(const char* c_str){
+    return String{
+        .ptr = (u8*)c_str,
+        .size = strlen(c_str),
+    };
+}
+
+inline
+String clone_from_cstr(Allocator allocator, const char* c_str){
+    let size = strlen(c_str);
+    let str = String_::create(allocator, size);
+    memcpy((void*)str.ptr, (void*)c_str, size);
+    return str;
+}
+
+inline
+Option<String> substr_alias(String str, usize begin, usize len){
+    if (str.size < begin + len) return {false};
+    return {true, 
+            String{
+                .ptr = str.ptr + begin,
+                .size = len,
+                .allocator = str.allocator,
+            }
+    };
+}
+
+inline
+String substr_alias_unsafe(String str, usize begin, usize len){
+    return String{
+        .ptr = str.ptr + begin,
+        .size = len,
+        .allocator = str.allocator,
+    };
+}
+
+inline
+char* c_str_unsafe(String str, Allocator allocator){
+    let ptr_try = Allocator_::allocate_array<char>(allocator, str.size + 1);
+    let ptr     = Errorable_::unwrap(ptr_try);
+    ptr[str.size] = '\0';
+    memcpy(ptr, str.ptr, str.size);
+    return ptr;
+}
+
+/*
+ * The length of the string
+ * mesaured by the nr of runes in it
+ *
+ * O(str.size)
+ *
+ * https://www.rfc-editor.org/rfc/rfc3629
+ */
+inline
+usize length_by_rune(String str){
+    if (str.size == 0) return 0;
+    usize len = 0;   
+    usize i = 0;
+
+    while (i < str.size) {
+        let b = str.ptr[i];
+        if      ((b >> 7) == 0)       i++;
+        else if ((b >> 5) == 0b110)   i += 2;
+        else if ((b >> 4) == 0b1110)  i += 3;
+        else if ((b >> 3) == 0b11110) i += 4;
+        len++;
+    }
+    return len;
+}
+
+/*
+ *  O(1)
+ */
+Rune rune_at_unsafe(String str, usize byte_pos){
+     let [rune, _] = Rune_::decode_from_utf8(str.ptr + byte_pos);
+     return rune;
+}
+
+bool equal(String lhs, String rhs){
+    if (lhs.size != rhs.size) return false;
+
+    For_Each(Array_::iter(lhs)){
+        if (it.value != rhs[it.idx]) return false;
+    }
+
+    return true;
+}
+
+
+bool starts_with_c_str(String str, const char* c_str){
+    for (usize i = 0; *c_str != '\0'; i++) {
+        if (str.size <= i || str.ptr[i] != *c_str) return false;
+        c_str++;
+    }
+    return true;
+};
+
+
+bool starts_with(String str1, String str2){
+    if (str1.size < str2.size) return false;
+    for (usize i = 0; i< str2.size; i++){
+        if (str1.ptr[i] != str2.ptr[i]) return false;
+    }
+    return true;
+};
+
+String remove_prefix(String str, usize len){
+    if (str.size <= len) return String{
+        .size = 0,
+    };
+    return String{
+        .ptr = str.ptr + len,
+        .size = str.size - len,
+        .allocator = str.allocator,
+    };
+}
+
+
 
 Array<Rune> to_rune_array(String str, Allocator allocator){
-    let len = rune_length(str);
+    let len = length_by_rune(str);
     let array = Array_::create<Rune>(allocator, len);
     usize i = 0;
     usize i_array = 0;
 
     while (i < str.size) {
-        let [rune, size] = decode_rune_from_utf8(str.ptr + i);
+        let [rune, size] = Rune_::decode_from_utf8(str.ptr + i);
         array.ptr[i_array] = rune;
 
         i += size;
@@ -919,16 +1053,18 @@ struct String_Rune_Iter{
     usize size;
 
     usize count = 0;
-    usize idx   = 0;
+    usize idx   = 0; // TODO(Ferenc): Currently idx is wrong fix it
     Rune  rune;
+    usize rune_byte_len = 0; // Last decoded runes len
 
     inline
     bool next(){
         if (idx >= size) return false;
-        let [rune, nr] = String_::decode_rune_from_utf8(ptr + idx);
-        this->idx += nr;
+        let [rune, rune_byte_len] = Rune_::decode_from_utf8(ptr + idx);
+        this->idx += rune_byte_len;
         this->rune = rune;
         this->count++;
+        this->rune_byte_len = rune_byte_len;
         return true;
     }
 };
@@ -943,5 +1079,130 @@ String_Rune_Iter iter_rune(String str){
         .count = 0,
     };
 }
+}
+
+
+struct String_Builder{
+    Dynamic_Array<u8> bytes;
+};
+
+namespace String_Builder_ {
+
+String_Builder create(Allocator allocator){
+    return {
+        .bytes = Dynamic_Array_::create<u8>(allocator),
+    };
+}
+
+void destroy(String_Builder* builder){
+    Dynamic_Array_::destroy(&builder->bytes);
+}
+
+void add_c_str(String_Builder* builder, const char* c_str){
+    while (*c_str != '\0') {
+        Dynamic_Array_::append(&builder->bytes, (u8)*c_str);
+        c_str++;
+    }
+}
+
+String build(String_Builder builder, Allocator allocator){
+    let array = Array_::create<u8>(allocator, builder.bytes.size);
+    typed_memcpy(array.ptr, builder.bytes.ptr, array.size);
+    return array;
+}
 
 }
+
+
+
+/*
+ *  This uses a linked list
+ */
+template<class T>
+struct Queue{
+    struct Node{
+        Node* next = nullptr;
+        T     data;
+    };
+
+    Allocator allocator;
+    Node*     head = nullptr;
+    Node*     tail = nullptr;
+    usize     size = 0;
+};
+
+namespace Queue_{
+
+
+template<class T>
+inline 
+Queue<T> create(Allocator allocator){
+    return {
+        .allocator = allocator,
+        .head      = nullptr,
+        .tail      = nullptr,
+        .size      = 0,
+    };
+};
+
+template<class T>
+void destroy(Queue<T>* q){
+    let node = q->head;
+    while (node != nullptr) {
+        let temp = node->next;
+        Allocator_::free(q->allocator, node);
+        node = temp;
+    }
+}
+
+template<class T>
+void enque(Queue<T>* q, T elem){
+    q->size++;
+    let try_node = Allocator_::allocate<typename Queue<T>::Node>(q->allocator);
+    let node     = Errorable_::unwrap(try_node);
+    node->data   = elem;
+    node->next   = nullptr;
+
+    if (q->tail == nullptr){
+        q->tail = node;
+        q->head = node;
+    }else{
+        q->tail->next = node;
+        q->tail = node;
+    }
+}
+
+
+template<class T>
+Option<T> deque(Queue<T>* q){
+    if (q->head == nullptr) return {false};
+    
+    let data = q->head->data;
+    let node = q->head;
+    q->head  = node->next;
+    Allocator_::free(q->allocator, node);
+    if (q->head == nullptr) q->tail = nullptr;
+    q->size--;
+
+    return {true, data};
+}
+
+
+template<class T>
+T deque_unsafe(Queue<T>* q){
+    let data = q->head->data;
+    let node = q->head;
+    q->head  = node->next;
+    Allocator_::free(q->allocator, node);
+    if (q->head == nullptr) q->tail = nullptr;
+    q->size--;
+
+    return data;
+}
+
+template<class T>
+bool empty(Queue<T> q){
+    return q.size == 0;
+}
+
+};
