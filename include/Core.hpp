@@ -83,20 +83,19 @@ struct Errorable {
 };
 
 namespace Errorable_ {
-    template <class T>
-    inline T unwrap(Errorable<T> errorable) {
-        if (errorable.error == Core_Error::Correct) return errorable.value;
-        panic("Errorable_::unwrap()");
-        UNREACHABLE;
-    }
+template <class T>
+inline T unwrap(Errorable<T> errorable) {
+    if (errorable.error == Core_Error::Correct) return errorable.value;
+    panic("Errorable_::unwrap()");
+    UNREACHABLE;
+}
 
-    template <class T>
-    inline T unwrap(Errorable<T> errorable, const char* msg) {
-        if (errorable.error == Core_Error::Correct) return errorable.value;
-        panic(msg);
-        UNREACHABLE;
-
-    }
+template <class T>
+inline T unwrap(Errorable<T> errorable, const char* msg) {
+    if (errorable.error == Core_Error::Correct) return errorable.value;
+    panic(msg);
+    UNREACHABLE;
+}
 }  // namespace Errorable_
 
 /*
@@ -151,10 +150,14 @@ T* typed_memcpy(T* dest, const T* src, usize n){
     return (T*)memcpy(dest, src, sizeof(T) * n);
 }
 
-/*
- *   TODO(Ferenc): Add alignment to allocators
- *   TODO(Ferenc): Add nicer interface to allocator implementations
- */
+
+template<class T>
+void typed_memset(T* ptr, T data, usize n){
+    for (usize i = 0; i < n; i++){
+        ptr[i] = data;
+    }
+}
+
 namespace Allocation_Error  {
     let Unsupported_Allocation_Mode = declare_error();
     let Out_Of_Memory = declare_error(); //e.g malloc ENOMEN
@@ -680,7 +683,7 @@ Array_Iter<T> iter(Array<T> array){
  * e. g.
  * ```cpp
  *  u32 a = 12;
- *  let bytes = Array_::alias_data(&a); // it is the bytes of a;
+ *  let bytes = Array_::alias_bytes_of(&a); // it is the bytes of a;
  * ```
  */
 template<class T>
@@ -700,6 +703,10 @@ struct Dynamic_Array{
     usize size;
     usize capacity;
     Allocator allocator;
+
+    T& operator[](usize idx){
+        return ptr[idx];
+    }
 };
 
 namespace Dynamic_Array_{
@@ -861,6 +868,19 @@ Pair<Rune, usize> decode_from_utf8(u8* encoded){
     return {rune, size};
 }
 
+/*
+ * It reads the first rune from the c_str
+ */
+Rune from_c_str(const char* c_str){
+    return decode_from_utf8((u8*)c_str).first;
+}
+
+
+Rune from_char(char chr){
+    return decode_from_utf8((u8*)&chr).first;
+}
+
+inline
 bool whitespace(Rune rune){
     switch (rune) {
         case 0x0A:   return true;
@@ -877,6 +897,7 @@ bool whitespace(Rune rune){
     return false;
 }
 
+inline
 bool digit(Rune rune){
     return '0' <= rune && rune <= '9';
 }
@@ -892,7 +913,6 @@ using String = Array<u8>;
 
 namespace String_{
 
-//TODO(Ferenc): Add a string starts with function
 
 inline 
 String create(Allocator allocator, usize size){
@@ -913,7 +933,7 @@ String alias(const char* c_str){
 }
 
 inline
-String clone_from_cstr(Allocator allocator, const char* c_str){
+String clone_from_cstr(const char* c_str, Allocator allocator){
     let size = strlen(c_str);
     let str = String_::create(allocator, size);
     memcpy((void*)str.ptr, (void*)c_str, size);
@@ -994,6 +1014,19 @@ bool equal(String lhs, String rhs){
 }
 
 
+bool equal_c_str(String lhs, const char* rhs){
+    
+    for (usize i = 0; i < lhs.size; i++){
+        if (rhs[0] == '\0') return false;
+        if (lhs[i] != (u8)rhs[i]) return false; // (u8) because char is fucking signed
+    }
+
+    if (rhs[lhs.size] != '\0') return false;
+
+    return true;
+}
+
+
 bool starts_with_c_str(String str, const char* c_str){
     for (usize i = 0; *c_str != '\0'; i++) {
         if (str.size <= i || str.ptr[i] != *c_str) return false;
@@ -1011,6 +1044,9 @@ bool starts_with(String str1, String str2){
     return true;
 };
 
+/*
+ * Doesn't free the removed parts
+ */
 String remove_prefix(String str, usize len){
     if (str.size <= len) return String{
         .size = 0,
@@ -1053,15 +1089,17 @@ struct String_Rune_Iter{
     usize size;
 
     usize count = 0;
-    usize idx   = 0; // TODO(Ferenc): Currently idx is wrong fix it
-    Rune  rune;
+    usize idx   = 0; 
+    usize last_idx = 0;
+    Rune  rune = 0;
     usize rune_byte_len = 0; // Last decoded runes len
 
     inline
     bool next(){
-        if (idx >= size) return false;
+        if (this->last_idx >= size) return false;
+        this->idx = this->last_idx;
         let [rune, rune_byte_len] = Rune_::decode_from_utf8(ptr + idx);
-        this->idx += rune_byte_len;
+        this->last_idx += rune_byte_len;
         this->rune = rune;
         this->count++;
         this->rune_byte_len = rune_byte_len;
@@ -1098,6 +1136,13 @@ void destroy(String_Builder* builder){
     Dynamic_Array_::destroy(&builder->bytes);
 }
 
+
+String build(String_Builder builder, Allocator allocator){
+    let array = Array_::create<u8>(allocator, builder.bytes.size);
+    typed_memcpy(array.ptr, builder.bytes.ptr, array.size);
+    return array;
+}
+
 void add_c_str(String_Builder* builder, const char* c_str){
     while (*c_str != '\0') {
         Dynamic_Array_::append(&builder->bytes, (u8)*c_str);
@@ -1105,11 +1150,24 @@ void add_c_str(String_Builder* builder, const char* c_str){
     }
 }
 
-String build(String_Builder builder, Allocator allocator){
-    let array = Array_::create<u8>(allocator, builder.bytes.size);
-    typed_memcpy(array.ptr, builder.bytes.ptr, array.size);
-    return array;
+
+void add_char(String_Builder* builder, char chr){
+    Dynamic_Array_::append(&builder->bytes, (u8)chr);
 }
+
+
+void add_rune(String_Builder* builder, Rune rune){
+    u8 bytes[4] = {0, 0, 0, 0};;
+    let len = Rune_::encode_to_utf8(rune, bytes);
+    for (usize i = 0; i < len; i++){
+        Dynamic_Array_::append(&builder->bytes, bytes[i]);
+    }
+}
+
+void clear(String_Builder* builder){
+    Dynamic_Array_::clear(&builder->bytes);
+}
+
 
 }
 
@@ -1153,6 +1211,9 @@ void destroy(Queue<T>* q){
         Allocator_::free(q->allocator, node);
         node = temp;
     }
+    q->head = nullptr;
+    q->tail = nullptr;
+    q->size = 0;
 }
 
 template<class T>
@@ -1204,5 +1265,332 @@ template<class T>
 bool empty(Queue<T> q){
     return q.size == 0;
 }
+
+};
+
+
+
+template <class T> using Hash_Proc  = usize (*)(T lhs);
+template <class T> using Probe_Proc = usize (*)(T lhs, usize i); 
+template <class T> using Equal_Proc =  bool (*)(T lhs, T rhs);
+
+template <class T>
+struct Hash_Set{
+    struct Elem{
+        enum struct Kind: u8{
+            Free,
+            Used,
+            Deleted,
+        } kind = Kind::Free;
+        T data;
+    };
+
+    Allocator allocator;
+    Elem*     data = nullptr;
+    usize     size = 0;
+    usize     capacity = 0;
+
+    Hash_Proc<T>  hash;
+    Probe_Proc<T> probe;
+    Equal_Proc<T> equal;
+};
+
+namespace Hash_Set_{
+
+template <class T>
+Hash_Set<T> create(Allocator     allocator, 
+                   usize         capacity   = 1,
+                   Hash_Proc<T>  hash_proc  = [](T lhs) -> usize { return (usize) lhs;}, 
+                   Equal_Proc<T> equal_proc = [](T lhs, T rhs) -> bool { return lhs == rhs;},
+                   Probe_Proc<T> probe      = [](T lhs, usize i) -> usize { return i * i; }
+){
+    let try_data = Allocator_::allocate_array<typename Hash_Set<T>::Elem>(allocator, capacity);
+    let data     = Errorable_::unwrap(try_data);
+    typed_memset(data, typename Hash_Set<T>::Elem{ .kind = Hash_Set<T>::Elem::Kind::Free, }, capacity);
+
+    return Hash_Set<T>{
+        .allocator = allocator,
+        .data      = data,
+        .size      = 0, 
+        .capacity  = capacity,
+        .hash      = hash_proc,
+        .probe     = probe,
+        .equal     = equal_proc,
+    };
+}
+
+template <class T>
+void destroy(Hash_Set<T>* set){
+    Allocator_::free_array(set->allocator, set->data, set->capacity);
+}
+
+template <class T>
+void reheash(Hash_Set<T>* set, usize capacity){
+    let try_data = Allocator_::allocate_array<typename Hash_Set<T>::Elem>(set->allocator, capacity);
+    let data     = Errorable_::unwrap(try_data);
+    typed_memset(data, typename Hash_Set<T>::Elem{ .kind = Hash_Set<T>::Elem::Kind::Free, }, capacity);
+
+    for (usize i = 0; i < set->capacity; i++){
+        let elem = set->data[i];
+        if (elem.kind != Hash_Set<T>::Elem::Kind::Used) continue;
+
+        let hashed = set->hash(elem.data);
+        for (usize i = 0; ; i++) {
+            let pos  = (hashed + set->probe(elem.data, i)) % set->capacity;
+            let elem_data = &data[pos];
+            if (elem_data->kind != Hash_Set<T>::Elem::Kind::Used){
+                elem_data->kind = Hash_Set<T>::Elem::Kind::Used;
+                elem_data->data = elem.data;
+                break;
+            }
+        }
+    }
+
+    Allocator_::free_array(set->allocator, set->data, set->capacity);
+    set->data = data;
+    set->capacity = capacity;
+}
+
+template <class T>
+void add(Hash_Set<T>* set, T elem){
+    if (set->size == set->capacity - 1 ||
+        ((double)set->size / (double)set->capacity) >= 0.7){
+        reheash(set, set->capacity * 2);
+    }
+
+    let hashed =  set->hash(elem);
+    for (usize i = 0; ; i++) {
+        let  pos  = (hashed + set->probe(elem, i)) % set->capacity;
+        let elem_data = &set->data[pos];
+        if (elem_data->kind == Hash_Set<T>::Elem::Kind::Used){
+            if (set->equal(elem, elem_data->data)) break;
+        } else {
+            elem_data->kind = Hash_Set<T>::Elem::Kind::Used;
+            elem_data->data = elem;
+            set->size++;
+            break;
+        }
+    }
+}
+
+template<class T>
+bool remove(Hash_Set<T>* set, T elem){
+    let hashed =  set->hash(elem);
+    for (usize i = 0; i < set->size; i++) {
+        let  pos  = (hashed + set->probe(elem, i)) % set->capacity;
+        let elem_data = &set->data[pos];
+        if (elem_data->kind == Hash_Set<T>::Elem::Kind::Free) return false;
+        if (elem_data->kind == Hash_Set<T>::Elem::Kind::Used){
+            if (set->equal(elem, elem_data->data)){
+                elem_data->kind = Hash_Set<T>::Elem::Kind::Deleted;
+                set->size--;
+                return true;
+            }
+        } 
+    }
+
+    return false;
+}
+
+template <class T>
+bool contains(Hash_Set<T> set, T elem){
+    let hashed =  set.hash(elem);
+    for (usize i = 0; i < set.size ; i++) {
+        let  pos  = (hashed + set.probe(elem, i)) % set.capacity;
+        let elem_data = set.data[pos];
+        if (elem_data.kind == Hash_Set<T>::Elem::Kind::Free) return false;
+        if (elem_data.kind == Hash_Set<T>::Elem::Kind::Used){
+            if (set.equal(elem, elem_data.data)){
+                return true;
+            }
+        } 
+    }
+
+    return false;
+}
+
+template<class T>
+bool empty(Hash_Set<T> set){
+    return set.size == 0;
+}
+
+};
+
+
+
+
+template <class K, class V>
+struct Hash_Map{
+    struct Key_Elem{
+        enum struct Kind: u8{
+            Free,
+            Used,
+            Deleted,
+        } kind = Kind::Free;
+        K data;
+    };
+
+    Allocator allocator;
+    Key_Elem* keys   = nullptr;
+    V*        values = nullptr;
+    usize capacity = 1;
+    usize size = 0;
+
+    Hash_Proc<K>  hash;
+    Equal_Proc<K> equal;
+    Probe_Proc<K> probe;
+};
+
+namespace Hash_Map_{
+
+template <class K, class V>
+Hash_Map<K, V> create(Allocator     allocator, 
+                      usize         capacity   = 1,
+                      Hash_Proc<K>  hash_proc  = [](K lhs) -> usize { return (usize) lhs;}, 
+                      Equal_Proc<K> equal_proc = [](K lhs, K rhs) -> bool { return lhs == rhs;},
+                      Probe_Proc<K> probe_proc = [](K lhs, usize i) -> usize { return i * i; }
+){
+
+
+    let try_keys = Allocator_::allocate_array<typename Hash_Map<K, V>::Key_Elem>(allocator, capacity);
+    let keys     = Errorable_::unwrap(try_keys);
+    typed_memset(keys, { .kind = Hash_Map<K, V>::Key_Elem::Kind::Free, }, capacity);
+
+    let try_values = Allocator_::allocate_array<V>(allocator, capacity);
+    let values     = Errorable_::unwrap(try_values);
+
+    return Hash_Map<K, V>{
+        .allocator = allocator,
+        .keys      = keys,
+        .values    = values,
+        .capacity  = capacity,
+        .size      = 0, 
+        .hash      = hash_proc,
+        .equal     = equal_proc,
+        .probe     = probe_proc,
+    };
+}
+
+template <class K, class V>
+void destroy(Hash_Map<K, V>* map){
+    Allocator_::free_array(map->allocator, map->keys,   map->capacity);
+    Allocator_::free_array(map->allocator, map->values, map->capacity);
+}
+
+template <class K, class V>
+void reheash(Hash_Map<K, V>* map, usize capacity){
+    let try_keys = Allocator_::allocate_array<typename Hash_Map<K, V>::Key_Elem>(map->allocator, capacity);
+    let keys     = Errorable_::unwrap(try_keys);
+    typed_memset(keys, { .kind = Hash_Map<K, V>::Key_Elem::Kind::Free, }, capacity);
+
+    let try_values = Allocator_::allocate_array<V>(map->allocator, capacity);
+    let values     = Errorable_::unwrap(try_values);
+
+    for (usize i = 0; i < map->capacity; i++){
+        let key = map->keys[i];
+        if (key.kind != Hash_Map<K, V>::Key_Elem::Kind::Used) continue;
+
+        let hashed = map->hash(key.data);
+        for (usize i = 0; ; i++) {
+            let pos  = (hashed + map->probe(key.data, i)) % map->capacity;
+            let new_key = &keys[pos];
+            if (new_key->kind != Hash_Map<K, V>::Key_Elem::Kind::Used){
+                new_key->kind = Hash_Map<K, V>::Key_Elem::Kind::Used;
+                new_key->data = key.data;
+                values[pos] = map->values[pos];
+                break;
+            }
+        }
+    }
+
+    Allocator_::free_array(map->allocator, map->keys, map->capacity);
+    Allocator_::free_array(map->allocator, map->values, map->capacity);
+    map->keys = keys;
+    map->values = values;
+    map->capacity = capacity;
+}
+
+template <class K, class V>
+void set(Hash_Map<K, V>* map, K key, V value){
+    if (map->size == map->capacity - 1 ||
+        ((double)map->size / (double)map->capacity) >= 0.7){
+        reheash(map, map->capacity * 2);
+    }
+
+    let hashed =  map->hash(key);
+    for (usize i = 0; ; i++) {
+        let  pos  = (hashed + map->probe(key, i)) % map->capacity;
+        let key_data = &map->keys[pos];
+        if (key_data->kind == Hash_Map<K, V>::Key_Elem::Kind::Used){
+            if (map->equal(key, key_data->data)) {
+                map->values[pos] = value;
+                break;
+            }
+        } else {
+            key_data->kind = Hash_Map<K, V>::Key_Elem::Kind::Used;
+            key_data->data = key;
+            map->values[pos] = value;
+            map->size++;
+            break;
+        }
+    }
+}
+
+template <class K, class V>
+bool remove(Hash_Map<K, V>* map, K key){
+    let hashed =  map->hash(key);
+    for (usize i = 0; i < map->size; i++) {
+        let  pos  = (hashed + map->probe(key, i)) % map->capacity;
+        let key_data = &map->keys[pos];
+        if (key_data->kind == Hash_Map<K, V>::Key_Elem::Kind::Free) return false;
+        if (key_data->kind == Hash_Map<K, V>::Key_Elem::Kind::Used){
+            if (map->equal(key, key_data->data)){
+                key_data->kind = Hash_Map<K, V>::Key_Elem::Kind::Deleted;
+                map->size--;
+                return true;
+            }
+        } 
+    }
+
+    return false;
+}
+
+template <class K, class V>
+Option<V> get(Hash_Map<K, V> map, K key){
+    let hashed =  map.hash(key);
+    for (usize i = 0; i < map.size; i++) {
+        let  pos  = (hashed + map.probe(key, i)) % map.capacity;
+        let key_data = &map.keys[pos];
+        if (key_data->kind == Hash_Map<K, V>::Key_Elem::Kind::Free) return {false};
+        if (key_data->kind == Hash_Map<K, V>::Key_Elem::Kind::Used){
+            if (map.equal(key, key_data->data)){
+                return {true, map.values[pos]};
+            }
+        } 
+    }
+
+    return {false};
+}
+
+
+template <class K, class V>
+V get_unwrap(Hash_Map<K, V> map, K key){
+    return Option_::unwrap(get(map, key));
+}
+
+
+template <class K, class V>
+V contains(Hash_Map<K, V> map, K key){
+    return get(map, key).some;
+}
+
+template <class K, class V>
+bool empty(Hash_Map<K, V> map){
+    return map.size == 0;
+}
+
+
+
+
 
 };
