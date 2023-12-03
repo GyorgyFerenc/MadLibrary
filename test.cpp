@@ -14,4 +14,5 @@ int main(){
     test_queue();
     test_hash_set();
     test_hash_map();
+    test_utf8_scanner();
 }

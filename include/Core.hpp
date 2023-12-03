@@ -21,6 +21,8 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 using usize = std::size_t;
+using f64 = double;
+using f32 = float;
 
 #define UNREACHABLE assert(false && "uncreachable");
 
@@ -80,21 +82,25 @@ template <class T>
 struct Errorable {
     Error error;
     T     value;
+
+    inline 
+    T unwrap(const char* msg = "Errorable::unwrap()") {
+        if (this->error == Core_Error::Correct) return this->value;
+        panic(msg);
+        UNREACHABLE;
+    }
 };
 
 namespace Errorable_ {
 template <class T>
-inline T unwrap(Errorable<T> errorable) {
-    if (errorable.error == Core_Error::Correct) return errorable.value;
-    panic("Errorable_::unwrap()");
-    UNREACHABLE;
+inline 
+T unwrap(Errorable<T> errorable) {
+    return errorable.unwrap();
 }
 
 template <class T>
 inline T unwrap(Errorable<T> errorable, const char* msg) {
-    if (errorable.error == Core_Error::Correct) return errorable.value;
-    panic(msg);
-    UNREACHABLE;
+    return errorable.unwrap(msg);
 }
 }  // namespace Errorable_
 
@@ -109,8 +115,16 @@ inline T unwrap(Errorable<T> errorable, const char* msg) {
 
 template <class T>
 struct Option {
-    bool some;
+    bool some = false;
     T    value;
+
+    
+    inline 
+    T unwrap(const char* msg = "Option::unwrap()") {
+        if (this->some) return this->value;
+        panic(msg);
+        UNREACHABLE;
+    }
 };
 
 namespace Option_ {
@@ -126,21 +140,16 @@ inline
 Option<T> none() {
     return {false};
 }
-
 template <class T>
 inline 
 T unwrap(Option<T> option) {
-    if (option.some) return option.value;
-    panic("Option_::unwrap()");
-    UNREACHABLE;
+    return option.unwrap();
 }
 
 template <class T>
 inline 
 T unwrap(Option<T> option, const char* msg) {
-    if (option.some) return option.value;
-    panic(msg);
-    UNREACHABLE;
+    return option.unwrap(msg);
 }
 
 }  // namespace Option_
@@ -834,6 +843,17 @@ usize encode_to_utf8(Rune rune, u8* ptr){
 }
 
 inline
+usize len_in_byes_from_first_byte(u8 b){
+    if ((b >> 7) == 0)       { return 1; }
+    if ((b >> 5) == 0b110)   { return 2; }
+    if ((b >> 4) == 0b1110)  { return 3; }
+    if ((b >> 3) == 0b11110) { return 4; }
+
+    panic("the byte is not utf8 encoded");
+    UNREACHABLE;
+}
+
+inline
 Pair<Rune, usize> decode_from_utf8(u8* encoded){
     Rune rune = {0};
     u32 b = encoded[0];
@@ -871,13 +891,15 @@ Pair<Rune, usize> decode_from_utf8(u8* encoded){
 /*
  * It reads the first rune from the c_str
  */
+inline
 Rune from_c_str(const char* c_str){
     return decode_from_utf8((u8*)c_str).first;
 }
 
 
+inline
 Rune from_char(char chr){
-    return decode_from_utf8((u8*)&chr).first;
+    return chr;
 }
 
 inline

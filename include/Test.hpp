@@ -1,7 +1,7 @@
 #include "Core.hpp"
+#include "Utf8_Scanner.hpp"
 
 #include <iostream>
-
 
 void test_arena_allocator(){
     let distance_in_bytes = [](void* first, void* second) -> usize{
@@ -358,5 +358,221 @@ void test_hash_map(){
         Hash_Map_::remove(&map, 0);
         assert(Hash_Map_::empty(map));
     }   
+}
 
+
+void test_utf8_scanner(){
+    {
+        let str = String_::alias("Kecske");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        assert(scanner.current == Rune_::from_char('K'));
+        //assert(scanner.peek == Rune_::from_char('e'));
+
+        let it2  = String_::iter_rune(str);
+        it2.next();
+        while (scanner.current != 0) {
+            assert(it2.rune == scanner.current);
+            Utf8_Scanner_advance(&scanner);
+            it2.next();
+        }
+    }
+    {
+        let str = String_::alias("  Kecske");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        let nr = Utf8_Scanner_skip_whitespace(&scanner);
+        assert(nr == 2);
+        assert(scanner.current == Rune_::from_char('K'));
+        //assert(scanner.peek == Rune_::from_char('e'));
+    }
+    {
+        let str = String_::alias("-12 +12 12 0xC 0xc -0xFF -0xfF 0b101 0b0000101 012 1_23 0b1010_1010");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == -12);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == -0xFF);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == -0xFF);
+        }
+        {
+            let i = Utf8_Scanner_scan_int<u8>(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 0b101);
+        }
+        {
+            let i = Utf8_Scanner_scan_int<u8>(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 0b101);
+        }
+        {
+            let i = Utf8_Scanner_scan_int<u8>(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 123);
+        }
+        {
+            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 0b10101010);
+        }
+    }
+    {
+        let str = String_::alias("0by0xpasd");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        {
+            let try_i = Utf8_Scanner_scan_int(&scanner);
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(!try_i.some);
+            assert(scanner.current == 'y');
+            Utf8_Scanner_advance(&scanner);
+        }
+        {
+            let try_i = Utf8_Scanner_scan_int(&scanner);
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(!try_i.some);
+            assert(scanner.current == 'p');
+            Utf8_Scanner_advance(&scanner);
+        }
+        {
+            let try_i = Utf8_Scanner_scan_int(&scanner);
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(!try_i.some);
+            assert(scanner.current == 'a');
+            Utf8_Scanner_advance(&scanner);
+        }
+    }
+    {
+        let str = String_::alias("0 12 12.0 12.3 12.03 -12.03 asd");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        {
+            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 0);
+        }
+        {
+            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12.0);
+        }
+        {
+            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12.0);
+        }
+        {
+            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12.3);
+        }
+        {
+            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == 12.03);
+        }
+        {
+            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == -12.03);
+        }
+        {
+            let try_i = Utf8_Scanner_scan_float(&scanner);
+            assert(!try_i.some);
+        }
+    }
+        
+    {
+        let str = String_::alias("true");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        {
+            let i = Utf8_Scanner_scan_bool(&scanner)
+                .unwrap();
+            Utf8_Scanner_skip_whitespace(&scanner);
+            assert(i == true);
+        }
+    }
+
+    {
+        let str = String_::alias("Kecskea");
+        let it  = String_::iter(str);
+        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
+            let it     = ((Array_Iter<u8>*)data);
+            let succes = it->next();
+            return {succes, it->value};
+        }, &it);
+
+        {
+            assert(Utf8_Scanner_scan_exact(&scanner, String_::alias("Kecske")));
+            assert(scanner.current == 'a');
+            assert(!Utf8_Scanner_scan_exact(&scanner, String_::alias("e")));
+            assert(scanner.current == 'a');
+        }
+    }
 }
