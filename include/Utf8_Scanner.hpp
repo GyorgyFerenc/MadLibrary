@@ -5,7 +5,6 @@ using Utf8_Scanner_Proc = Option<u8>(*)(void *);
 
 struct Utf8_Scanner{
     Rune current = 0;
-    Rune peek    = 0;
 
     Utf8_Scanner_Proc scan_proc;
     void* user_data;
@@ -19,12 +18,12 @@ Rune Utf8_Scanner_advance(Utf8_Scanner* scanner, usize nr = 1);
 Utf8_Scanner Utf8_Scanner_create(Utf8_Scanner_Proc proc, void* user_data = NULL){
     let scanner = Utf8_Scanner {
         .current   = 0,
-        .peek      = 0,
+        //.peek      = 0,
         .scan_proc = proc,
         .user_data = user_data,
     };
 
-    Utf8_Scanner_advance(&scanner, 2);
+    Utf8_Scanner_advance(&scanner, 1);
     return scanner;
 }
 
@@ -33,22 +32,22 @@ Utf8_Scanner Utf8_Scanner_create(Utf8_Scanner_Proc proc, void* user_data = NULL)
  */
 Rune Utf8_Scanner_advance(Utf8_Scanner* scanner, usize nr){
     let scan_unwrap = [](Utf8_Scanner_Proc proc, void* data) -> u8{
-        return Option_::unwrap(proc(data));
+        return unwrap(proc(data));
     };
 
     for (usize i = 0; i < nr; i++){
-        scanner->current = scanner->peek;
+        //scanner->current = scanner->peek;
 
         let try_byte = scanner->scan_proc(scanner->user_data);
         if (!try_byte.some) {
-            scanner->peek = 0;
-            continue;
+            scanner->current = 0;
+            break;
         } 
 
         u8 bytes[4] = {0};
         bytes[0] = try_byte.value;
 
-        switch (Rune_::len_in_byes_from_first_byte(bytes[0])) {
+        switch (len_in_byes_from_first_byte(bytes[0])) {
         case 2:{
             bytes[1] = scan_unwrap(scanner->scan_proc, scanner->user_data);
         }break;
@@ -62,8 +61,8 @@ Rune Utf8_Scanner_advance(Utf8_Scanner* scanner, usize nr){
             bytes[3] = scan_unwrap(scanner->scan_proc, scanner->user_data);
         }break;
         }
-        let [r, _] = Rune_::decode_from_utf8(bytes);
-        scanner->peek = r;
+        let [r, _] = decode_from_utf8(bytes);
+        scanner->current = r;
     }
     return scanner->current;
 }
@@ -86,7 +85,7 @@ usize Utf8_Scanner_skip(Utf8_Scanner* scanner, bool(*predicate)(Rune)){
  */
 inline
 usize Utf8_Scanner_skip_whitespace(Utf8_Scanner* scanner){
-    return Utf8_Scanner_skip(scanner, Rune_::whitespace);
+    return Utf8_Scanner_skip(scanner, whitespace);
 }
 
 
@@ -109,7 +108,7 @@ usize Utf8_Scanner_skip_rune(Utf8_Scanner* scanner, Rune rune){
  */
 inline
 usize Utf8_Scanner_skip_char(Utf8_Scanner* scanner, char chr){
-    let rune = Rune_::from_char(chr);
+    let rune = from_char(chr);
     let nr = 0;
     while (scanner->current == rune) {
         Utf8_Scanner_advance(scanner);
@@ -127,7 +126,7 @@ usize Utf8_Scanner_skip_char(Utf8_Scanner* scanner, char chr){
  */
 inline
 bool Utf8_Scanner_scan_exact(Utf8_Scanner* scanner, String str){
-    For_Each(String_::iter_rune(str)){
+    For_Each(iter_rune(str)){
         if (scanner->current != it.rune) return false;
         Utf8_Scanner_advance(scanner);
     }
@@ -158,23 +157,41 @@ Option<Integer> Utf8_Scanner_scan_int(Utf8_Scanner* scanner){
         Utf8_Scanner_advance(scanner);
     }
 
-    let scanned_one = false;
-    let scan_hexa = scanner->current == '0' &&
-                    scanner->peek    == 'x';
-    let scan_binary = scanner->current == '0' &&
-                      scanner->peek    == 'b';
+
+    let scan_hexa    = false;    
+    let scan_binary  = false;
+    let scan_decimal = false;
+
+    if (scanner->current == '0'){
+        scan_decimal = true;
+        let r = Utf8_Scanner_advance(scanner);
+        if (r == 'x'){
+            scan_hexa = true;
+            Utf8_Scanner_advance(scanner);
+        } else if (r == 'b'){
+            scan_binary = true;
+            Utf8_Scanner_advance(scanner);
+        } else if (digit(scanner->current)){
+            scan_decimal = true;
+        } else {
+            return {true, 0};
+        }
+    } else if (digit(scanner->current)){
+        scan_decimal = true;
+    } else {
+        return {false};
+    }
 
     if (scan_hexa){ // hexadecimal
-        Utf8_Scanner_advance(scanner, 2);
-        scanned_one = Utf8_Scanner_skip_char(scanner, '0') != 0;
+        let scanned_one  = Utf8_Scanner_skip_char(scanner, '0') != 0;
         while (true){
-            let digit = 0;
-            if (Rune_::digit(scanner->current)){
-                digit = scanner->current - '0';
+            let d = 0;
+            if (digit(scanner->current)){
+                d = scanner->current - '0';
             } else if('A' <= scanner->current && scanner->current <= 'F'){
-                digit = 10 + scanner->current - 'A';
+                d = 10 + scanner->current - 'A';
             } else if('a' <= scanner->current && scanner->current <= 'f'){
-                digit = 10 + scanner->current - 'a';
+                d = 10 + scanner->current - 'a';
             } else if(scanner->current == '_'){
                 Utf8_Scanner_advance(scanner);
                 continue;
@@ -182,14 +199,14 @@ Option<Integer> Utf8_Scanner_scan_int(Utf8_Scanner* scanner){
                 break;
             }
 
-            number = number * 16 + digit;
+            number = number * 16 + d;
             Utf8_Scanner_advance(scanner);
             scanned_one = true;
         }
+        if (!scanned_one) return {false};
 
     } else if (scan_binary){ // binary
-        Utf8_Scanner_advance(scanner, 2);
-        scanned_one = Utf8_Scanner_skip_char(scanner, '0') != 0;
+        let scanned_one = Utf8_Scanner_skip_char(scanner, '0') != 0;
         while (true){
             let digit = 0;
             if ('0' <= scanner->current && scanner->current <= '1'){
@@ -204,25 +221,26 @@ Option<Integer> Utf8_Scanner_scan_int(Utf8_Scanner* scanner){
             Utf8_Scanner_advance(scanner);
             scanned_one = true;
         }
-    } else { // Decimal
+        if (!scanned_one) return {false};
+    } else if (scan_decimal){ // Decimal
         Utf8_Scanner_skip_char(scanner, '0');
         while (true){
-            let digit = 0;
-            if (Rune_::digit(scanner->current)){
-                digit = scanner->current - '0';
+            let d = 0;
+            if (digit(scanner->current)){
+                d = scanner->current - '0';
             } else if(scanner->current == '_'){
                 Utf8_Scanner_advance(scanner);
                 continue;
             } else {
                 break;
             }
-            number = number * 10 + digit;
+            number = number * 10 + d;
             Utf8_Scanner_advance(scanner);
-            scanned_one = true;
         }
+    } else {
+        return {false};
     }
 
-    if (!scanned_one){ return {false}; }
 
     if (negative) return {true, (Integer) -number};
     else          return {true, (Integer)  number};
@@ -255,15 +273,15 @@ Option<Float> Utf8_Scanner_scan_float(Utf8_Scanner* scanner){
     }
 
     let nr = Utf8_Scanner_skip_char(scanner, '0');
-    if (nr == 0 && !Rune_::digit(scanner->current)){ return {false}; }
-    while (Rune_::digit(scanner->current)){
+    if (nr == 0 && !digit(scanner->current)){ return {false}; }
+    while (digit(scanner->current)){
         number = number * 10 + (scanner->current - '0');
         Utf8_Scanner_advance(scanner);
     }
     Float fractional = 10.0;
     if (scanner->current == '.'){ 
         Utf8_Scanner_advance(scanner);
-        while (Rune_::digit(scanner->current)){
+        while (digit(scanner->current)){
             number += (scanner->current - '0') / fractional;
             fractional *= 10;
             Utf8_Scanner_advance(scanner);
@@ -278,11 +296,11 @@ Option<Float> Utf8_Scanner_scan_float(Utf8_Scanner* scanner){
 inline
 Option<bool> Utf8_Scanner_scan_bool(Utf8_Scanner* scanner){
     if (scanner->current == 't'){
-        let ok = Utf8_Scanner_scan_exact(scanner, String_::alias("true"));
+        let ok = Utf8_Scanner_scan_exact(scanner, alias("true"));
         return {ok, true};
 
     } else if (scanner->current == 'f'){
-        let ok = Utf8_Scanner_scan_exact(scanner, String_::alias("false"));
+        let ok = Utf8_Scanner_scan_exact(scanner, alias("false"));
         return {ok, false};
 
     } else { 

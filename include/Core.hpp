@@ -91,7 +91,6 @@ struct Errorable {
     }
 };
 
-namespace Errorable_ {
 template <class T>
 inline 
 T unwrap(Errorable<T> errorable) {
@@ -102,7 +101,6 @@ template <class T>
 inline T unwrap(Errorable<T> errorable, const char* msg) {
     return errorable.unwrap(msg);
 }
-}  // namespace Errorable_
 
 /*
  * Returns the error if it is an error
@@ -127,17 +125,16 @@ struct Option {
     }
 };
 
-namespace Option_ {
 
 template <class T>
 inline 
-Option<T> some(T value) {
+Option<T> Option_some(T value) {
     return {true, value};
 }
 
 template <class T>
 inline 
-Option<T> none() {
+Option<T> Option_none() {
     return {false};
 }
 template <class T>
@@ -152,7 +149,6 @@ T unwrap(Option<T> option, const char* msg) {
     return option.unwrap(msg);
 }
 
-}  // namespace Option_
 
 template<class T>
 T* typed_memcpy(T* dest, const T* src, usize n){
@@ -187,7 +183,6 @@ struct Allocator{
     Allocator_Function function;
 };
 
-namespace Allocator_{
 
 inline
 Errorable<void*> allocate_raw(Allocator allocator, usize size){
@@ -225,7 +220,7 @@ template<class T>
 inline
 T* allocate_unwrap(Allocator allocator, T value = {}){
     let try_ptr = allocate_raw(allocator, sizeof(T));
-    let t_ptr = (T*)Errorable_::unwrap(try_ptr);
+    let t_ptr = (T*)unwrap(try_ptr);
     *t_ptr = value;
     return t_ptr;
 }
@@ -257,11 +252,8 @@ Errorable<T*> reallocate_array(Allocator allocator, usize size, T* ptr, usize ol
     return {try_ptr.error, (T*)try_ptr.value};
 }
 
-};
 
 
-
-namespace Malloc_Allocator_{
 
 Errorable<void*> malloc_allocate(Allocation_Mode mode, usize size, void* old_ptr, usize old_size){
     switch (mode) {
@@ -286,16 +278,15 @@ Errorable<void*> malloc_allocate(Allocation_Mode mode, usize size, void* old_ptr
     return {Allocation_Error::Unsupported_Allocation_Mode};
 }
 
-Allocator to_interface(){
+Allocator Mallocator_to_interface(){
     return Allocator{
         .obj = nullptr,
         .function = [](void* obj, Allocation_Mode mode, usize size, void* old_ptr, usize old_size) -> Errorable<void*>{
-            return Malloc_Allocator_::malloc_allocate(mode, size, old_ptr, old_size);
+            return malloc_allocate(mode, size, old_ptr, old_size);
         },
     };
 }
 
-};
 
 struct Arena_Allocator{
     u8* memory;
@@ -303,10 +294,9 @@ struct Arena_Allocator{
     usize position = 0;
 };
 
-namespace Arena_Allocator_ {
 
 inline
-Arena_Allocator create(u8* memory, usize size){
+Arena_Allocator Arena_Allocator_create(u8* memory, usize size){
     return Arena_Allocator{
         .memory = memory,
         .size = size,
@@ -314,7 +304,7 @@ Arena_Allocator create(u8* memory, usize size){
     };
 }
 
-Errorable<void*> allocate_impl(Arena_Allocator* alloc, Allocation_Mode mode, usize size, void* old_ptr, usize old_size){
+Errorable<void*> Arena_Allocator_allocate_impl(Arena_Allocator* alloc, Allocation_Mode mode, usize size, void* old_ptr, usize old_size){
     switch (mode) {
         case Allocation_Mode::Reallocate:{ 
             let old_position = alloc->position - old_size;
@@ -327,7 +317,7 @@ Errorable<void*> allocate_impl(Arena_Allocator* alloc, Allocation_Mode mode, usi
                 return {Core_Error::Correct, old_ptr}; 
             }
             // need to allocate new memory
-            let try_new_memory = allocate_impl(alloc, Allocation_Mode::Allocate, size, old_ptr, old_size);
+            let try_new_memory = Arena_Allocator_allocate_impl(alloc, Allocation_Mode::Allocate, size, old_ptr, old_size);
             return_error(try_new_memory);
             let new_memory = try_new_memory.value;
             memcpy(new_memory, old_ptr, old_size);
@@ -363,7 +353,7 @@ Allocator to_interface(Arena_Allocator* alloc){
     return Allocator{
         .obj = alloc,
         .function = [](void* obj, Allocation_Mode mode, usize size, void* old_ptr, usize old_size) -> Errorable<void*>{
-            return allocate_impl((Arena_Allocator*)obj, mode, size, old_ptr, old_size);
+            return Arena_Allocator_allocate_impl((Arena_Allocator*)obj, mode, size, old_ptr, old_size);
         },
     };
 }
@@ -375,24 +365,24 @@ bool has_space(Arena_Allocator alloc, usize size){
 
 inline
 Errorable<void*> allocate_raw(Arena_Allocator* allocator, usize size){
-    return allocate_impl(allocator, Allocation_Mode::Allocate, size, nullptr, 0);
+    return Arena_Allocator_allocate_impl(allocator, Allocation_Mode::Allocate, size, nullptr, 0);
 }
 
 
 inline
 Error free_raw(Arena_Allocator* allocator, void* old_ptr, usize old_size){
-    return allocate_impl(allocator, Allocation_Mode::Free, 0, old_ptr, old_size).error;
+    return Arena_Allocator_allocate_impl(allocator, Allocation_Mode::Free, 0, old_ptr, old_size).error;
 }
 
 
 inline
 Errorable<void*> reallocate_raw(Arena_Allocator* allocator, usize size, void* old_ptr, usize old_size){
-    return allocate_impl(allocator, Allocation_Mode::Reallocate, size, old_ptr, old_size);
+    return Arena_Allocator_allocate_impl(allocator, Allocation_Mode::Reallocate, size, old_ptr, old_size);
 }
 
 inline
 Error free_all(Arena_Allocator* allocator){
-    return allocate_impl(allocator, Allocation_Mode::Free_All, 0, nullptr, 0).error;
+    return Arena_Allocator_allocate_impl(allocator, Allocation_Mode::Free_All, 0, nullptr, 0).error;
 }
 
 template<class T>
@@ -429,8 +419,6 @@ Errorable<T*> reallocate_array(Arena_Allocator* allocator, usize size, T* ptr, u
     return {try_ptr.error, (T*)try_ptr.value};
 }
 
-};
-
 
 struct Page_Allocator{
     Allocator alloc;
@@ -446,7 +434,6 @@ struct Page_Allocator{
     };
 };
 
-namespace Page_Allocator_{
 
 
 inline
@@ -463,17 +450,17 @@ Errorable<void*> allocate(Page_Allocator* alloc, Allocation_Mode mode, usize siz
 
     switch (mode) {
         case Allocation_Mode::Reallocate:{
-            let try_mem = Arena_Allocator_::allocate_impl(&alloc->arena, mode, size, old_ptr, old_size);
+            let try_mem = Arena_Allocator_allocate_impl(&alloc->arena, mode, size, old_ptr, old_size);
             if (try_mem.error == Core_Error::Correct) return try_mem;
         }   // fallthrough to allocate the new page if needed
             // Notice that it will call Areana_Allocator_::allocate with
             // the mode that is passed in, which means that it will resize
             // thus the copying is handled by the Arena_Allocator
         case Allocation_Mode::Allocate: {
-            if (alloc->page == nullptr || !Arena_Allocator_::has_space(alloc->arena, size)){
+            if (alloc->page == nullptr || !has_space(alloc->arena, size)){
                 let needed_size = alloc->page_size > size ? alloc->page_size : size;
 
-                let try_mem = Allocator_::allocate_raw(alloc->alloc, sizeof(Page_Allocator::Page_Header) + needed_size);
+                let try_mem = allocate_raw(alloc->alloc, sizeof(Page_Allocator::Page_Header) + needed_size);
                 return_error(try_mem);
                 let mem_block = (u8*)try_mem.value;
 
@@ -481,10 +468,10 @@ Errorable<void*> allocate(Page_Allocator* alloc, Allocation_Mode mode, usize siz
                 page_header->next = alloc->page;
                 page_header->size = needed_size;
 
-                alloc->arena = Arena_Allocator_::create(mem_block + sizeof(Page_Allocator::Page_Header), needed_size);
+                alloc->arena = Arena_Allocator_create(mem_block + sizeof(Page_Allocator::Page_Header), needed_size);
                 alloc->page = mem_block;
             }
-            return Arena_Allocator_::allocate_impl(&alloc->arena, mode, size, old_ptr, old_size);
+            return Arena_Allocator_allocate_impl(&alloc->arena, mode, size, old_ptr, old_size);
         }break;
         case Allocation_Mode::Free: return {Allocation_Error::Unsupported_Allocation_Mode};
         case Allocation_Mode::Free_All:{
@@ -492,7 +479,7 @@ Errorable<void*> allocate(Page_Allocator* alloc, Allocation_Mode mode, usize siz
             while (page != nullptr) {
                 let page_header = (Page_Allocator::Page_Header*)page;
                 let next = page_header->next;
-                Allocator_::free_raw(alloc->alloc, page, page_header->size);
+                free_raw(alloc->alloc, page, page_header->size);
                 page = next;
             }
             return {Core_Error::Correct};
@@ -512,7 +499,6 @@ Allocator to_interface(Page_Allocator* alloc){
     };
 }
 
-};
 
 struct Pool_Allocator{
     u8* memory;   
@@ -526,7 +512,6 @@ struct Pool_Allocator{
     Free_Node* head;
 };
 
-namespace Pool_Allocator_ {
 Errorable<void*> allocate(Pool_Allocator* alloc, Allocation_Mode mode, usize size, void* old_ptr, usize old_size);
 
 inline
@@ -576,7 +561,6 @@ Errorable<void*> allocate(Pool_Allocator* alloc, Allocation_Mode mode, usize siz
     return {Allocation_Error::Unsupported_Allocation_Mode};
 }
 
-};
 
 template<class T1, class T2>
 struct Pair{
@@ -584,19 +568,15 @@ struct Pair{
     T2 second;
 };
 
-namespace Pair_{
 
 template<class T1, class T2>
 inline
-Pair<T1, T2> create(T1 first, T2 second){
+Pair<T1, T2> Pair_create(T1 first, T2 second){
     return Pair<T1, T2>{
         .first = first,
         .second = second,
     };
 }
-
-};
-
 
 
 #define For_Each(iter)     for (let  it = iter; it.next();) 
@@ -616,18 +596,14 @@ struct Range{
     }
 };
 
-namespace Range_{
-
-Range create(int closed_low, int open_high){
+Range Range_create(int closed_low, int open_high){
     return Range{closed_low, open_high};
 }
 
-};
-
 template <class T>
 struct Array{
-    T* ptr;
-    usize size;
+    T* ptr = nullptr;
+    usize size = 0;
     Allocator allocator;
 
     T& operator[](usize idx){
@@ -657,15 +633,14 @@ struct Array_Iter{
 };
 
 
-namespace Array_{
 
 
 template <class T>
 inline
-Array<T> create(Allocator allocator, usize size){
-    let try_ptr = Allocator_::allocate_array<T>(allocator, size);
+Array<T> Array_create(Allocator allocator, usize size){
+    let try_ptr = allocate_array<T>(allocator, size);
     return Array<T>{
-        .ptr = Errorable_::unwrap(try_ptr, "Array_::create"),
+        .ptr = unwrap(try_ptr, "Array_::create"),
         .size = size,
         .allocator = allocator,
     };
@@ -673,7 +648,7 @@ Array<T> create(Allocator allocator, usize size){
 
 template <class T>
 void destroy(Array<T>* array){
-    Allocator_::free_array(array->allocator, array->ptr, array->size);
+    free_array(array->allocator, array->ptr, array->size);
 }
 
 
@@ -703,8 +678,6 @@ Array<u8> alias_bytes_of(T* data){
     };
 }
 
-};
-
 
 template <class T>
 struct Dynamic_Array{
@@ -718,13 +691,12 @@ struct Dynamic_Array{
     }
 };
 
-namespace Dynamic_Array_{
 template <class T>
-Dynamic_Array<T> create(Allocator allocator, usize capacity = 1, usize size = 0){
+Dynamic_Array<T> Dynamic_Array_create(Allocator allocator, usize capacity = 1, usize size = 0){
     assert(capacity > size);
-    let try_ptr = Allocator_::allocate_array<T>(allocator, capacity);
+    let try_ptr = allocate_array<T>(allocator, capacity);
     return Dynamic_Array<T>{
-        .ptr = Errorable_::unwrap(try_ptr, "Dynamic_Array_::create"),
+        .ptr = unwrap(try_ptr, "Dynamic_Array_::create"),
         .size = size,
         .capacity = capacity,
         .allocator = allocator,
@@ -733,14 +705,14 @@ Dynamic_Array<T> create(Allocator allocator, usize capacity = 1, usize size = 0)
 
 template <class T>
 void destroy(Dynamic_Array<T>* array){
-    Allocator_::free_array(array->allocator, array->ptr, array->capacity);
+    free_array(array->allocator, array->ptr, array->capacity);
 }
 
 template <class T>
 Error reserve(Dynamic_Array<T>* array, usize new_capacity){
     if (array->capacity >= new_capacity) return Core_Error::Correct;
 
-    let try_ptr = Allocator_::reallocate_array(array->allocator, new_capacity, array->ptr, array->capacity);
+    let try_ptr = reallocate_array(array->allocator, new_capacity, array->ptr, array->capacity);
     return_error(try_ptr);
     array->ptr = try_ptr.value;
     array->capacity = new_capacity;
@@ -760,6 +732,21 @@ usize append(Dynamic_Array<T>* array, T value){
 }
 
 template <class T>
+usize insert(Dynamic_Array<T>* array, T value, usize pos){
+    if (array->size + 1 > array->capacity) {
+        reserve(array, 2 * array->capacity);
+    }
+
+    for (usize i = array->size; i > pos; i--){
+        array->ptr[i] = array->ptr[i - 1];
+    }
+    array->size++;
+    array->ptr[pos] = value;
+    return pos;
+}
+
+
+template <class T>
 void clear(Dynamic_Array<T>* array){
     array->size = 0;
 }
@@ -774,12 +761,9 @@ Array_Iter<T> iter(Dynamic_Array<T> array){
     };
 }
 
-};
 
 // Rune is on 4 bytes representing a unicode code point
-using Rune   = u32;
-
-namespace Rune_{
+using Rune = u32;
 
 usize encode_to_utf8(Rune rune, u8* ptr){
     u8 rune_least1_byte = 0;
@@ -924,7 +908,6 @@ bool digit(Rune rune){
     return '0' <= rune && rune <= '9';
 }
 
-};
 
 
 /*
@@ -933,18 +916,11 @@ bool digit(Rune rune){
  */
 using String = Array<u8>;
 
-namespace String_{
-
-
 inline 
-String create(Allocator allocator, usize size){
-    return Array_::create<u8>(allocator, size);
+String String_create(Allocator allocator, usize size){
+    return Array_create<u8>(allocator, size);
 }
 
-inline
-void destroy(String* str){
-    Array_::destroy(str);
-}
 
 inline
 String alias(const char* c_str){
@@ -957,7 +933,7 @@ String alias(const char* c_str){
 inline
 String clone_from_cstr(const char* c_str, Allocator allocator){
     let size = strlen(c_str);
-    let str = String_::create(allocator, size);
+    let str = String_create(allocator, size);
     memcpy((void*)str.ptr, (void*)c_str, size);
     return str;
 }
@@ -985,8 +961,8 @@ String substr_alias_unsafe(String str, usize begin, usize len){
 
 inline
 char* c_str_unsafe(String str, Allocator allocator){
-    let ptr_try = Allocator_::allocate_array<char>(allocator, str.size + 1);
-    let ptr     = Errorable_::unwrap(ptr_try);
+    let ptr_try = allocate_array<char>(allocator, str.size + 1);
+    let ptr     = unwrap(ptr_try);
     ptr[str.size] = '\0';
     memcpy(ptr, str.ptr, str.size);
     return ptr;
@@ -1021,14 +997,14 @@ usize length_by_rune(String str){
  *  O(1)
  */
 Rune rune_at_unsafe(String str, usize byte_pos){
-     let [rune, _] = Rune_::decode_from_utf8(str.ptr + byte_pos);
+     let [rune, _] = decode_from_utf8(str.ptr + byte_pos);
      return rune;
 }
 
 bool equal(String lhs, String rhs){
     if (lhs.size != rhs.size) return false;
 
-    For_Each(Array_::iter(lhs)){
+    For_Each(iter(lhs)){
         if (it.value != rhs[it.idx]) return false;
     }
 
@@ -1084,12 +1060,12 @@ String remove_prefix(String str, usize len){
 
 Array<Rune> to_rune_array(String str, Allocator allocator){
     let len = length_by_rune(str);
-    let array = Array_::create<Rune>(allocator, len);
+    let array = Array_create<Rune>(allocator, len);
     usize i = 0;
     usize i_array = 0;
 
     while (i < str.size) {
-        let [rune, size] = Rune_::decode_from_utf8(str.ptr + i);
+        let [rune, size] = decode_from_utf8(str.ptr + i);
         array.ptr[i_array] = rune;
 
         i += size;
@@ -1098,13 +1074,6 @@ Array<Rune> to_rune_array(String str, Allocator allocator){
 
     return array;
 }
-
-inline
-Array_Iter<u8> iter(String str){
-    return Array_::iter(str);
-}
-
-};
 
 struct String_Rune_Iter{
     u8* ptr;
@@ -1120,7 +1089,7 @@ struct String_Rune_Iter{
     bool next(){
         if (this->last_idx >= size) return false;
         this->idx = this->last_idx;
-        let [rune, rune_byte_len] = Rune_::decode_from_utf8(ptr + idx);
+        let [rune, rune_byte_len] = decode_from_utf8(ptr + idx);
         this->last_idx += rune_byte_len;
         this->rune = rune;
         this->count++;
@@ -1129,7 +1098,6 @@ struct String_Rune_Iter{
     }
 };
 
-namespace String_{
 
 inline
 String_Rune_Iter iter_rune(String str){
@@ -1139,58 +1107,53 @@ String_Rune_Iter iter_rune(String str){
         .count = 0,
     };
 }
-}
 
 
 struct String_Builder{
     Dynamic_Array<u8> bytes;
 };
 
-namespace String_Builder_ {
 
-String_Builder create(Allocator allocator){
+String_Builder String_Builder_create(Allocator allocator){
     return {
-        .bytes = Dynamic_Array_::create<u8>(allocator),
+        .bytes = Dynamic_Array_create<u8>(allocator),
     };
 }
 
 void destroy(String_Builder* builder){
-    Dynamic_Array_::destroy(&builder->bytes);
+    destroy(&builder->bytes);
 }
 
 
 String build(String_Builder builder, Allocator allocator){
-    let array = Array_::create<u8>(allocator, builder.bytes.size);
+    let array = Array_create<u8>(allocator, builder.bytes.size);
     typed_memcpy(array.ptr, builder.bytes.ptr, array.size);
     return array;
 }
 
 void add_c_str(String_Builder* builder, const char* c_str){
     while (*c_str != '\0') {
-        Dynamic_Array_::append(&builder->bytes, (u8)*c_str);
+        append(&builder->bytes, (u8)*c_str);
         c_str++;
     }
 }
 
 
 void add_char(String_Builder* builder, char chr){
-    Dynamic_Array_::append(&builder->bytes, (u8)chr);
+    append(&builder->bytes, (u8)chr);
 }
 
 
 void add_rune(String_Builder* builder, Rune rune){
     u8 bytes[4] = {0, 0, 0, 0};;
-    let len = Rune_::encode_to_utf8(rune, bytes);
+    let len = encode_to_utf8(rune, bytes);
     for (usize i = 0; i < len; i++){
-        Dynamic_Array_::append(&builder->bytes, bytes[i]);
+        append(&builder->bytes, bytes[i]);
     }
 }
 
 void clear(String_Builder* builder){
-    Dynamic_Array_::clear(&builder->bytes);
-}
-
-
+    clear(&builder->bytes);
 }
 
 
@@ -1211,12 +1174,10 @@ struct Queue{
     usize     size = 0;
 };
 
-namespace Queue_{
-
 
 template<class T>
 inline 
-Queue<T> create(Allocator allocator){
+Queue<T> Queue_create(Allocator allocator){
     return {
         .allocator = allocator,
         .head      = nullptr,
@@ -1230,7 +1191,7 @@ void destroy(Queue<T>* q){
     let node = q->head;
     while (node != nullptr) {
         let temp = node->next;
-        Allocator_::free(q->allocator, node);
+        free(q->allocator, node);
         node = temp;
     }
     q->head = nullptr;
@@ -1241,8 +1202,8 @@ void destroy(Queue<T>* q){
 template<class T>
 void enque(Queue<T>* q, T elem){
     q->size++;
-    let try_node = Allocator_::allocate<typename Queue<T>::Node>(q->allocator);
-    let node     = Errorable_::unwrap(try_node);
+    let try_node = allocate<typename Queue<T>::Node>(q->allocator);
+    let node     = unwrap(try_node);
     node->data   = elem;
     node->next   = nullptr;
 
@@ -1263,7 +1224,7 @@ Option<T> deque(Queue<T>* q){
     let data = q->head->data;
     let node = q->head;
     q->head  = node->next;
-    Allocator_::free(q->allocator, node);
+    free(q->allocator, node);
     if (q->head == nullptr) q->tail = nullptr;
     q->size--;
 
@@ -1276,7 +1237,7 @@ T deque_unsafe(Queue<T>* q){
     let data = q->head->data;
     let node = q->head;
     q->head  = node->next;
-    Allocator_::free(q->allocator, node);
+    free(q->allocator, node);
     if (q->head == nullptr) q->tail = nullptr;
     q->size--;
 
@@ -1288,7 +1249,6 @@ bool empty(Queue<T> q){
     return q.size == 0;
 }
 
-};
 
 
 
@@ -1317,17 +1277,16 @@ struct Hash_Set{
     Equal_Proc<T> equal;
 };
 
-namespace Hash_Set_{
 
 template <class T>
-Hash_Set<T> create(Allocator     allocator, 
+Hash_Set<T> Hash_Set_create(Allocator     allocator, 
                    usize         capacity   = 1,
                    Hash_Proc<T>  hash_proc  = [](T lhs) -> usize { return (usize) lhs;}, 
                    Equal_Proc<T> equal_proc = [](T lhs, T rhs) -> bool { return lhs == rhs;},
                    Probe_Proc<T> probe      = [](T lhs, usize i) -> usize { return i * i; }
 ){
-    let try_data = Allocator_::allocate_array<typename Hash_Set<T>::Elem>(allocator, capacity);
-    let data     = Errorable_::unwrap(try_data);
+    let try_data = allocate_array<typename Hash_Set<T>::Elem>(allocator, capacity);
+    let data     = unwrap(try_data);
     typed_memset(data, typename Hash_Set<T>::Elem{ .kind = Hash_Set<T>::Elem::Kind::Free, }, capacity);
 
     return Hash_Set<T>{
@@ -1343,13 +1302,13 @@ Hash_Set<T> create(Allocator     allocator,
 
 template <class T>
 void destroy(Hash_Set<T>* set){
-    Allocator_::free_array(set->allocator, set->data, set->capacity);
+    free_array(set->allocator, set->data, set->capacity);
 }
 
 template <class T>
 void reheash(Hash_Set<T>* set, usize capacity){
-    let try_data = Allocator_::allocate_array<typename Hash_Set<T>::Elem>(set->allocator, capacity);
-    let data     = Errorable_::unwrap(try_data);
+    let try_data = allocate_array<typename Hash_Set<T>::Elem>(set->allocator, capacity);
+    let data     = unwrap(try_data);
     typed_memset(data, typename Hash_Set<T>::Elem{ .kind = Hash_Set<T>::Elem::Kind::Free, }, capacity);
 
     for (usize i = 0; i < set->capacity; i++){
@@ -1368,7 +1327,7 @@ void reheash(Hash_Set<T>* set, usize capacity){
         }
     }
 
-    Allocator_::free_array(set->allocator, set->data, set->capacity);
+    free_array(set->allocator, set->data, set->capacity);
     set->data = data;
     set->capacity = capacity;
 }
@@ -1436,10 +1395,6 @@ bool empty(Hash_Set<T> set){
     return set.size == 0;
 }
 
-};
-
-
-
 
 template <class K, class V>
 struct Hash_Map{
@@ -1463,10 +1418,9 @@ struct Hash_Map{
     Probe_Proc<K> probe;
 };
 
-namespace Hash_Map_{
 
 template <class K, class V>
-Hash_Map<K, V> create(Allocator     allocator, 
+Hash_Map<K, V> Hash_Map_create(Allocator     allocator, 
                       usize         capacity   = 1,
                       Hash_Proc<K>  hash_proc  = [](K lhs) -> usize { return (usize) lhs;}, 
                       Equal_Proc<K> equal_proc = [](K lhs, K rhs) -> bool { return lhs == rhs;},
@@ -1474,12 +1428,12 @@ Hash_Map<K, V> create(Allocator     allocator,
 ){
 
 
-    let try_keys = Allocator_::allocate_array<typename Hash_Map<K, V>::Key_Elem>(allocator, capacity);
-    let keys     = Errorable_::unwrap(try_keys);
+    let try_keys = allocate_array<typename Hash_Map<K, V>::Key_Elem>(allocator, capacity);
+    let keys     = unwrap(try_keys);
     typed_memset(keys, { .kind = Hash_Map<K, V>::Key_Elem::Kind::Free, }, capacity);
 
-    let try_values = Allocator_::allocate_array<V>(allocator, capacity);
-    let values     = Errorable_::unwrap(try_values);
+    let try_values = allocate_array<V>(allocator, capacity);
+    let values     = unwrap(try_values);
 
     return Hash_Map<K, V>{
         .allocator = allocator,
@@ -1495,18 +1449,18 @@ Hash_Map<K, V> create(Allocator     allocator,
 
 template <class K, class V>
 void destroy(Hash_Map<K, V>* map){
-    Allocator_::free_array(map->allocator, map->keys,   map->capacity);
-    Allocator_::free_array(map->allocator, map->values, map->capacity);
+    free_array(map->allocator, map->keys,   map->capacity);
+    free_array(map->allocator, map->values, map->capacity);
 }
 
 template <class K, class V>
 void reheash(Hash_Map<K, V>* map, usize capacity){
-    let try_keys = Allocator_::allocate_array<typename Hash_Map<K, V>::Key_Elem>(map->allocator, capacity);
-    let keys     = Errorable_::unwrap(try_keys);
+    let try_keys = allocate_array<typename Hash_Map<K, V>::Key_Elem>(map->allocator, capacity);
+    let keys     = unwrap(try_keys);
     typed_memset(keys, { .kind = Hash_Map<K, V>::Key_Elem::Kind::Free, }, capacity);
 
-    let try_values = Allocator_::allocate_array<V>(map->allocator, capacity);
-    let values     = Errorable_::unwrap(try_values);
+    let try_values = allocate_array<V>(map->allocator, capacity);
+    let values     = unwrap(try_values);
 
     for (usize i = 0; i < map->capacity; i++){
         let key = map->keys[i];
@@ -1525,8 +1479,8 @@ void reheash(Hash_Map<K, V>* map, usize capacity){
         }
     }
 
-    Allocator_::free_array(map->allocator, map->keys, map->capacity);
-    Allocator_::free_array(map->allocator, map->values, map->capacity);
+    free_array(map->allocator, map->keys, map->capacity);
+    free_array(map->allocator, map->values, map->capacity);
     map->keys = keys;
     map->values = values;
     map->capacity = capacity;
@@ -1556,6 +1510,7 @@ void set(Hash_Map<K, V>* map, K key, V value){
             break;
         }
     }
+
 }
 
 template <class K, class V>
@@ -1597,7 +1552,7 @@ Option<V> get(Hash_Map<K, V> map, K key){
 
 template <class K, class V>
 V get_unwrap(Hash_Map<K, V> map, K key){
-    return Option_::unwrap(get(map, key));
+    return unwrap(get(map, key));
 }
 
 
@@ -1611,8 +1566,3 @@ bool empty(Hash_Map<K, V> map){
     return map.size == 0;
 }
 
-
-
-
-
-};
