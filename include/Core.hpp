@@ -7,6 +7,23 @@
 #include <cstring>
 
 
+#define MADLIBRARY_LINUX   0
+#define MADLIBRARY_WINDOWS 1
+
+#ifndef MADLIBRARY_OS
+    #define MADLIBRARY_OS  MADLIBRARY_LINUX
+#endif
+
+
+#define MADLIBRARY_LITTLE_ENDIAN 0
+#define MADLIBRARY_BIG_ENDIAN    1
+
+#ifndef MADLIBRARY_BYTE_ORDER
+    #define MADLIBRARY_BYTE_ORDER  MADLIBRARY_LITTLE_ENDIAN
+#endif
+
+
+
 #define KB 1024
 #define MB 1024 * KB
 #define GB 1024 * MB
@@ -21,6 +38,7 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 using usize = std::size_t;
+using ssize = ssize_t;
 using f64 = double;
 using f32 = float;
 
@@ -125,6 +143,9 @@ struct Option {
     }
 };
 
+
+#define return_none(option) \
+    if (!option.some) return {false};
 
 template <class T>
 inline 
@@ -251,8 +272,6 @@ Errorable<T*> reallocate_array(Allocator allocator, usize size, T* ptr, usize ol
     let try_ptr = reallocate_raw(allocator, sizeof(T) * size, ptr, sizeof(T) * old_size);
     return {try_ptr.error, (T*)try_ptr.value};
 }
-
-
 
 
 Errorable<void*> malloc_allocate(Allocation_Mode mode, usize size, void* old_ptr, usize old_size){
@@ -437,7 +456,7 @@ struct Page_Allocator{
 
 
 inline
-Page_Allocator create(Allocator allocator, usize page_size){
+Page_Allocator Page_Allocator_create(Allocator allocator, usize page_size){
     return Page_Allocator{
         .alloc = allocator,
         .page = nullptr,
@@ -515,7 +534,7 @@ struct Pool_Allocator{
 Errorable<void*> allocate(Pool_Allocator* alloc, Allocation_Mode mode, usize size, void* old_ptr, usize old_size);
 
 inline
-Pool_Allocator create(u8* memory, usize memory_size, usize chunk_size){
+Pool_Allocator Pool_Allocator_create(u8* memory, usize memory_size, usize chunk_size){
     let alloc = Pool_Allocator{
         .memory = memory,
         .memory_size = memory_size,
@@ -647,6 +666,44 @@ Array<T> Array_create(Allocator allocator, usize size){
 }
 
 template <class T>
+inline
+Array<T> Array_empty(){
+    return Array<T>{
+        .ptr = NULL,
+        .size = 0,
+    };
+}
+
+
+template <class T>
+inline
+Array<T> Array_alias(T* ptr, usize size){
+    return Array<T>{
+        .ptr = ptr,
+        .size = size,
+    };
+}
+
+
+template <class T>
+inline
+Array<T> slice(Array<T> array, usize offset, usize nr){
+    return Array<T>{
+        .ptr = array.ptr + offset,
+        .size = nr,
+    };
+}
+
+template <class T>
+inline
+Array<T> slice_remaining(Array<T> array, usize offset){
+    return Array<T>{
+        .ptr = array.ptr + offset,
+        .size = array.size - offset,
+    };
+}
+
+template <class T>
 void destroy(Array<T>* array){
     free_array(array->allocator, array->ptr, array->size);
 }
@@ -667,11 +724,11 @@ Array_Iter<T> iter(Array<T> array){
  * e. g.
  * ```cpp
  *  u32 a = 12;
- *  let bytes = Array_::alias_bytes_of(&a); // it is the bytes of a;
+ *  let bytes = bytes_of(&a); // it is the bytes of a;
  * ```
  */
 template<class T>
-Array<u8> alias_bytes_of(T* data){
+Array<u8> bytes_of(T* data){
     return {
         .ptr  = (u8*) data,
         .size = sizeof(T),
@@ -776,11 +833,11 @@ usize encode_to_utf8(Rune rune, u8* ptr){
         return 1;
     }
 
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if MADLIBRARY_BYTE_ORDER == MADLIBRARY_LITTLE_ENDIAN
     rune_least1_byte = ((u8*)&rune)[0];
     rune_least2_byte = ((u8*)&rune)[1];
 #endif
-#if BYTE_ORDER == BIG_ENDIAN
+#if MADLIBRARY_BYTE_ORDER == MADLIBRARY_BIG_ENDIAN
     rune_least1_byte = ((u8*)&rune)[3];
     rune_least2_byte = ((u8*)&rune)[2];
 #endif
@@ -806,10 +863,10 @@ usize encode_to_utf8(Rune rune, u8* ptr){
         return 3;
     }
 
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if MADLIBRARY_BYTE_ORDER == MADLIBRARY_LITTLE_ENDIAN
     rune_least3_byte = ((u8*)&rune)[2];
 #endif
-#if BYTE_ORDER == BIG_ENDIAN
+#if MADLIBRARY_BYTE_ORDER == MADLIBRARY_BIG_ENDIAN
     rune_least3_byte = ((u8*)&rune)[1];
 #endif
     
@@ -923,20 +980,22 @@ String String_create(Allocator allocator, usize size){
 
 
 inline
-String alias(const char* c_str){
+String String_alias(const char* c_str){
     return String{
         .ptr = (u8*)c_str,
         .size = strlen(c_str),
     };
 }
 
+
 inline
-String clone_from_cstr(const char* c_str, Allocator allocator){
+String String_clone_from_cstr(const char* c_str, Allocator allocator){
     let size = strlen(c_str);
     let str = String_create(allocator, size);
     memcpy((void*)str.ptr, (void*)c_str, size);
     return str;
 }
+
 
 inline
 Option<String> substr_alias(String str, usize begin, usize len){
@@ -967,6 +1026,7 @@ char* c_str_unsafe(String str, Allocator allocator){
     memcpy(ptr, str.ptr, str.size);
     return ptr;
 }
+
 
 /*
  * The length of the string
@@ -1108,6 +1168,13 @@ String_Rune_Iter iter_rune(String str){
     };
 }
 
+usize String_hash(String str){
+    usize sum = 0;
+    For_Each(iter_rune(str)){
+        sum += it.rune;
+    }
+    return sum;
+}
 
 struct String_Builder{
     Dynamic_Array<u8> bytes;
@@ -1131,6 +1198,18 @@ String build(String_Builder builder, Allocator allocator){
     return array;
 }
 
+
+/*
+ * Alias the underlying array 
+ * It can be used to check if we built something but do not need it yet
+ */
+String build_alias(String_Builder builder){
+    return Array<u8>{
+        .ptr  = builder.bytes.ptr,
+        .size = builder.bytes.size,
+    };
+}
+
 void add_c_str(String_Builder* builder, const char* c_str){
     while (*c_str != '\0') {
         append(&builder->bytes, (u8)*c_str);
@@ -1138,6 +1217,16 @@ void add_c_str(String_Builder* builder, const char* c_str){
     }
 }
 
+
+void add_byte(String_Builder* builder, u8 byte){
+    append(&builder->bytes, byte);
+}
+
+void add(String_Builder* builder, Array<u8> array){
+    For_Each(iter(array)){
+        append(&builder->bytes, it.value);
+    }
+}
 
 void add_char(String_Builder* builder, char chr){
     append(&builder->bytes, (u8)chr);
@@ -1149,6 +1238,27 @@ void add_rune(String_Builder* builder, Rune rune){
     let len = encode_to_utf8(rune, bytes);
     for (usize i = 0; i < len; i++){
         append(&builder->bytes, bytes[i]);
+    }
+}
+
+void add_uint(String_Builder* builder, u64 number){
+    char buffer[20] = {0};
+    usize idx = 0;
+    usize len = 0;
+
+    while (true) {
+        let digit = number % 10;
+        number /= 10;
+        buffer[idx] = '0' + digit;
+        len++;
+        idx++;
+
+        if (number == 0) break;
+    }
+
+    for (usize i = 0; i < len; i++){
+        let pos = len - i - 1;
+        add_char(builder, buffer[pos]);
     }
 }
 
@@ -1557,7 +1667,7 @@ V get_unwrap(Hash_Map<K, V> map, K key){
 
 
 template <class K, class V>
-V contains(Hash_Map<K, V> map, K key){
+bool contains(Hash_Map<K, V> map, K key){
     return get(map, key).some;
 }
 
@@ -1566,3 +1676,41 @@ bool empty(Hash_Map<K, V> map){
     return map.size == 0;
 }
 
+
+template <class K, class V>
+struct Hash_Map_Iter{
+    K     key;
+    V     value;
+    V*    value_ptr;
+    usize count = 0;
+
+    usize pos = 0;
+    usize capacity;
+    typename Hash_Map<K, V>::Key_Elem* keys;
+    V* values;
+
+    bool next(){
+        while (this->pos < this->capacity){
+            let i = this->pos++;
+            let key = this->keys[i];
+            if (key.kind != Hash_Map<K, V>::Key_Elem::Kind::Used) continue;
+            
+            this->count++;
+            this->key       = key.data;
+            this->value     = this->values[i];
+            this->value_ptr = &this->values[i];
+            return true;
+        }
+        return false;
+    }
+};
+
+
+template <class K, class V>
+Hash_Map_Iter<K, V> iter(Hash_Map<K, V> map){
+    return Hash_Map_Iter<K, V>{
+        .capacity = map.capacity,
+        .keys     = map.keys,
+        .values   = map.values,
+    };
+}

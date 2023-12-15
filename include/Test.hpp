@@ -36,7 +36,7 @@ void test_arena_allocator(){
 
 void test_page_allocator(){
     let mallocator     = Mallocator_to_interface();
-    let page_allocator = create(mallocator, 100);
+    let page_allocator = Page_Allocator_create(mallocator, 100);
     let allocator      = to_interface(&page_allocator);
     defer({
         let ret = free_all(allocator);
@@ -173,7 +173,7 @@ void test_string(){
     }
 
     {
-        let str = clone_from_cstr("Test string", allocator);
+        let str = String_clone_from_cstr("Test string", allocator);
         defer(destroy(&str));
         
         assert(equal_c_str(str, "Test string"));
@@ -197,7 +197,7 @@ void test_string(){
 
     }
     {
-        let str = alias("ÁÁÁ");
+        let str = String_alias("ÁÁÁ");
         let rune = from_c_str("Á");
         let count = 0;
         For_Each(iter_rune(str)){
@@ -216,15 +216,37 @@ void test_string(){
     }
     {
         let c_str1 = "asdasdasd";
-        let str = alias(c_str1);
+        let str = String_alias(c_str1);
         let c_str2 = c_str_unsafe(str, allocator);
         defer(free_array(allocator, c_str2, 10));
 
         assert(strcmp(c_str1, c_str2) == 0);
     }
     {
-        let str = alias("ÁÁÁ");
+        let str = String_alias("ÁÁÁ");
         assert(length_by_rune(str) == 3);
+    }
+    {
+        let builder   = String_Builder_create(allocator);
+        defer(destroy(&builder));
+        
+        add_uint(&builder, 123);
+
+        let str = build(builder, allocator);
+        defer(destroy(&str));
+
+        assert(equal_c_str(str, "123"));
+    }
+    {
+        let builder   = String_Builder_create(allocator);
+        defer(destroy(&builder));
+        
+        add_uint(&builder, 0);
+
+        let str = build(builder, allocator);
+        defer(destroy(&str));
+
+        assert(equal_c_str(str, "0"));
     }
 }
 
@@ -379,217 +401,43 @@ void test_hash_map(){
 
 
 void test_utf8_scanner(){
-    {
-        let str = alias("Kecske");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
+    struct Data{
+        const char* str = "KecskeÁÁ";
+        bool returned = false;
+    } data;
 
-        assert(scanner.current == from_char('K'));
-        //assert(scanner.peek == from_char('e'));
+    let scanner = Utf8_Scanner{
+        .user_data = &data,
+        .scan_proc = [](void* ptr) -> Array<u8>{
+            let data = (Data*)ptr;
+            if (data->returned) {
+                return Array_empty<u8>();
+            }
+            data->returned = true;
+            return String_alias(data->str);
+        },
+    };
+    let r = from_c_str("Á");
 
-        let it2  = iter_rune(str);
-        it2.next();
-        while (scanner.current != 0) {
-            assert(it2.rune == scanner.current);
-            Utf8_Scanner_advance(&scanner);
-            it2.next();
-        }
-    }
-    {
-        let str = alias("  Kecske");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
-
-        let nr = Utf8_Scanner_skip_whitespace(&scanner);
-        assert(nr == 2);
-        assert(scanner.current == from_char('K'));
-        //assert(scanner.peek == from_char('e'));
-    }
-    {
-        let str = alias("-12 +12 12 0xC 0xc -0xFF -0xfF 0b101 0b0000101 012 1_23 0b1010_1010");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
-
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == -12);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == -0xFF);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == -0xFF);
-        }
-        {
-            let i = Utf8_Scanner_scan_int<u8>(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 0b101);
-        }
-        {
-            let i = Utf8_Scanner_scan_int<u8>(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 0b101);
-        }
-        {
-            let i = Utf8_Scanner_scan_int<u8>(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 123);
-        }
-        {
-            let i = Utf8_Scanner_scan_int(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 0b10101010);
-        }
-    }
-    {
-        let str = alias("0by0xpasd");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
-
-        {
-            let try_i = Utf8_Scanner_scan_int(&scanner);
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(!try_i.some);
-            assert(scanner.current == 'y');
-            Utf8_Scanner_advance(&scanner);
-        }
-        {
-            let try_i = Utf8_Scanner_scan_int(&scanner);
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(!try_i.some);
-            assert(scanner.current == 'p');
-            Utf8_Scanner_advance(&scanner);
-        }
-        {
-            let try_i = Utf8_Scanner_scan_int(&scanner);
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(!try_i.some);
-            assert(scanner.current == 'a');
-            Utf8_Scanner_advance(&scanner);
-        }
-    }
-    {
-        let str = alias("0 12 12.0 12.3 12.03 -12.03 asd");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
-
-        {
-            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 0);
-        }
-        {
-            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12.0);
-        }
-        {
-            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12.0);
-        }
-        {
-            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12.3);
-        }
-        {
-            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == 12.03);
-        }
-        {
-            let i = Utf8_Scanner_scan_float(&scanner).unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == -12.03);
-        }
-        {
-            let try_i = Utf8_Scanner_scan_float(&scanner);
-            assert(!try_i.some);
-        }
-    }
-        
-    {
-        let str = alias("true");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
-
-        {
-            let i = Utf8_Scanner_scan_bool(&scanner)
-                .unwrap();
-            Utf8_Scanner_skip_whitespace(&scanner);
-            assert(i == true);
-        }
-    }
-
-    {
-        let str = alias("Kecskea");
-        let it  = iter(str);
-        let scanner = Utf8_Scanner_create([](void* data) -> Option<u8>{
-            let it     = ((Array_Iter<u8>*)data);
-            let succes = it->next();
-            return {succes, it->value};
-        }, &it);
-
-        {
-            assert(Utf8_Scanner_scan_exact(&scanner, alias("Kecske")));
-            assert(scanner.current == 'a');
-            assert(!Utf8_Scanner_scan_exact(&scanner, alias("e")));
-            assert(scanner.current == 'a');
-        }
-    }
+    next(&scanner);
+    assert(scanner.current == 'K');
+    next(&scanner);
+    assert(scanner.current == 'e');
+    next(&scanner);
+    assert(scanner.current == 'c');
+    next(&scanner);
+    assert(scanner.current == 's');
+    next(&scanner);
+    assert(scanner.current == 'k');
+    next(&scanner);
+    assert(scanner.current == 'e');
+    next(&scanner);
+    assert(scanner.current == r);
+    next(&scanner);
+    assert(scanner.current == r);
+    next(&scanner);
+    assert(scanner.current == 0);
+    next(&scanner);
+    assert(scanner.current == 0);
+    next(&scanner);
 }
