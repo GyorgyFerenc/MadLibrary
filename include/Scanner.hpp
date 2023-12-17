@@ -3,6 +3,9 @@
 
 using Scanner_Proc = Array<u8>(*)(void *);
 
+/*
+ * Neet to call scanner_next() so current is set
+ */
 struct Scanner{
     Rune current = 0;
 
@@ -17,7 +20,7 @@ struct Scanner{
 /*
  * we asume that the returned array contains correct utf8 and aligned currectly
  */
-Rune next(Scanner* scanner){
+Rune scanner_next(Scanner* scanner){
     if (scanner->array.size == 0 || scanner->peek_idx == scanner->array.size){
         scanner->current = 0;
         scanner->peek_idx = 0;
@@ -45,7 +48,7 @@ Option<u64> scanner_scan_uint(Scanner* scanner){
     while (rune_digit(scanner->current)) {
         let d = scanner->current - '0';
         number = number * 10 + d;
-        next(scanner);
+        scanner_next(scanner);
     }
 
     return {true, number};
@@ -70,7 +73,7 @@ Option<u64> string_parse_uint(String str){
         },
     };
 
-    next(&scanner);
+    scanner_next(&scanner);
 
     return scanner_scan_uint(&scanner);
 }

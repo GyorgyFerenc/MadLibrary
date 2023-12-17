@@ -423,27 +423,27 @@ void test_utf8_scanner(){
         };
         let r = rune_from_c_str("Á");
 
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 'K');
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 'e');
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 'c');
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 's');
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 'k');
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 'e');
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == r);
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == r);
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 0);
-        next(&scanner);
+        scanner_next(&scanner);
         assert(scanner.current == 0);
-        next(&scanner);
+        scanner_next(&scanner);
     }
     {
         struct Data{
@@ -462,7 +462,7 @@ void test_utf8_scanner(){
                 return string_alias(data->str);
             },
         };
-        next(&scanner);
+        scanner_next(&scanner);
 
         let number = scanner_scan_uint(&scanner).unwrap();
         assert(number == 123);

@@ -164,10 +164,10 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
     };
 
     let correct = [&](){
-        next(&scanner);
+        scanner_next(&scanner);
 
         while (scanner.current != SP) {
-            next(&scanner);
+            scanner_next(&scanner);
         }
 
         // I can do this slice because the scanner_data.buffer starts out with enough data
@@ -192,60 +192,60 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
         let builder = string_builder_create(allocator);
         defer(string_builder_destroy(&builder));
 
-        next(&scanner);
+        scanner_next(&scanner);
         while (scanner.current != SP) {
             string_builder_add_rune(&builder, scanner.current);
-            next(&scanner);
+            scanner_next(&scanner);
         }
 
         request.uri = string_builder_build(builder, allocator);
 
         string_builder_clear(&builder);
-        next(&scanner);
+        scanner_next(&scanner);
         while (scanner.current != CR) {
             string_builder_add_rune(&builder, scanner.current);
-            next(&scanner);
+            scanner_next(&scanner);
         }
         let http_version = string_builder_build_alias(builder);
         if (!string_equal_c_str(http_version, "HTTP/1.1")){
             return false;
         }
-        next(&scanner); 
+        scanner_next(&scanner); 
         if (scanner.current != LF) {
             return false;
         }
 
-        next(&scanner);
+        scanner_next(&scanner);
         while (scanner.current != CR) {
             //scan 1 header
             string_builder_clear(&builder);
             while (scanner.current != ':') {
                 string_builder_add_rune(&builder, scanner.current);
-                next(&scanner);
+                scanner_next(&scanner);
             }
             let key = string_builder_build(builder, allocator);
 
-            if (next(&scanner) != SP){ return false; }
+            if (scanner_next(&scanner) != SP){ return false; }
 
             string_builder_clear(&builder);
-            next(&scanner);
+            scanner_next(&scanner);
             while (scanner.current != CR) {
                 string_builder_add_rune(&builder, scanner.current);
-                next(&scanner);
+                scanner_next(&scanner);
             }
             let value = string_builder_build(builder, allocator);
             hash_map_set(&request.headers, key, value);
         
             if (scanner.current != CR){ return false; }
-            if (next(&scanner)  != LF){ return false; }
-            next(&scanner);
+            if (scanner_next(&scanner)  != LF){ return false; }
+            scanner_next(&scanner);
         }
-        if (next(&scanner) != LF){ return false; }
+        if (scanner_next(&scanner) != LF){ return false; }
 
 
         let content_length = hash_map_get(request.headers, string_alias("Content-Length"));
         if (content_length.some){
-            next(&scanner);
+            scanner_next(&scanner);
 
             let try_length = string_parse_uint(content_length.value);
             if (!try_length.some) return false;
