@@ -1029,6 +1029,15 @@ char* string_c_str_unsafe(String str, Allocator allocator){
     return ptr;
 }
 
+inline
+Errorable<char*> string_c_str(String str, Allocator allocator){
+    let ptr_try = allocator_allocate_array<char>(allocator, str.size + 1);
+    return_error(ptr_try);
+    let ptr = ptr_try.value;
+    ptr[str.size] = '\0';
+    memcpy(ptr, str.ptr, str.size);
+    return {Core_Error::Correct, ptr};
+}
 
 /*
  * The length of the string

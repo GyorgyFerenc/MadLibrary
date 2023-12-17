@@ -1,5 +1,6 @@
 #pragma  once
 
+#include <cstdio>
 #include "../Core.hpp"
 
 using IPv4 = u8[4];
@@ -12,3 +13,5 @@ struct Socket{
     int socket_descriptor;
     Address address;
 };
+
+struct File;

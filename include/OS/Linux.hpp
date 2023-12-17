@@ -2,6 +2,8 @@
 
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -114,4 +116,71 @@ Pair<ssize, int> tcp_receive(Socket socket, Array<u8>* data){
     }
     data->size = nr;
     return {nr, err};
+}
+
+
+
+struct File{
+    enum Mode{
+        Read,
+        Write,  // Creates if doesn't exists
+        Append, // Creates if doesn't exists
+    };
+    int fd;
+};
+
+Option<File> file_open_c_str(const char* path, File::Mode mode = File::Mode::Read){
+    File file;
+
+    switch (mode) {
+    case File::Mode::Read:{
+        file.fd = open(path, O_RDONLY);
+    }break;
+    case File::Mode::Write:{
+        file.fd = open(path, O_RDONLY | O_CREAT);
+    }break;
+    case File::Mode::Append:{
+        file.fd = open(path, O_RDONLY | O_CREAT | O_APPEND);
+    }break;
+    }
+
+    if (file.fd < 0){
+        return {false, file};
+    }
+
+    return {true, file};
+}
+
+
+Option<File> file_open(String str, Allocator allocator, File::Mode mode = File::Mode::Read){
+    let cstr = string_c_str(str, allocator);
+    if (cstr.error != Core_Error::Correct) return {false};
+    return file_open_c_str(cstr.value, mode);
+}
+
+
+usize file_read(File file, Array<u8>* array){
+    let nr = read(file.fd, array->ptr, array->size);
+    array->size = nr;
+    return nr;
+}
+
+
+usize file_write(File file, Array<u8> array){
+    return write(file.fd, array.ptr, array.size);
+}
+
+
+usize file_size(File file){
+    struct stat s;
+    fstat(file.fd, &s);
+    return s.st_size;
+}
+
+
+Array<u8> file_read_all(File file, Allocator allocator){
+    let size = file_size(file);
+    let array = array_create<u8>(allocator, size);
+    file_read(file, &array);
+    return array;
 }
