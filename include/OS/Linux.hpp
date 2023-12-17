@@ -106,11 +106,12 @@ bool tcp_send(Socket socket, Array<u8> data){
     return ret <= 0;
 }
 
-Pair<ssize, int> tcp_receive(Socket socket, Array<u8> data){
-    let nr = recv(socket.socket_descriptor, data.ptr, data.size, 0);
+Pair<ssize, int> tcp_receive(Socket socket, Array<u8>* data){
+    let nr = recv(socket.socket_descriptor, data->ptr, data->size, 0);
     let err = 0;
     if (nr < 0){
         err = errno;
     }
+    data->size = nr;
     return {nr, err};
 }

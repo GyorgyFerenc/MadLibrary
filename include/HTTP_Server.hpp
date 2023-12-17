@@ -1,6 +1,5 @@
 #include "Core.hpp"
-#include "OS/Linux.hpp"
-#include "Utf8_Scanner.hpp"
+#include "Scanner.hpp"
 #include "OS.hpp"
 
 const u8 SP = 32;
@@ -8,7 +7,7 @@ const u8 CR = 13;
 const u8 LF = 10;
 const u8 CRLF[2] = {CR, LF};
 
-const let Content_Type_Html = String_alias("plain/html");
+const let Content_Type_Html = String_alias("text/html");
 
 enum struct Request_Method {
     OPTIONS = 0,
@@ -24,7 +23,7 @@ enum struct Request_Method {
 struct Request{
     Request_Method           method;
     String                   uri;
-    String                   body;
+    Array<u8>                body;
     Hash_Map<String, String> headers;
     Socket client;
 };
@@ -33,7 +32,7 @@ struct Response{
     usize status_code = 500;
     String description;
     Hash_Map<String, String> headers;
-    String body;
+    Array<u8> body;
 };
 
 Response response_create(Allocator allocator){
@@ -96,7 +95,11 @@ void response_set_status_code(Response* response, usize status_code){
     }
 }
 
-void response_set_body(Response* response, Allocator allocator, String body, String content_type = Content_Type_Html){
+/*
+ * content_type is not cloned.
+ * body is not cloned.
+ */
+void response_set_body(Response* response, Allocator allocator, Array<u8> body, String content_type = Content_Type_Html){
     response->body = body;
 
     let builder = String_Builder_create(allocator);
@@ -105,7 +108,7 @@ void response_set_body(Response* response, Allocator allocator, String body, Str
     add_uint(&builder, body.size);
 
     set(&response->headers, String_alias("Content-Length"), build(builder, allocator));
-    //set(&response->headers, String_alias("Content-Length"), build(builder, allocator));
+    set(&response->headers, String_alias("Content-Type"),   content_type);
 }
 
 
@@ -113,7 +116,8 @@ struct HTTP_Server{
     Socket listener;
 };
 
-Option<HTTP_Server> HTTP_Server_start(Address address){
+
+Option<HTTP_Server> http_server_start(Address address){
     let listener = tcp_start_listener(address);
     return_none(listener);
 
@@ -122,15 +126,17 @@ Option<HTTP_Server> HTTP_Server_start(Address address){
     }};
 }
 
+
 void close(HTTP_Server server){
     close(server.listener);
 }
+
 
 /*
  * It blocks until a request comes in
  */
 Option<Request> poll_request(HTTP_Server server, Allocator allocator){
-    //TODO(Ferenc): More error handleing
+    //TODO(Ferenc): Better error handleing
 
     let client_opt = tcp_accept(server.listener);
     return_none(client_opt);
@@ -146,18 +152,16 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
     } scanner_data;
     scanner_data.client = client;
 
-
-    Utf8_Scanner scanner{
+    Scanner scanner{
         .user_data = &scanner_data,
         .scan_proc = [](void* user_data) -> Array<u8>{
             let scanner_data = (Scanner_Data*)user_data;
             let buffer = Array_alias(scanner_data->buffer, 1 * KB);
-            let [nr, err] = tcp_receive(scanner_data->client, buffer);
+            let [nr, err] = tcp_receive(scanner_data->client, &buffer);
             if (nr <= 0){ return Array_empty<u8>(); }
-            return slice(buffer, 0, nr);
+            return buffer;
         }
     };
-
 
     let correct = [&](){
         next(&scanner);
@@ -238,11 +242,35 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
         }
         if (next(&scanner) != LF){ return false; }
 
-        //Content-Length or Transfer-Encoding
-        let content_lenght = get(request.headers, String_alias("Content-Length"));
-        if (content_lenght.some){
-            let lenght = content_lenght.value;
-            //TODO(Ferenc): Read body
+
+        let content_length = get(request.headers, String_alias("Content-Length"));
+        if (content_length.some){
+            next(&scanner);
+
+            let try_length = string_parse_uint(content_length.value);
+            if (!try_length.some) return false;
+            let length = try_length.value;
+            request.body = Array_create<u8>(allocator, length);
+
+            let scanner_remaining = slice_remaining(scanner.array, scanner.idx);
+            For_Each(iter(scanner_remaining)){
+                request.body[it.idx] = it.value;
+            }
+            let offset = scanner_remaining.size;
+
+            while (offset < length) {
+                let buffer = Array_alias(scanner_data.buffer, 1 * KB);
+                let [nr, err] = tcp_receive(scanner_data.client, &buffer);
+
+                if (nr <= 0) 
+                    return false; 
+
+                For_Each(iter(buffer)){
+                    request.body[offset + it.idx] = it.value;
+                }
+
+                offset += buffer.size;
+            }
         }
 
         return true;
@@ -252,7 +280,7 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
         close(client);
     }
 
-    return {true, request};
+    return {correct, request};
 }
 
 void respond(Request request, Response response, Allocator allocator){
@@ -275,11 +303,10 @@ void respond(Request request, Response response, Allocator allocator){
         add_byte(&builder, LF);
     }
 
-    //TODO(Ferenc): Add body
     add_byte(&builder, CR);
     add_byte(&builder, LF);
-
     add(&builder, response.body);
+
     tcp_send(request.client, build_alias(builder));
     close(request.client);
 };

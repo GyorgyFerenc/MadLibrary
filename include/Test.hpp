@@ -1,7 +1,5 @@
 #include "Core.hpp"
-#include "Utf8_Scanner.hpp"
-
-#include <iostream>
+#include "Scanner.hpp"
 
 void test_arena_allocator(){
     let distance_in_bytes = [](void* first, void* second) -> usize{
@@ -401,43 +399,67 @@ void test_hash_map(){
 
 
 void test_utf8_scanner(){
-    struct Data{
-        const char* str = "KecskeÁÁ";
-        bool returned = false;
-    } data;
+    {
+        struct Data{
+            const char* str = "KecskeÁÁ";
+            bool returned = false;
+        } data;
 
-    let scanner = Utf8_Scanner{
-        .user_data = &data,
-        .scan_proc = [](void* ptr) -> Array<u8>{
-            let data = (Data*)ptr;
-            if (data->returned) {
-                return Array_empty<u8>();
-            }
-            data->returned = true;
-            return String_alias(data->str);
-        },
-    };
-    let r = from_c_str("Á");
+        let scanner = Scanner{
+            .user_data = &data,
+            .scan_proc = [](void* ptr) -> Array<u8>{
+                let data = (Data*)ptr;
+                if (data->returned) {
+                    return Array_empty<u8>();
+                }
+                data->returned = true;
+                return String_alias(data->str);
+            },
+        };
+        let r = from_c_str("Á");
 
-    next(&scanner);
-    assert(scanner.current == 'K');
-    next(&scanner);
-    assert(scanner.current == 'e');
-    next(&scanner);
-    assert(scanner.current == 'c');
-    next(&scanner);
-    assert(scanner.current == 's');
-    next(&scanner);
-    assert(scanner.current == 'k');
-    next(&scanner);
-    assert(scanner.current == 'e');
-    next(&scanner);
-    assert(scanner.current == r);
-    next(&scanner);
-    assert(scanner.current == r);
-    next(&scanner);
-    assert(scanner.current == 0);
-    next(&scanner);
-    assert(scanner.current == 0);
-    next(&scanner);
+        next(&scanner);
+        assert(scanner.current == 'K');
+        next(&scanner);
+        assert(scanner.current == 'e');
+        next(&scanner);
+        assert(scanner.current == 'c');
+        next(&scanner);
+        assert(scanner.current == 's');
+        next(&scanner);
+        assert(scanner.current == 'k');
+        next(&scanner);
+        assert(scanner.current == 'e');
+        next(&scanner);
+        assert(scanner.current == r);
+        next(&scanner);
+        assert(scanner.current == r);
+        next(&scanner);
+        assert(scanner.current == 0);
+        next(&scanner);
+        assert(scanner.current == 0);
+        next(&scanner);
+    }
+    {
+        struct Data{
+            const char* str = "123";
+            bool returned = false;
+        } data;
+
+        let scanner = Scanner{
+            .user_data = &data,
+            .scan_proc = [](void* ptr) -> Array<u8>{
+                let data = (Data*)ptr;
+                if (data->returned) {
+                    return Array_empty<u8>();
+                }
+                data->returned = true;
+                return String_alias(data->str);
+            },
+        };
+        next(&scanner);
+
+        let number = scanner_scan_uint(&scanner).unwrap();
+        assert(number == 123);
+    }
 }
