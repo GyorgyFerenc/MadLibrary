@@ -8,7 +8,7 @@
 #include <cerrno>
 
 #include "../Core.hpp"
-#include "Shared.hpp"
+#include "Shared.hpp" // IWYU pragma: export
 
 
 Option<Socket> tcp_start_listener(Address address, usize listen_nr = 50, bool non_blocking = false){

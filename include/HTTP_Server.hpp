@@ -7,7 +7,7 @@ const u8 CR = 13;
 const u8 LF = 10;
 const u8 CRLF[2] = {CR, LF};
 
-const let Content_Type_Html = String_alias("text/html");
+const let Content_Type_Html = string_alias("text/html");
 
 enum struct Request_Method {
     OPTIONS = 0,
@@ -37,7 +37,7 @@ struct Response{
 
 Response response_create(Allocator allocator){
     return {
-        .headers = Hash_Map_create<String, String>(allocator, 10, String_hash, equal),
+        .headers = hash_map_create<String, String>(allocator, 10, string_hash, string_equal),
     };
 }
 
@@ -48,50 +48,50 @@ void response_set_status_code(Response* response, usize status_code){
     response->status_code = status_code;
 
     switch (status_code) {
-    case 100: response->description = String_alias("Continue"); break;
-    case 101: response->description = String_alias("Switching"); break;
-    case 200: response->description = String_alias("OK"); break;
-    case 201: response->description = String_alias("Created"); break;
-    case 202: response->description = String_alias("Accepted"); break;
-    case 203: response->description = String_alias("Non"); break;
-    case 204: response->description = String_alias("No"); break;
-    case 205: response->description = String_alias("Reset"); break;
-    case 206: response->description = String_alias("Partial"); break;
-    case 300: response->description = String_alias("Multiple"); break;
-    case 301: response->description = String_alias("Moved"); break;
-    case 302: response->description = String_alias("Found"); break;
-    case 303: response->description = String_alias("See"); break;
-    case 304: response->description = String_alias("Not"); break;
-    case 305: response->description = String_alias("Use"); break;
-    case 307: response->description = String_alias("Temporary"); break;
-    case 308: response->description = String_alias("Permanent"); break;
-    case 400: response->description = String_alias("Bad"); break;
-    case 401: response->description = String_alias("Unauthorized"); break;
-    case 402: response->description = String_alias("Payment"); break;
-    case 403: response->description = String_alias("Forbidden"); break;
-    case 404: response->description = String_alias("Not"); break;
-    case 405: response->description = String_alias("Method"); break;
-    case 406: response->description = String_alias("Not"); break;
-    case 407: response->description = String_alias("Proxy"); break;
-    case 408: response->description = String_alias("Request"); break;
-    case 409: response->description = String_alias("Conflict"); break;
-    case 410: response->description = String_alias("Gone"); break;
-    case 411: response->description = String_alias("Length"); break;
-    case 412: response->description = String_alias("Precondition"); break;
-    case 413: response->description = String_alias("Content"); break;
-    case 414: response->description = String_alias("URI"); break;
-    case 415: response->description = String_alias("Unsupported"); break;
-    case 416: response->description = String_alias("Range"); break;
-    case 417: response->description = String_alias("Expectation"); break;
-    case 421: response->description = String_alias("Misdirected"); break;
-    case 422: response->description = String_alias("Unprocessable"); break;
-    case 426: response->description = String_alias("Upgrade"); break;
-    case 500: response->description = String_alias("Internal"); break;
-    case 501: response->description = String_alias("Not"); break;
-    case 502: response->description = String_alias("Bad"); break;
-    case 503: response->description = String_alias("Service"); break;
-    case 504: response->description = String_alias("Gateway"); break;
-    case 505: response->description = String_alias("HTTP"); break;
+    case 100: response->description = string_alias("Continue"); break;
+    case 101: response->description = string_alias("Switching"); break;
+    case 200: response->description = string_alias("OK"); break;
+    case 201: response->description = string_alias("Created"); break;
+    case 202: response->description = string_alias("Accepted"); break;
+    case 203: response->description = string_alias("Non"); break;
+    case 204: response->description = string_alias("No"); break;
+    case 205: response->description = string_alias("Reset"); break;
+    case 206: response->description = string_alias("Partial"); break;
+    case 300: response->description = string_alias("Multiple"); break;
+    case 301: response->description = string_alias("Moved"); break;
+    case 302: response->description = string_alias("Found"); break;
+    case 303: response->description = string_alias("See"); break;
+    case 304: response->description = string_alias("Not"); break;
+    case 305: response->description = string_alias("Use"); break;
+    case 307: response->description = string_alias("Temporary"); break;
+    case 308: response->description = string_alias("Permanent"); break;
+    case 400: response->description = string_alias("Bad"); break;
+    case 401: response->description = string_alias("Unauthorized"); break;
+    case 402: response->description = string_alias("Payment"); break;
+    case 403: response->description = string_alias("Forbidden"); break;
+    case 404: response->description = string_alias("Not"); break;
+    case 405: response->description = string_alias("Method"); break;
+    case 406: response->description = string_alias("Not"); break;
+    case 407: response->description = string_alias("Proxy"); break;
+    case 408: response->description = string_alias("Request"); break;
+    case 409: response->description = string_alias("Conflict"); break;
+    case 410: response->description = string_alias("Gone"); break;
+    case 411: response->description = string_alias("Length"); break;
+    case 412: response->description = string_alias("Precondition"); break;
+    case 413: response->description = string_alias("Content"); break;
+    case 414: response->description = string_alias("URI"); break;
+    case 415: response->description = string_alias("Unsupported"); break;
+    case 416: response->description = string_alias("Range"); break;
+    case 417: response->description = string_alias("Expectation"); break;
+    case 421: response->description = string_alias("Misdirected"); break;
+    case 422: response->description = string_alias("Unprocessable"); break;
+    case 426: response->description = string_alias("Upgrade"); break;
+    case 500: response->description = string_alias("Internal"); break;
+    case 501: response->description = string_alias("Not"); break;
+    case 502: response->description = string_alias("Bad"); break;
+    case 503: response->description = string_alias("Service"); break;
+    case 504: response->description = string_alias("Gateway"); break;
+    case 505: response->description = string_alias("HTTP"); break;
     }
 }
 
@@ -102,13 +102,13 @@ void response_set_status_code(Response* response, usize status_code){
 void response_set_body(Response* response, Allocator allocator, Array<u8> body, String content_type = Content_Type_Html){
     response->body = body;
 
-    let builder = String_Builder_create(allocator);
-    defer(destroy(&builder));
+    let builder = string_builder_create(allocator);
+    defer(string_builder_destroy(&builder));
 
-    add_uint(&builder, body.size);
+    string_builder_add_uint(&builder, body.size);
 
-    set(&response->headers, String_alias("Content-Length"), build(builder, allocator));
-    set(&response->headers, String_alias("Content-Type"),   content_type);
+    hash_map_set(&response->headers, string_alias("Content-Length"), string_builder_build(builder, allocator));
+    hash_map_set(&response->headers, string_alias("Content-Type"),   content_type);
 }
 
 
@@ -144,7 +144,7 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
     
     Request request;
     request.client = client;
-    request.headers = Hash_Map_create<String, String>(allocator, 10, String_hash, equal);
+    request.headers = hash_map_create<String, String>(allocator, 10, string_hash, string_equal);
 
     struct Scanner_Data{
         u8 buffer[1 * KB] = {0};
@@ -156,9 +156,9 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
         .user_data = &scanner_data,
         .scan_proc = [](void* user_data) -> Array<u8>{
             let scanner_data = (Scanner_Data*)user_data;
-            let buffer = Array_alias(scanner_data->buffer, 1 * KB);
+            let buffer = array_alias(scanner_data->buffer, 1 * KB);
             let [nr, err] = tcp_receive(scanner_data->client, &buffer);
-            if (nr <= 0){ return Array_empty<u8>(); }
+            if (nr <= 0){ return array_empty<u8>(); }
             return buffer;
         }
     };
@@ -172,42 +172,42 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
 
         // I can do this slice because the scanner_data.buffer starts out with enough data
         // tho it can happen that if is received by multiple tcp_recived
-        let method_str = (String) slice(scanner.array, 0, scanner.idx);
-        if (equal_c_str(method_str, "OPTIONS")){
+        let method_str = (String) array_slice(scanner.array, 0, scanner.idx);
+        if (string_equal_c_str(method_str, "OPTIONS")){
             request.method = Request_Method::OPTIONS;   
-        } else if (equal_c_str(method_str, "GET")){
+        } else if (string_equal_c_str(method_str, "GET")){
             request.method = Request_Method::GET;   
-        } else if (equal_c_str(method_str, "HEAD")){
+        } else if (string_equal_c_str(method_str, "HEAD")){
             request.method = Request_Method::HEAD;   
-        } else if (equal_c_str(method_str, "POST")){
+        } else if (string_equal_c_str(method_str, "POST")){
             request.method = Request_Method::POST;   
-        } else if (equal_c_str(method_str, "DELETE")){
+        } else if (string_equal_c_str(method_str, "DELETE")){
             request.method = Request_Method::DELETE;   
-        } else if (equal_c_str(method_str, "TRACE")){
+        } else if (string_equal_c_str(method_str, "TRACE")){
             request.method = Request_Method::TRACE;   
-        } else if (equal_c_str(method_str, "CONNECT")){
+        } else if (string_equal_c_str(method_str, "CONNECT")){
             request.method = Request_Method::CONNECT;   
         } 
 
-        let builder = String_Builder_create(allocator);
-        defer(destroy(&builder));
+        let builder = string_builder_create(allocator);
+        defer(string_builder_destroy(&builder));
 
         next(&scanner);
         while (scanner.current != SP) {
-            add_rune(&builder, scanner.current);
+            string_builder_add_rune(&builder, scanner.current);
             next(&scanner);
         }
 
-        request.uri = build(builder, allocator);
+        request.uri = string_builder_build(builder, allocator);
 
-        clear(&builder);
+        string_builder_clear(&builder);
         next(&scanner);
         while (scanner.current != CR) {
-            add_rune(&builder, scanner.current);
+            string_builder_add_rune(&builder, scanner.current);
             next(&scanner);
         }
-        let http_version = build_alias(builder);
-        if (!equal_c_str(http_version, "HTTP/1.1")){
+        let http_version = string_builder_build_alias(builder);
+        if (!string_equal_c_str(http_version, "HTTP/1.1")){
             return false;
         }
         next(&scanner); 
@@ -218,23 +218,23 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
         next(&scanner);
         while (scanner.current != CR) {
             //scan 1 header
-            clear(&builder);
+            string_builder_clear(&builder);
             while (scanner.current != ':') {
-                add_rune(&builder, scanner.current);
+                string_builder_add_rune(&builder, scanner.current);
                 next(&scanner);
             }
-            let key = build(builder, allocator);
+            let key = string_builder_build(builder, allocator);
 
             if (next(&scanner) != SP){ return false; }
 
-            clear(&builder);
+            string_builder_clear(&builder);
             next(&scanner);
             while (scanner.current != CR) {
-                add_rune(&builder, scanner.current);
+                string_builder_add_rune(&builder, scanner.current);
                 next(&scanner);
             }
-            let value = build(builder, allocator);
-            set(&request.headers, key, value);
+            let value = string_builder_build(builder, allocator);
+            hash_map_set(&request.headers, key, value);
         
             if (scanner.current != CR){ return false; }
             if (next(&scanner)  != LF){ return false; }
@@ -243,29 +243,29 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
         if (next(&scanner) != LF){ return false; }
 
 
-        let content_length = get(request.headers, String_alias("Content-Length"));
+        let content_length = hash_map_get(request.headers, string_alias("Content-Length"));
         if (content_length.some){
             next(&scanner);
 
             let try_length = string_parse_uint(content_length.value);
             if (!try_length.some) return false;
             let length = try_length.value;
-            request.body = Array_create<u8>(allocator, length);
+            request.body = array_create<u8>(allocator, length);
 
-            let scanner_remaining = slice_remaining(scanner.array, scanner.idx);
-            For_Each(iter(scanner_remaining)){
+            let scanner_remaining = array_slice_remaining(scanner.array, scanner.idx);
+            For_Each(array_iter(scanner_remaining)){
                 request.body[it.idx] = it.value;
             }
             let offset = scanner_remaining.size;
 
             while (offset < length) {
-                let buffer = Array_alias(scanner_data.buffer, 1 * KB);
+                let buffer = array_alias(scanner_data.buffer, 1 * KB);
                 let [nr, err] = tcp_receive(scanner_data.client, &buffer);
 
                 if (nr <= 0) 
                     return false; 
 
-                For_Each(iter(buffer)){
+                For_Each(array_iter(buffer)){
                     request.body[offset + it.idx] = it.value;
                 }
 
@@ -284,29 +284,29 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
 }
 
 void respond(Request request, Response response, Allocator allocator){
-    let builder = String_Builder_create(allocator);
-    defer(destroy(&builder));
+    let builder = string_builder_create(allocator);
+    defer(string_builder_destroy(&builder));
     
-    add_c_str(&builder, "HTTP/1.1");
-    add_c_str(&builder, " ");
-    add_uint(&builder, response.status_code);
-    add_c_str(&builder, " ");
-    add(&builder, response.description);
-    add_byte(&builder, CR);
-    add_byte(&builder, LF);
+    string_builder_add_c_str(&builder, "HTTP/1.1");
+    string_builder_add_c_str(&builder, " ");
+    string_builder_add_uint(&builder, response.status_code);
+    string_builder_add_c_str(&builder, " ");
+    string_builder_add(&builder, response.description);
+    string_builder_add_byte(&builder, CR);
+    string_builder_add_byte(&builder, LF);
 
-    For_Each(iter(response.headers)){
-        add(&builder, it.key);
-        add_c_str(&builder, ": ");
-        add(&builder, it.value);
-        add_byte(&builder, CR);
-        add_byte(&builder, LF);
+    For_Each(hash_map_iter(response.headers)){
+        string_builder_add(&builder, it.key);
+        string_builder_add_c_str(&builder, ": ");
+        string_builder_add(&builder, it.value);
+        string_builder_add_byte(&builder, CR);
+        string_builder_add_byte(&builder, LF);
     }
 
-    add_byte(&builder, CR);
-    add_byte(&builder, LF);
-    add(&builder, response.body);
+    string_builder_add_byte(&builder, CR);
+    string_builder_add_byte(&builder, LF);
+    string_builder_add(&builder, response.body);
 
-    tcp_send(request.client, build_alias(builder));
+    tcp_send(request.client, string_builder_build_alias(builder));
     close(request.client);
 };

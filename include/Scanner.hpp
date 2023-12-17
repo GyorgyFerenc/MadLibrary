@@ -29,7 +29,7 @@ Rune next(Scanner* scanner){
     }
 
     let ptr = scanner->array.ptr + scanner->peek_idx;
-    let [rune, nr] = decode_from_utf8(ptr);
+    let [rune, nr] = rune_decode_from_utf8(ptr);
     scanner->idx = scanner->peek_idx;
     scanner->peek_idx += nr;
     scanner->current = rune;
@@ -37,12 +37,12 @@ Rune next(Scanner* scanner){
 }
 
 Option<u64> scanner_scan_uint(Scanner* scanner){
-    if (!digit(scanner->current)){
+    if (!rune_digit(scanner->current)){
         return {false};
     }
 
     u64 number = 0;
-    while (digit(scanner->current)) {
+    while (rune_digit(scanner->current)) {
         let d = scanner->current - '0';
         number = number * 10 + d;
         next(scanner);
@@ -63,7 +63,7 @@ Option<u64> string_parse_uint(String str){
         .scan_proc = [](void* ptr) -> Array<u8>{
             let data = (Data*)ptr;
             if (data->returned) {
-                return Array_empty<u8>();
+                return array_empty<u8>();
             }
             data->returned = true;
             return data->str;
