@@ -93,21 +93,30 @@ void test_dynamic_array(){
     }
 
     dynamic_array_clear(&array);
-    dynamic_array_insert(&array, 1, 0);
-    dynamic_array_insert(&array, 2, 1);
-    dynamic_array_insert(&array, 3, 2);
-    dynamic_array_insert(&array, 4, 3);
+    dynamic_array_insert(&array, 0, 1);
+    dynamic_array_insert(&array, 1, 2);
+    dynamic_array_insert(&array, 2, 3);
+    dynamic_array_insert(&array, 3, 4);
     assert(array[0] == 1);
     assert(array[1] == 2);
     assert(array[2] == 3);
     assert(array[3] == 4);
 
-    dynamic_array_insert(&array, 12, 0);
+    dynamic_array_insert(&array, 0, 12);
     assert(array[0] == 12);
     assert(array[1] == 1);
     assert(array[2] == 2);
     assert(array[3] == 3);
     assert(array[4] == 4);
+
+    assert(array.size == 5);
+    dynamic_array_pop(&array);
+    assert(array.size == 4);
+    dynamic_array_remove(&array, 0);
+    assert(array[0] == 1);
+    assert(array[1] == 2);
+    assert(array[2] == 3);
+    assert(array.size == 3);
 }
 
 void test_rune(){
@@ -466,5 +475,41 @@ void test_utf8_scanner(){
 
         let number = scanner_scan_uint(&scanner).unwrap();
         assert(number == 123);
+    }
+}
+
+void test_bucket_array(){
+    let allocator = mallocator_to_interface();
+    let array = bucket_array_create<int, 2>(allocator);
+    defer(bucket_array_destroy(array));
+
+    let [idx_0, ptr_0] = bucket_array_append(&array, 0);
+    let [idx_1, ptr_1] = bucket_array_append(&array, 1);
+    let [idx_2, ptr_2] = bucket_array_append(&array, 2);
+    let [idx_3, ptr_3] = bucket_array_append(&array, 3);
+    bucket_array_append(&array, 4);
+    bucket_array_append(&array, 5);
+
+    assert(array.size == 6);
+
+    {
+        *ptr_0 = 123;
+        let value = bucket_array_get(array, idx_0);
+        assert(value == 123);
+    }
+    {
+        *ptr_1 = 32;
+        let value = bucket_array_get(array, idx_1);
+        assert(value == 32);
+    }
+    {
+        *ptr_2 = 1;
+        let value = bucket_array_get(array, idx_2);
+        assert(value == 1);
+    }
+    {
+        *ptr_3 = 321;
+        let value = bucket_array_get(array, idx_3);
+        assert(value == 321);
     }
 }

@@ -8,10 +8,10 @@ struct Address{
     IPv4 ip;
     u16  port;
 };
-
-struct Socket{
-    int socket_descriptor;
-    Address address;
-};
+struct Socket;
 
 struct File;
+
+struct Thread;
+struct Mutex;
+struct Conditional_Variable;

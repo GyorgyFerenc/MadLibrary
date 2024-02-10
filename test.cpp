@@ -15,4 +15,5 @@ int main(){
     test_hash_set();
     test_hash_map();
     test_utf8_scanner();
+    test_bucket_array();
 }

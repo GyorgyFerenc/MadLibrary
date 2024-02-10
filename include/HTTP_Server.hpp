@@ -7,7 +7,7 @@ const u8 CR = 13;
 const u8 LF = 10;
 const u8 CRLF[2] = {CR, LF};
 
-const let Content_Type_Html = string_alias("text/html");
+const let Content_Type_Html = string_alias("text/html; charset=utf-8");
 
 enum struct Request_Method {
     OPTIONS = 0,
@@ -136,7 +136,7 @@ void close(HTTP_Server server){
  * It blocks until a request comes in
  */
 Option<Request> poll_request(HTTP_Server server, Allocator allocator){
-    //TODO(Ferenc): Better error handleing
+    //TODO(Ferenc): Better error handling
 
     let client_opt = tcp_accept(server.listener);
     return_none(client_opt);

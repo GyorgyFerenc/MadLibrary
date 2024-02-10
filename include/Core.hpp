@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -70,6 +71,7 @@ struct defer_dummy {
 #else
     #define ANONYMOUS_VARIABLE(str) CONCAT(str, __LINE__)
 #endif
+
 
 #define defer_block auto ANONYMOUS_VARIABLE(__defer_instance) = defer_dummy{} + [&]()
 #define defer(body) \
@@ -664,6 +666,13 @@ Array<T> array_create(Allocator allocator, usize size){
     };
 }
 
+
+template <class T>
+inline
+void array_destroy(Array<T>* array){
+    allocator_free_array(array->allocator, array->ptr, array->size);
+}
+
 template <class T>
 inline
 Array<T> array_empty(){
@@ -702,12 +711,6 @@ Array<T> array_slice_remaining(Array<T> array, usize offset){
     };
 }
 
-template <class T>
-void array_destroy(Array<T>* array){
-    allocator_free_array(array->allocator, array->ptr, array->size);
-}
-
-
 template<class T>
 Array_Iter<T> array_iter(Array<T> array){
     return Array_Iter<T>{
@@ -715,6 +718,17 @@ Array_Iter<T> array_iter(Array<T> array){
         .size = array.size,
         .count = 0,
     };
+}
+
+
+template <class T>
+inline
+Array<T> array_clone(Array<T> array, Allocator allocator){
+    let new_array = array_create<T>(allocator, array.size);
+    For_Each(array_iter(array)){
+        new_array[it.idx] = it.value;
+    }
+    return new_array;
 }
 
 /*
@@ -788,7 +802,7 @@ usize dynamic_array_append(Dynamic_Array<T>* array, T value){
 }
 
 template <class T>
-usize dynamic_array_insert(Dynamic_Array<T>* array, T value, usize pos){
+usize dynamic_array_insert(Dynamic_Array<T>* array, usize pos, T value){
     if (array->size + 1 > array->capacity) {
         dynamic_array_reserve(array, 2 * array->capacity);
     }
@@ -801,6 +815,19 @@ usize dynamic_array_insert(Dynamic_Array<T>* array, T value, usize pos){
     return pos;
 }
 
+template <class T>
+void dynamic_array_remove(Dynamic_Array<T>* array, usize pos){
+    assert(pos < array->size);
+    for (usize i = pos; i < array->size - 1; i++){
+        array->ptr[i] = array->ptr[i + 1];
+    }
+    array->size--;
+}
+
+template <class T>
+void dynamic_array_pop(Dynamic_Array<T>* array){
+    dynamic_array_remove(array, array->size - 1);
+}
 
 template <class T>
 void dynamic_array_clear(Dynamic_Array<T>* array){
@@ -816,6 +843,12 @@ Array_Iter<T> dynamic_array_iter(Dynamic_Array<T> array){
         .count = 0,
     };
 }
+
+template<class T>
+T dynamic_array_last(Dynamic_Array<T> array){
+    return array.ptr[array.size - 1];
+}
+
 
 
 // Rune is on 4 bytes representing a unicode code point
@@ -972,6 +1005,11 @@ bool rune_digit(Rune rune){
  */
 using String = Array<u8>;
 
+inline
+String string_empty(){
+    return array_empty<u8>();
+}
+
 inline 
 String string_create(Allocator allocator, usize size){
     return array_create<u8>(allocator, size);
@@ -1084,7 +1122,6 @@ bool string_equal(String lhs, String rhs){
 
 
 bool string_equal_c_str(String lhs, const char* rhs){
-    
     for (usize i = 0; i < lhs.size; i++){
         if (rhs[0] == '\0') return false;
         if (lhs[i] != (u8)rhs[i]) return false; // (u8) because char is fucking signed
@@ -1151,17 +1188,17 @@ struct String_Rune_Iter{
     usize size;
 
     usize count = 0;
-    usize idx   = 0; 
-    usize last_idx = 0;
+    usize byte_idx   = 0; 
+    usize read_len = 0;
     Rune  rune = 0;
     usize rune_byte_len = 0; // Last decoded runes len
 
     inline
     bool next(){
-        if (this->last_idx >= size) return false;
-        this->idx = this->last_idx;
-        let [rune, rune_byte_len] = rune_decode_from_utf8(ptr + idx);
-        this->last_idx += rune_byte_len;
+        if (this->read_len >= size) return false;
+        this->byte_idx = this->read_len;
+        let [rune, rune_byte_len] = rune_decode_from_utf8(ptr + byte_idx);
+        this->read_len += rune_byte_len;
         this->rune = rune;
         this->count++;
         this->rune_byte_len = rune_byte_len;
@@ -1177,6 +1214,12 @@ String_Rune_Iter string_iter_rune(String str){
         .size = str.size,
         .count = 0,
     };
+}
+
+
+inline
+Array_Iter<u8> string_iter(String str){
+    return array_iter(str);
 }
 
 usize string_hash(String str){
@@ -1725,3 +1768,134 @@ Hash_Map_Iter<K, V> hash_map_iter(Hash_Map<K, V> map){
         .values   = map.values,
     };
 }
+
+
+template <class T, usize capacity>
+struct Bucket{
+    T ptr[capacity];
+};
+
+template <class T, usize bucket_capacity>
+struct Bucket_Array{
+    usize size = 0;
+    usize bucket_size = 0;
+    Dynamic_Array<Bucket<T, bucket_capacity>*> bucket_array;
+    Allocator allocator;
+};
+
+template <class T, usize bucket_capacity>
+inline
+Bucket_Array<T, bucket_capacity> bucket_array_create(Allocator allocator){
+    let bucket = allocator_allocate_unwrap<Bucket<T, bucket_capacity>>(allocator);
+
+    let array = Bucket_Array<T, bucket_capacity>{
+        .bucket_array = dynamic_array_create<Bucket<T, bucket_capacity>*>(allocator, 1),
+        .allocator    = allocator,
+    };
+
+    dynamic_array_append(&array.bucket_array, bucket);
+    return array;
+}
+
+
+template <class T, usize bucket_capacity>
+void bucket_array_destroy(Bucket_Array<T, bucket_capacity> array){
+    For_Each(dynamic_array_iter(array.bucket_array)){
+        allocator_free(array.allocator, it.value);
+    }
+
+    dynamic_array_destroy(&array.bucket_array);
+}
+
+template <class T, usize bucket_capacity>
+Pair<usize, T*> bucket_array_append(Bucket_Array<T, bucket_capacity>* array, T elem){
+    if (array->bucket_size == bucket_capacity){
+        let bucket = allocator_allocate_unwrap<Bucket<T, bucket_capacity>>(array->allocator);
+        dynamic_array_append(&array->bucket_array, bucket);
+        array->bucket_size = 0;
+    }
+
+
+    let elem_ptr = &dynamic_array_last(array->bucket_array)->ptr[array->bucket_size];
+    *elem_ptr = elem;
+    array->bucket_size++;
+    let i = array->size++;
+
+    return {i, elem_ptr};
+}
+
+/*
+ * It returns the ptr to the inserted elem
+ */
+template <class T, usize bucket_capacity>
+inline
+T* bucket_array_append_ptr(Bucket_Array<T, bucket_capacity>* array, T elem){
+    return bucket_array_append(array, elem).second;
+}
+
+/*
+ * It returns the idx to the inserted elem
+ */
+template <class T, usize bucket_capacity>
+inline
+T* bucket_array_append_idx(Bucket_Array<T, bucket_capacity>* array, T elem){
+    return bucket_array_append(array, elem).first;
+}
+
+template <class T, usize bucket_capacity>
+inline
+T* bucket_array_get_ptr(Bucket_Array<T, bucket_capacity> array, usize i){
+    let bucket_i = i / bucket_capacity;
+    let bucket_in_i = i % bucket_capacity;
+    return &array.bucket_array[bucket_i]->ptr[bucket_in_i];
+}
+
+template <class T, usize bucket_capacity>
+inline
+T bucket_array_get(Bucket_Array<T, bucket_capacity> array, usize i){
+    return *bucket_array_get_ptr(array, i);
+}
+
+
+template <class T>
+struct Stack{
+    Dynamic_Array<T> inner;
+};
+
+
+template <class T>
+Stack<T> stack_create(Allocator allocator){
+    return {
+        .inner = dynamic_array_create<T>(allocator),
+    };
+}
+
+template <class T>
+void stack_destroy(Stack<T> s){
+    dynamic_array_destroy(&s.inner);
+}
+
+template <class T>
+void stack_push(Stack<T>* s, T elem){
+    dynamic_array_append(&s->inner, elem);
+}
+
+
+template <class T>
+T stack_top(Stack<T> s){
+    return dynamic_array_last(s.inner);
+}
+
+template <class T>
+T stack_pop(Stack<T>* s){
+    let value = stack_top(*s);
+    dynamic_array_pop(&s->inner);
+    return value;
+}
+
+//template <class T>
+//template <class T>
+//template <class T>
+//template <class T>
+//template <class T>
+//template <class T>

@@ -12,6 +12,14 @@
 #include "../Core.hpp"
 #include "Shared.hpp" // IWYU pragma: export
 
+// ------
+// Socket
+// ------
+
+struct Socket{
+    int socket_descriptor;
+    Address address;
+};
 
 Option<Socket> tcp_start_listener(Address address, usize listen_nr = 50, bool non_blocking = false){
     int type = SOCK_STREAM;
@@ -108,6 +116,10 @@ bool tcp_send(Socket socket, Array<u8> data){
     return ret <= 0;
 }
 
+/*
+ * data is inout parameter
+ * it sets the size of the data to what is read
+ */
 Pair<ssize, int> tcp_receive(Socket socket, Array<u8>* data){
     let nr = recv(socket.socket_descriptor, data->ptr, data->size, 0);
     let err = 0;
@@ -119,6 +131,9 @@ Pair<ssize, int> tcp_receive(Socket socket, Array<u8>* data){
 }
 
 
+// ----
+// File
+// ----
 
 struct File{
     enum Mode{
@@ -137,11 +152,13 @@ Option<File> file_open_c_str(const char* path, File::Mode mode = File::Mode::Rea
         file.fd = open(path, O_RDONLY);
     }break;
     case File::Mode::Write:{
-        file.fd = open(path, O_RDONLY | O_CREAT);
+        file.fd = open(path, O_RDONLY | O_CREAT, S_IRWXU);
     }break;
     case File::Mode::Append:{
-        file.fd = open(path, O_RDONLY | O_CREAT | O_APPEND);
+        file.fd = open(path, O_RDONLY | O_CREAT | O_APPEND, S_IRWXU);
     }break;
+    default:
+        file.fd = -1;
     }
 
     if (file.fd < 0){
@@ -158,6 +175,9 @@ Option<File> file_open(String str, Allocator allocator, File::Mode mode = File::
     return file_open_c_str(cstr.value, mode);
 }
 
+void file_close(File file){
+    close(file.fd);
+}
 
 usize file_read(File file, Array<u8>* array){
     let nr = read(file.fd, array->ptr, array->size);
@@ -184,3 +204,110 @@ Array<u8> file_read_all(File file, Allocator allocator){
     file_read(file, &array);
     return array;
 }
+
+
+// ------
+// Thread
+// ------
+
+#include <pthread.h>
+
+struct Thread_Data{
+    Allocator allocator;
+    void*     data;
+};
+
+using Thread_Proc = void(*)(Thread_Data);
+
+struct Thread{
+    pthread_t   p_thread;
+    Thread_Proc proc;
+    Thread_Data data;
+};
+
+void thread_start(Thread* thread, Thread_Proc proc, Thread_Data data = {NULL}){
+    thread->proc = proc;
+    thread->data = data;
+    pthread_create(&thread->p_thread, NULL, [](void* void_thread) -> void*{
+        let thread = (Thread*)void_thread;
+        thread->proc(thread->data);
+        return NULL;
+    }, thread);
+}
+
+void thread_join(Thread thread){
+    pthread_join(thread.p_thread, NULL);
+}
+
+void thread_cancel(Thread thread){
+    pthread_cancel(thread.p_thread);
+}
+
+/*
+ * Copying is not allowed
+ */
+struct Mutex{
+    pthread_mutex_t p_mutex;  
+};
+
+inline
+Mutex mutex_create(){
+    let mutex = Mutex{ };
+    pthread_mutex_init(&mutex.p_mutex, NULL);
+    return mutex;
+}
+
+inline
+void mutex_lock(Mutex* mutex){
+    pthread_mutex_lock(&mutex->p_mutex);
+}
+
+/*
+ * Returns true if it locked the mutex
+ */
+inline
+bool mutex_try_lock(Mutex* mutex){
+    return !pthread_mutex_trylock(&mutex->p_mutex);
+}
+
+inline
+void mutex_unlock(Mutex* mutex){
+    pthread_mutex_unlock(&mutex->p_mutex);
+}
+
+inline
+void mutex_destroy(Mutex* mutex){
+    pthread_mutex_destroy(&mutex->p_mutex);
+}
+
+struct Conditional_Variable{
+    pthread_cond_t p_cond;
+};
+
+inline
+Conditional_Variable conditional_variable_create(){
+    Conditional_Variable cond;
+    pthread_cond_init(&cond.p_cond, NULL);
+    return cond;
+}
+
+inline
+void conditional_variable_destroy(Conditional_Variable* cond){
+    pthread_cond_destroy(&cond->p_cond);
+}
+
+inline
+void conditional_variable_notify_one(Conditional_Variable* cond){
+    pthread_cond_signal(&cond->p_cond);
+}
+
+inline
+void conditional_variable_notify_all(Conditional_Variable* cond){
+    pthread_cond_broadcast(&cond->p_cond);
+}
+
+inline
+void pthread_cond_waitconditional_variable_wait(Conditional_Variable* cond, Mutex* mutex){
+    pthread_cond_wait(&cond->p_cond, &mutex->p_mutex);
+}
+

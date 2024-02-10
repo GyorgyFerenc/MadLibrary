@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-
 enum class Compiler{
     GCC,
 };
@@ -63,7 +62,7 @@ void target_add_include_search_directory(Target* target, const char* dir){
     dynamic_array_append(&target->include_search_directories, dir);
 }
 
-void target_define_macro(Target* target, const char* macro, const char* value){
+void target_define_macro(Target* target, const char* macro, const char* value = ""){
     dynamic_array_append(&target->macros, {macro, value});
 }
 
