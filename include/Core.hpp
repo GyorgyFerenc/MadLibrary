@@ -1225,6 +1225,8 @@ Array_Iter<u8> string_iter(String str){
 }
 
 usize string_hash(String str){
+    //Todo(Ferenc): Add a better hash function
+
     usize sum = 0;
     For_Each(string_iter_rune(str)){
         sum += it.rune;

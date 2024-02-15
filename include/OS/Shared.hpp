@@ -1,6 +1,5 @@
 #pragma  once
 
-#include <cstdio>
 #include "../Core.hpp"
 
 using IPv4 = u8[4];

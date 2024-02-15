@@ -1,10 +1,17 @@
 #pragma once
 
 #include "Core.hpp"
+#include "OS.hpp"
 #include <cstdio>
 #include <cstdlib>
 
-enum class Compiler{
+
+proc run(const char* c_str){
+    printf("[Running]: %s\n", c_str);
+    system(c_str);
+}
+
+enum struct Compiler{
     GCC,
 };
 
@@ -145,10 +152,70 @@ void target_compile(Target target){
 
     let command = string_builder_build(builder, target.allocator);
     defer(array_destroy(&command));
-    let c_str = string_c_str_unsafe(command, target.allocator);
-    defer(allocator_free_array(target.allocator, c_str, command.size + 1));
+    let command_c_str = string_c_str_unsafe(command, target.allocator);
+    defer(allocator_free_array(target.allocator, command_c_str, command.size + 1));
 
-    printf("[Running]: %s\n", c_str);
-    system(c_str);
+    run(command_c_str);
+}
+
+
+proc self_build(const char* source_path, 
+                const char* output, 
+                Allocator allocator,
+                int argc,
+                const char** argv){
+
+    let source_file = file_open_c_str(source_path).unwrap();
+    let source = cast(String) file_read_all(source_file, allocator);
+    let source_hash = string_hash(source);
+
+    let builder = string_builder_create(allocator);
+    defer(string_builder_destroy(&builder));
+    string_builder_add_c_str(&builder, source_path);
+    string_builder_add_c_str(&builder, ".hash");
+
+    let hash_file_path = string_builder_build_alias(builder);
+    let [success, hash_file_reader] = file_open(hash_file_path, allocator, File::Mode::Read);
+
+    let need_rebuild = false;
+
+    if (!success){
+        need_rebuild = true;
+    } else {
+        let stored_hash_bytes = file_read_all(hash_file_reader, allocator);
+        file_close(hash_file_reader);
+
+        let stored_hash = *cast(usize*)stored_hash_bytes.ptr;// transmute out the 
+        need_rebuild = stored_hash != source_hash;
+    }
+
+    if (need_rebuild){
+        // save the hash
+        let hash_file_write = file_open(hash_file_path, allocator, File::Mode::Write).unwrap();
+        file_write(hash_file_write, bytes_of(&source_hash));
+        file_close(hash_file_write);
+
+        let target = target_create(allocator);
+        defer(target_destory(&target));
+
+        target_add_source(&target, source_path);
+        target.output = output;
+        target_compile(target);
+
+        let rerun_buldier = builder; // reuse the builder for saving memory
+        string_builder_clear(&rerun_buldier);
+
+        For_Each(range(0, argc)){
+            string_builder_add_c_str(&rerun_buldier, argv[it.value]);
+            string_builder_add_char(&rerun_buldier, ' ');
+        }
+
+        let rerun_cmd = string_builder_build_alias(rerun_buldier);
+        let rerun_cmd_c_str = string_c_str(rerun_cmd, allocator).unwrap();
+        defer(allocator_free_array(allocator, rerun_cmd_c_str, rerun_cmd.size + 1));
+
+        run(rerun_cmd_c_str);
+        exit(1);
+    }
 }
 

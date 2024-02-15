@@ -152,10 +152,10 @@ Option<File> file_open_c_str(const char* path, File::Mode mode = File::Mode::Rea
         file.fd = open(path, O_RDONLY);
     }break;
     case File::Mode::Write:{
-        file.fd = open(path, O_RDONLY | O_CREAT, S_IRWXU);
+        file.fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
     }break;
     case File::Mode::Append:{
-        file.fd = open(path, O_RDONLY | O_CREAT | O_APPEND, S_IRWXU);
+        file.fd = open(path, O_WRONLY | O_CREAT | O_APPEND, S_IRWXU);
     }break;
     default:
         file.fd = -1;
@@ -170,7 +170,7 @@ Option<File> file_open_c_str(const char* path, File::Mode mode = File::Mode::Rea
 
 
 Option<File> file_open(String str, Allocator allocator, File::Mode mode = File::Mode::Read){
-    let cstr = string_c_str(str, allocator);
+    let cstr = string_c_str(str, allocator); // Todo(Ferenc): free cstr
     if (cstr.error != Core_Error::Correct) return {false};
     return file_open_c_str(cstr.value, mode);
 }

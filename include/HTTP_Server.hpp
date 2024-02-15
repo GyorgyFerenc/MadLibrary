@@ -172,7 +172,7 @@ Option<Request> poll_request(HTTP_Server server, Allocator allocator){
 
         // I can do this slice because the scanner_data.buffer starts out with enough data
         // tho it can happen that if is received by multiple tcp_recived
-        let method_str = (String) array_slice(scanner.array, 0, scanner.idx);
+        let method_str = cast(String) array_slice(scanner.array, 0, scanner.idx);
         if (string_equal_c_str(method_str, "OPTIONS")){
             request.method = Request_Method::OPTIONS;   
         } else if (string_equal_c_str(method_str, "GET")){
