@@ -45,7 +45,9 @@ using f32 = float;
 
 #define UNREACHABLE assert(false && "uncreachable");
 
-#define let auto
+
+#define let auto // variable declaration
+#define proc auto // procedure declaration
 #define cast(type) (type)
 
 #include <functional>
@@ -77,12 +79,12 @@ struct defer_dummy {
 #define defer(body) \
     auto ANONYMOUS_VARIABLE(__defer_instance) = defer_implementation{[&]() { body; }};
 
-void panic(const char* text) {
+proc panic(const char* text) {
     printf("%s\n",text);
     assert(false && "panic");
 }
 
-void panic() {
+proc panic() {
     assert(false && "panic");
 }
 

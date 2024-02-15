@@ -221,16 +221,16 @@ using Thread_Proc = void(*)(Thread_Data);
 
 struct Thread{
     pthread_t   p_thread;
-    Thread_Proc proc;
+    Thread_Proc procedure;
     Thread_Data data;
 };
 
-void thread_start(Thread* thread, Thread_Proc proc, Thread_Data data = {NULL}){
-    thread->proc = proc;
+void thread_start(Thread* thread, Thread_Proc procedure, Thread_Data data = {NULL}){
+    thread->procedure = procedure;
     thread->data = data;
     pthread_create(&thread->p_thread, NULL, [](void* void_thread) -> void*{
         let thread = (Thread*)void_thread;
-        thread->proc(thread->data);
+        thread->procedure(thread->data);
         return NULL;
     }, thread);
 }
