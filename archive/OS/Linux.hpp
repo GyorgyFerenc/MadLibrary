@@ -41,6 +41,7 @@ Option<Socket> tcp_start_listener(Address address, usize listen_nr = 50, bool no
 
     struct sockaddr_in sockaddress;
     sockaddress.sin_family = AF_INET;
+    // Todo(Ferenc): Check for endianness
     sockaddress.sin_addr.s_addr = htonl(*(u32*)address.ip);
     sockaddress.sin_port = htons(address.port);
     ret = bind(s.socket_descriptor, (struct sockaddr*)&sockaddress, sizeof(sockaddress));
@@ -170,9 +171,11 @@ Option<File> file_open_c_str(const char* path, File::Mode mode = File::Mode::Rea
 
 
 Option<File> file_open(String str, Allocator allocator, File::Mode mode = File::Mode::Read){
-    let cstr = string_c_str(str, allocator); // Todo(Ferenc): free cstr
-    if (cstr.error != Core_Error::Correct) return {false};
-    return file_open_c_str(cstr.value, mode);
+    let [error, cstr] = string_c_str(str, allocator); 
+    if (error != Core_Error::Correct) return {false};
+
+    defer(allocator_free_array(allocator, cstr, str.size + 1));
+    return file_open_c_str(cstr, mode);
 }
 
 void file_close(File file){

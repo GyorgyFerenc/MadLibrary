@@ -6,9 +6,9 @@
 #include <cstdlib>
 
 
-proc run(const char* c_str){
+proc run(const char* c_str) -> int{
     printf("[Running]: %s\n", c_str);
-    system(c_str);
+    return system(c_str);
 }
 
 enum struct Compiler{
@@ -73,7 +73,7 @@ void target_define_macro(Target* target, const char* macro, const char* value = 
     dynamic_array_append(&target->macros, {macro, value});
 }
 
-void target_compile(Target target){
+int target_compile(Target target){
     let builder = string_builder_create(target.allocator);
 
     const char* link_file_flag;
@@ -155,7 +155,7 @@ void target_compile(Target target){
     let command_c_str = string_c_str_unsafe(command, target.allocator);
     defer(allocator_free_array(target.allocator, command_c_str, command.size + 1));
 
-    run(command_c_str);
+    return run(command_c_str);
 }
 
 

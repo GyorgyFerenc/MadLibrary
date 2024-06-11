@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -49,6 +48,7 @@ using f32 = float;
 #define let auto // variable declaration
 #define proc auto // procedure declaration
 #define cast(type) (type)
+
 
 #include <functional>
 struct defer_implementation {
@@ -523,7 +523,7 @@ Allocator page_allocator_to_interface(Page_Allocator* alloc){
 
 
 struct Pool_Allocator{
-    u8* memory;   
+    u8* memory;
     usize memory_size;
     usize chunk_size;
     
@@ -851,7 +851,10 @@ T dynamic_array_last(Dynamic_Array<T> array){
     return array.ptr[array.size - 1];
 }
 
-
+template<class T>
+Array<T> dynamic_array_slice(Dynamic_Array<T> array){
+    return array_alias(array.ptr, array.size);
+};
 
 // Rune is on 4 bytes representing a unicode code point
 using Rune = u32;
@@ -980,9 +983,9 @@ Rune rune_from_char(char chr){
 inline
 bool rune_whitespace(Rune rune){
     switch (rune) {
-        case 0x0A:   return true;
-        case 0x20:   return true;
-        case 0xA0:   return true;
+        case 0x000A: return true;
+        case 0x0020: return true;
+        case 0x00A0: return true;
         case 0x1680: return true;
         case 0x202F: return true;
         case 0x205F: return true;
@@ -1896,10 +1899,3 @@ T stack_pop(Stack<T>* s){
     dynamic_array_pop(&s->inner);
     return value;
 }
-
-//template <class T>
-//template <class T>
-//template <class T>
-//template <class T>
-//template <class T>
-//template <class T>
