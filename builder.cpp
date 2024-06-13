@@ -7,7 +7,6 @@ int main(int argc, char const* argv[]) {
     let alloc = mallocator;
     self_build("builder.cpp", "build", alloc, argc, argv);
 
-
     if (argc < 2){
         println_fmt("Need args lol");
         return 1;

@@ -59,4 +59,9 @@ void add(String_Builder* builder, Rune rune){
     }
 }
 
+inline
+void clear(String_Builder* builder){
+    clear(&builder->bytes);
+}
+
 //Todo(Ferenc): Add remaining 'add' procedures

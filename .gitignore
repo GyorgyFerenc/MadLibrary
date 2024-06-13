@@ -8,8 +8,8 @@
 # playground
 
 playground.cpp
-playground.out
+playground
 
 # builder
-build.hash
-builder.cpp
+build.cpp.stored
+build

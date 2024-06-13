@@ -13,12 +13,8 @@ It is a header based library
 ```
 ┌── documentation // The documentation of everything
 ├── example // Set of examples using the library
-├── experimental // The location of experimental modules 
-│   ├── ExperimentalModule1 // The location of an experimental module
-│   ... // rest of experimental modules
-│
-└── include // The location of the includes
-    ├── Log // The location of the logging module
+└── lib // The location of the includes
+    ├── core.hpp // The location of the core module
     ... // rest of the modules
 ```
 
