@@ -397,7 +397,7 @@ struct Option{
 template <class T>
 inline
 void typed_memset(T* ptr, T value, usize count){
-    for (let i = 0; i < count; i++){
+    for (usize i = 0; i < count; i++){
         ptr[i] = value;
     }
 }
@@ -481,7 +481,7 @@ void* allocate_raw_non_zero(Allocator allocator, usize size, usize align = Defau
 }
 
 void free_all(Allocator allocator){
-    allocator.procedure(allocator.data, { .kind = Allocator_Message::Free_All, });
+    allocator.procedure(allocator.data, { .kind = Allocator_Message::Free_All, {} });
 }
 
 void free(Allocator allocator, void* ptr){
@@ -592,6 +592,7 @@ Arena create_static_arena(void* buffer, usize len){
     return {
         .buffer = cast(u8*) buffer,
         .len = len,
+        .allocator = {},
     };
 }
 
@@ -832,8 +833,7 @@ struct Slice{
     usize   len = 0;
     Allocator allocator;
 
-    T& operator[](usize idx){ return this->buffer[idx];
-    }
+    T& operator[](usize idx){ return this->buffer[idx]; }
 };
 
 template <class T>
@@ -861,8 +861,9 @@ void destroy(Slice<T> slice){
 
 template <class T>
 Slice<T> empty_slice(){
-    return {NULL, 0};
+    return {NULL, 0, {}};
 }
+
 /*
  * This used so any data can be easily 
  * aliasad as an slice of bytes
@@ -878,6 +879,7 @@ Slice<u8> bytes_of(T* data){
     return {
         .buffer  = (u8*) data,
         .len = sizeof(T),
+        .allocator = {},
     };
 }
 
@@ -943,7 +945,7 @@ template<class T>
 struct Slice_Iter{
     T  value; 
     T* value_ptr;
-    usize pos = 0;
+    usize idx = 0;
     usize count = 0;
 
     T* buffer = NULL;
@@ -952,22 +954,46 @@ struct Slice_Iter{
 
 template<class T>
 bool next(Slice_Iter<T>* it){
-    it->pos = it->count;
+    it->idx = it->count;
     if (it->count >= it->len) return false;
 
     it->count    += 1;
-    it->value     = it->buffer[it->pos];
-    it->value_ptr = &it->buffer[it->pos];
+    it->value     = it->buffer[it->idx];
+    it->value_ptr = &it->buffer[it->idx];
 
     return true;
 }
 
-
 template <class T>
 Slice_Iter<T> iter(Slice<T> slice){
     return {
+        .value = 0, 
+        .value_ptr = NULL,
+        .idx = 0,
+        .count = 0,
+
         .buffer = slice.buffer,
         .len    = slice.len,
+    };
+}
+
+template <class T>
+Slice<T> copy(Slice<T> slice, Allocator allocator){
+    let new_slice = create_slice_non_zero<T>(allocator, slice.len);
+    For_Each(iter(new_slice)){
+        *it.value_ptr = slice[it.idx];
+    }
+    
+    return new_slice;
+}
+
+//Todo(Ferenc): Add remaining procedures
+template<class T>
+inline
+Slice<T> slice_from(T* buffer, usize pos, usize len){
+    return {
+        .buffer = buffer + pos,
+        .len = len,
     };
 }
 
@@ -1085,16 +1111,19 @@ Slice<T> slice_from(Array<T> array, usize pos, usize len){
 }
 
 template<class T>
+inline
 Slice<T> slice_from(Array<T> array, usize pos = 0){ 
     return slice_from(slice_from(array, 0, array.len), pos); 
 }
 
 template<class T>
+inline
 Pair<Slice<T>, bool> slice_from_safe(Array<T> array, usize pos, usize len){
     return slice_from_safe(slice_from(array), pos, len);
 }
 
 template<class T>
+inline
 Pair<Slice<T>, bool> slice_from_safe(Array<T> array, usize pos = 0){
     return slice_from_safe(slice_from(array), pos);
 }
@@ -1272,6 +1301,8 @@ bool rune_ascii_digit(Rune rune){
 */
 struct String{
     Slice<u8> slice;
+
+    u8& operator[](usize idx){ return this->slice[idx]; }
 };
 
 inline 
@@ -1309,6 +1340,7 @@ String alias(const char* c_str){
         .slice = {
             .buffer = (u8*)c_str,
             .len = strlen(c_str),
+            .allocator = {},
         }
     };
 }
@@ -1319,6 +1351,7 @@ String alias(const char* c_str, usize len){
         .slice = {
             .buffer = (u8*)c_str,
             .len = len,
+            .allocator = {},
         }
     };
 }
@@ -1343,15 +1376,26 @@ String string_from(const char* c_str, Allocator allocator){
 }
 
 inline
-String clone(String str, Allocator allocator){
-    let cloned = create_string(allocator, len(str));
-    memcpy(cloned.slice.buffer, str.slice.buffer, len(str));
-    return cloned;
+String copy(String str, Allocator allocator){
+    let copyed = create_string(allocator, len(str));
+    memcpy(copyed.slice.buffer, str.slice.buffer, len(str));
+    return copyed;
 }
 
 inline
 Slice_Iter<u8> byte_iter(String str){
     return iter(str.slice);
+}
+
+
+inline
+char* cstr(String str, Allocator allocator){
+    let c = allocate_array_non_zero<char>(allocator, len(str) + 1); 
+    For_Each(byte_iter(str)){
+        c[it.idx] = it.value;
+    }
+    c[len(str)] = '\0';
+    return c;
 }
 
 /*
@@ -1416,6 +1460,15 @@ String errno_to_str(Errno e){
     return alias(errno_to_c_str(e));
 }
 
+bool equal(String str1, String str2){
+    For_Each(byte_iter(str1)){
+        if (it.value != str2[it.idx]){
+            return false;
+        }
+    }
+
+    return true;
+}
 
 /*
    -----

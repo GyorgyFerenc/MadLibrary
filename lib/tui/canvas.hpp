@@ -3,11 +3,99 @@
 #include "../core.hpp"
 
 struct Pixel{
-    Rune rune;
+    enum Style: u8{
+        Bold         = 1 << 0,
+        Dim          = 1 << 1,
+        Italic       = 1 << 2,
+        Underline    = 1 << 3,
+        Blinking     = 1 << 4,
+        Inverse      = 1 << 5,
+        Hidden       = 1 << 6,
+        Striketrough = 1 << 7,
+    };
+    enum Color_Mode: u8{
+        None,
+        Color_Mode_8,
+        Color_Mode_16,
+        Color_Mode_256,
+        Color_Mode_RGB,
+    };
+    enum struct Color_8: u8{
+        Black = 30,
+        Red,
+        Green,
+        Yellow,
+        Blue,
+        Magenta,
+        Cyan,
+        White,
+        Default,
+        Reset,
+    };
+
+    enum struct Color_16: u8{
+        Black = 30,
+        Red,
+        Green,
+        Yellow,
+        Blue,
+        Magenta,
+        Cyan,
+        White,
+        Default,
+        Reset,
+
+        Bright_Black = 90,
+        Bright_Red,
+        Bright_Green,
+        Bright_Yellow,
+        Bright_Blue,
+        Bright_Magenta,
+        Bright_Cyan,
+        Bright_White,
+    };    
+
+    Rune rune = 0;
+    u8 style_flags = 0;
+
+    struct {
+        Color_Mode color_mode = None;
+        union{
+            Color_8 color_8;
+            Color_16 color_16;
+            u8 color_256;
+            struct {
+                u8 r;
+                u8 g;
+                u8 b;
+            } color_rgb;
+        };
+    } background, foreground;
 };
 
-Pixel pixel_from(Rune r){
-    return {.rune = r};
+inline
+void set_style(Pixel* p, Pixel::Style style){
+    p->style_flags |= cast(u8) style;
+}
+
+inline
+void unset_style(Pixel* p, Pixel::Style style){
+    p->style_flags &= ~(cast(u8) style);
+}
+
+inline
+bool check_style(Pixel p, Pixel::Style style){
+   return p.style_flags & cast(u8) style;
+}
+
+inline
+bool same_style(Pixel p1, Pixel p2, Pixel::Style style){
+    return !(check_style(p1, style) ^ check_style(p2, style));
+
+}
+
+void toggle_style(Pixel* p, Pixel::Style style){
+    p->style_flags ^= cast(u8) style;
 }
 
 constexpr Pixel DEFAULT_PIXEL = {
@@ -59,6 +147,7 @@ void destroy(Canvas c){
     free(c.allocator, c.pixels);
 }
 
+inline
 Option<Canvas> canvas_from(Canvas c, usize x, usize y, usize width, usize height){
     if (x + width > c.width || y + height > c.height){
         return {{}, false};
@@ -105,6 +194,7 @@ Option<Pixel*> get_safe(Canvas c, usize x, usize y){
     }
 }
 
+inline
 void fill(Canvas c, Pixel p){
     for (usize x = 0; x < c.width; x++){
         for (usize y = 0; y < c.height; y++){
@@ -112,16 +202,3 @@ void fill(Canvas c, Pixel p){
         }
     }
 }
-
-//struct Canvas_Iter{
-//    Pixel** pixels;
-//    usize width;
-//    usize height;
-//
-//    usize x;
-//    usize y;
-//    Pixel  value;
-//    Pixel* value_ptr;
-//};
-
-
