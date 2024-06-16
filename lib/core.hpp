@@ -1387,6 +1387,29 @@ Slice_Iter<u8> byte_iter(String str){
     return iter(str.slice);
 }
 
+inline
+String substr(String str, usize pos, usize len){
+    return string_from(slice_from(str.slice, pos, len));
+}
+
+inline
+String substr(String str, usize pos){
+    return string_from(slice_from(str.slice, pos));
+}
+
+inline
+Option<String> substr_safe(String str, usize pos, usize len){
+    let [s, ok] = slice_from_safe(str.slice, pos, len);
+    if (!ok) return {{}, false};
+    return {string_from(s), true};
+}
+
+inline
+Option<String> substr_safe(String str, usize pos){
+    let [s, ok] = slice_from_safe(str.slice, pos);
+    if (!ok) return {{}, false};
+    return {string_from(s), true};
+}
 
 inline
 char* cstr(String str, Allocator allocator){
