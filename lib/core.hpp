@@ -388,6 +388,7 @@ struct Option{
     bool ok = false;
 };
 
+
 /*
  * ======
  * Memory
@@ -1484,6 +1485,7 @@ String errno_to_str(Errno e){
 }
 
 bool equal(String str1, String str2){
+    if (len(str1) != len(str2)) return false;
     For_Each(byte_iter(str1)){
         if (it.value != str2[it.idx]){
             return false;
@@ -1491,6 +1493,10 @@ bool equal(String str1, String str2){
     }
 
     return true;
+}
+
+bool equal(String str1, const char* cstr){
+    return equal(str1, alias(cstr));
 }
 
 /*

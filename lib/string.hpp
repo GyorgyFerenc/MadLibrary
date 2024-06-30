@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.hpp"
+#include "fmt.hpp"
 
 struct String_Builder{
     Array<u8> bytes;
@@ -51,7 +52,7 @@ void add(String_Builder* builder, const char* c_str){
 }
 
 inline
-void add(String_Builder* builder, Rune rune){
+void add_rune(String_Builder* builder, Rune rune){
     u8 buffer[5];
     let len = encode_to_utf8(rune, buffer);
     for (usize i = 0; i < len; i++){
@@ -64,4 +65,40 @@ void clear(String_Builder* builder){
     clear(&builder->bytes);
 }
 
+inline
+usize write(String_Builder* builder, Slice<u8> slice){
+    For_Each(iter(slice)){
+        append(&builder->bytes, it.value);
+    }
+
+    return slice.len;
+}
+
+inline
+void add(String_Builder* builder, u64 number){
+    write_fmt(builder, number);
+}
+
+inline
+void add(String_Builder* builder, u32 number){
+    add(builder, cast(u64) number);
+}
+
+inline
+void add(String_Builder* builder, u16 number){
+    add(builder, cast(u64) number);
+}
+
+inline
+void add(String_Builder* builder, u8 number){
+    add(builder, cast(u64) number);
+}
+
+inline
+void add(String_Builder* builder, bool boolean){
+    if (boolean)
+        add(builder, "true");
+    else
+        add(builder, "false");
+}
 //Todo(Ferenc): Add remaining 'add' procedures
