@@ -60,6 +60,16 @@ usize write_fmt(Out_Stream stream, bool elem){
         return write_fmt(stream, "false");
 }
 
+template <interface Out_Stream, class T>
+usize write_fmt(Out_Stream stream, T* ptr){
+    //todo(Ferenc): Do something lol
+    switch (sizeof(void*)){
+    case sizeof(u64): return write_fmt(stream, cast(u64)ptr);
+    case sizeof(u32): return write_fmt(stream, cast(u32)cast(u64)ptr);
+    case sizeof(u16): return write_fmt(stream, cast(u16)cast(u64)ptr);
+    case sizeof(u8):  return write_fmt(stream, cast(u8) cast(u64)ptr);
+    }
+}
 
 template <interface Out_Stream, class T>
 usize write_fmt(Out_Stream stream, Slice<T> slice){

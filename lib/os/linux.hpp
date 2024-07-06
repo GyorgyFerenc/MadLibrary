@@ -191,7 +191,7 @@ usize len(File file){
 }
 
 
-Slice<u8> file_read_all(File file, Allocator allocator){
+Slice<u8> read_all(File file, Allocator allocator){
     let size = len(file);
     let array = create_slice<u8>(allocator, size);
     read(file, array);
