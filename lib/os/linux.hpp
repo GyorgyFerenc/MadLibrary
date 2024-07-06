@@ -12,6 +12,8 @@
 #include "../core.hpp"
 #include "shared.hpp" 
 
+#include "../fmt.hpp" // debug
+
 // ------
 // Socket
 // ------
@@ -21,9 +23,14 @@ struct Socket{
     Address address;
 };
 
-Option<Socket> tcp_start_listener(Address address, usize listen_nr = 50, bool non_blocking = false){
+struct Start_Options{
+    int listen_nr = 50;
+    bool non_blocking = false;
+};
+
+Option<Socket> tcp_start_listener(Address address, Start_Options options = {}){
     int type = SOCK_STREAM;
-    if (non_blocking) type |= SOCK_NONBLOCK;
+    if (options.non_blocking) type |= SOCK_NONBLOCK;
     Socket s;
     s.address = address;
     s.socket_descriptor = socket(AF_INET, type, 0);
@@ -48,7 +55,7 @@ Option<Socket> tcp_start_listener(Address address, usize listen_nr = 50, bool no
         return {{}, false};
     }
 
-    ret = listen(s.socket_descriptor, listen_nr);
+    ret = listen(s.socket_descriptor, options.listen_nr);
     if (ret < 0){
         return {{}, false};
     }
@@ -86,9 +93,14 @@ Option<Socket> tcp_accept(Socket listener){
 }
 
 
-Option<Socket> tcp_dial(Address address, bool non_blocking = false){
+
+struct Dial_Options{
+    bool non_blocking = false;
+};
+
+Option<Socket> tcp_dial(Address address, Dial_Options options = {}){
     int type = SOCK_STREAM;
-    if (non_blocking) type |= SOCK_NONBLOCK;
+    if (options.non_blocking) type |= SOCK_NONBLOCK;
     Socket s;
     s.address = address;
     s.socket_descriptor = socket(AF_INET, type, 0);
@@ -114,8 +126,9 @@ bool tcp_send(Socket socket, Slice<u8> data){
     return ret <= 0;
 }
 
+
 Pair<ssize, Errno> tcp_receive(Socket socket, Slice<u8> data){
-    let nr = recv(socket.socket_descriptor, data.buffer, data.len, 0);
+    let nr = ::recv(socket.socket_descriptor, data.buffer, data.len, 0);
     let err = 0;
     if (nr < 0){
         err = errno;

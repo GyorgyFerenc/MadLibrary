@@ -568,11 +568,14 @@ let mallocator = Allocator{
     .procedure = malloc_allocate,
 };
 
+
 /*
  * -----
  * Arena
  * -----
  */
+
+//TODO(Ferenc): rewrite
 
 struct Arena{
     struct Dynamic{
@@ -593,7 +596,6 @@ Arena create_static_arena(void* buffer, usize len){
     return {
         .buffer = cast(u8*) buffer,
         .len = len,
-        .allocator = {},
     };
 }
 
