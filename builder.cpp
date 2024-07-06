@@ -19,13 +19,12 @@ int main(int argc, char const* argv[]) {
         add(&playground, "-D ML_DEBUG");
         add(&playground, "playground.cpp");
         add(&playground, "-g");
-        add(&playground, "-W");
 
         let code = run(playground, alloc);
         if (code == 0) 
         {
             println_fmt("[%] Running: %", "Playground", "./playground");
-            system("./playground");
+            //system("./playground");
         }
     } 
 }

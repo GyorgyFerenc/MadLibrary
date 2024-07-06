@@ -217,7 +217,7 @@ void tui_enter_altscreen() {
 
 void tui_leave_altscreen() {
     print_fmt("\e[?1049l");
-    tui.altscreen = true;
+    tui.altscreen = false;
 }
 
 void tui_save_cursor(){

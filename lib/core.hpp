@@ -865,14 +865,12 @@ Slice<T> empty_slice(){
 }
 
 /*
- * This used so any data can be easily 
- * aliasad as an slice of bytes
- * e. g.
- *
- * ```cpp
- *  u32 a = 12;
- *  let bytes = bytes_of(&a); // it is the bytes of a;
- * ```
+  This used so any data can be easily 
+  aliasad as an slice of bytes
+  e. g.
+
+   u32 a = 12;
+   let bytes = bytes_of(&a); // it is the bytes of a;
  */
 template<class T>
 Slice<u8> bytes_of(T* data){

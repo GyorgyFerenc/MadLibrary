@@ -72,6 +72,11 @@ usize write_fmt(Out_Stream stream, Slice<T> slice){
     return n;   
 }
 
+template <interface Out_Stream, class T>
+usize write_fmt(Out_Stream stream, Array<T> array){
+    return write_fmt(stream, slice_from(array));
+}
+
 
 template <interface Out_Stream>
 usize write_fmt(Out_Stream stream, char chr){
