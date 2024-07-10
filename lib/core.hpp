@@ -50,11 +50,14 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 using usize = std::size_t;
-using ssize = ssize_t;
+using isize = ssize_t;
 using f64 = double;
 using f32 = float;
 using uptr = uintptr_t;
 using iptr  = intptr_t;
+
+//Todo(Ferenc): Add rest
+#define U64_MAX 18446744073709551615ull
 
 #define UNREACHABLE assert(false && "uncreachable");
 
@@ -237,9 +240,150 @@ enum struct Errno: int{
     Ekeyrejected,    // Key was rejected by service
     Eownerdead,      // Owner died
     Enotrecoverable, // State not recoverable
+
+
+    Ewouldblock = Eagain,
 };
 
+
 const char* errno_to_c_str(Errno e){
+    switch (e){
+    case Errno::Ok:              return "Ok";
+    case Errno::Eperm:           return "Eperm";
+    case Errno::Enoent:          return "Enoent";
+    case Errno::Esrch:           return "Esrch";
+    case Errno::Eintr:           return "Eintr";
+    case Errno::Eio:             return "Eio";
+    case Errno::Enxio:           return "Enxio";
+    case Errno::E2big:           return "E2big";
+    case Errno::Enoexec:         return "Enoexec";
+    case Errno::Ebadf:           return "Ebadf";
+    case Errno::Echild:          return "Echild";
+    case Errno::Eagain:          return "Eagain";
+    case Errno::Enomem:          return "Enomem";
+    case Errno::Eacces:          return "Eacces";
+    case Errno::Efault:          return "Efault";
+    case Errno::Enotblk:         return "Enotblk";
+    case Errno::Ebusy:           return "Ebusy";
+    case Errno::Eexist:          return "Eexist";
+    case Errno::Exdev:           return "Exdev";
+    case Errno::Enodev:          return "Enodev";
+    case Errno::Enotdir:         return "Enotdir";
+    case Errno::Eisdir:          return "Eisdir";
+    case Errno::Einval:          return "Einval";
+    case Errno::Enfile:          return "Enfile";
+    case Errno::Emfile:          return "Emfile";
+    case Errno::Enotty:          return "Enotty";
+    case Errno::Etxtbsy:         return "Etxtbsy";
+    case Errno::Efbig:           return "Efbig";
+    case Errno::Enospc:          return "Enospc";
+    case Errno::Espipe:          return "Espipe";
+    case Errno::Erofs:           return "Erofs";
+    case Errno::Emlink:          return "Emlink";
+    case Errno::Epipe:           return "Epipe";
+    case Errno::Edom:            return "Edom";
+    case Errno::Erange:          return "Erange";
+    case Errno::Edeadlk:         return "Edeadlk";
+    case Errno::Enametoolong:    return "Enametoolong";
+    case Errno::Enolck:          return "Enolck";
+    case Errno::Enosys:          return "Enosys";
+    case Errno::Enotempty:       return "Enotempty";
+    case Errno::Eloop:           return "Eloop";
+    case Errno::Enomsg:          return "Enomsg";
+    case Errno::Eidrm:           return "Eidrm";
+    case Errno::Echrng:          return "Echrng";
+    case Errno::El2nsync:        return "El2nsync";
+    case Errno::El3hlt:          return "El3hlt";
+    case Errno::El3rst:          return "El3rst";
+    case Errno::Elnrng:          return "Elnrng";
+    case Errno::Eunatch:         return "Eunatch";
+    case Errno::Enocsi:          return "Enocsi";
+    case Errno::El2hlt:          return "El2hlt";
+    case Errno::Ebade:           return "Ebade";
+    case Errno::Ebadr:           return "Ebadr";
+    case Errno::Exfull:          return "Exfull";
+    case Errno::Enoano:          return "Enoano";
+    case Errno::Ebadrqc:         return "Ebadrqc";
+    case Errno::Ebadslt:         return "Ebadslt";
+    case Errno::Ebfont:          return "Ebfont";
+    case Errno::Enostr:          return "Enostr";
+    case Errno::Enodata:         return "Enodata";
+    case Errno::Etime:           return "Etime";
+    case Errno::Enosr:           return "Enosr";
+    case Errno::Enonet:          return "Enonet";
+    case Errno::Enopkg:          return "Enopkg";
+    case Errno::Eremote:         return "Eremote";
+    case Errno::Enolink:         return "Enolink";
+    case Errno::Eadv:            return "Eadv";
+    case Errno::Esrmnt:          return "Esrmnt";
+    case Errno::Ecomm:           return "Ecomm";
+    case Errno::Eproto:          return "Eproto";
+    case Errno::Emultihop:       return "Emultihop";
+    case Errno::Edotdot:         return "Edotdot";
+    case Errno::Ebadmsg:         return "Ebadmsg";
+    case Errno::Eoverflow:       return "Eoverflow";
+    case Errno::Enotuniq:        return "Enotuniq";
+    case Errno::Ebadfd:          return "Ebadfd";
+    case Errno::Eremchg:         return "Eremchg";
+    case Errno::Elibacc:         return "Elibacc";
+    case Errno::Elibbad:         return "Elibbad";
+    case Errno::Elibscn:         return "Elibscn";
+    case Errno::Elibmax:         return "Elibmax";
+    case Errno::Elibexec:        return "Elibexec";
+    case Errno::Eilseq:          return "Eilseq";
+    case Errno::Erestart:        return "Erestart";
+    case Errno::Estrpipe:        return "Estrpipe";
+    case Errno::Eusers:          return "Eusers";
+    case Errno::Enotsock:        return "Enotsock";
+    case Errno::Edestaddrreq:    return "Edestaddrreq";
+    case Errno::Emsgsize:        return "Emsgsize";
+    case Errno::Eprototype:      return "Eprototype";
+    case Errno::Enoprotoopt:     return "Enoprotoopt";
+    case Errno::Eprotonosupport: return "Eprotonosupport";
+    case Errno::Esocktnosupport: return "Esocktnosupport";
+    case Errno::Eopnotsupp:      return "Eopnotsupp";
+    case Errno::Epfnosupport:    return "Epfnosupport";
+    case Errno::Eafnosupport:    return "Eafnosupport";
+    case Errno::Eaddrinuse:      return "Eaddrinuse";
+    case Errno::Eaddrnotavail:   return "Eaddrnotavail";
+    case Errno::Enetdown:        return "Enetdown";
+    case Errno::Enetunreach:     return "Enetunreach";
+    case Errno::Enetreset:       return "Enetreset";
+    case Errno::Econnaborted:    return "Econnaborted";
+    case Errno::Econnreset:      return "Econnreset";
+    case Errno::Enobufs:         return "Enobufs";
+    case Errno::Eisconn:         return "Eisconn";
+    case Errno::Enotconn:        return "Enotconn";
+    case Errno::Eshutdown:       return "Eshutdown";
+    case Errno::Etoomanyrefs:    return "Etoomanyrefs";
+    case Errno::Etimedout:       return "Etimedout";
+    case Errno::Econnrefused:    return "Econnrefused";
+    case Errno::Ehostdown:       return "Ehostdown";
+    case Errno::Ehostunreach:    return "Ehostunreach";
+    case Errno::Ealready:        return "Ealready";
+    case Errno::Einprogress:     return "Einprogress";
+    case Errno::Estale:          return "Estale";
+    case Errno::Euclean:         return "Euclean";
+    case Errno::Enotnam:         return "Enotnam";
+    case Errno::Enavail:         return "Enavail";
+    case Errno::Eisnam:          return "Eisnam";
+    case Errno::Eremoteio:       return "Eremoteio";
+    case Errno::Edquot:          return "Edquot";
+    case Errno::Enomedium:       return "Enomedium";
+    case Errno::Emediumtype:     return "Emediumtype";
+    case Errno::Ecanceled:       return "Ecanceled";
+    case Errno::Enokey:          return "Enokey";
+    case Errno::Ekeyexpired:     return "Ekeyexpired";
+    case Errno::Ekeyrevoked:     return "Ekeyrevoked";
+    case Errno::Ekeyrejected:    return "Ekeyrejected";
+    case Errno::Eownerdead:      return "Eownerdead";
+    case Errno::Enotrecoverable: return "Enotrecoverable";
+    }
+
+    return "";
+}
+
+const char* errno_msg_c_str(Errno e){
     switch (e){
     case Errno::Ok:              return "Ok";
     case Errno::Eperm:           return "Operation not permitted";
@@ -482,7 +626,7 @@ void* allocate_raw_non_zero(Allocator allocator, usize size, usize align = Defau
 }
 
 void free_all(Allocator allocator){
-    allocator.procedure(allocator.data, { .kind = Allocator_Message::Free_All, {} });
+    allocator.procedure(allocator.data, { .kind = Allocator_Message::Free_All, });
 }
 
 void free(Allocator allocator, void* ptr){
@@ -967,8 +1111,7 @@ bool next(Slice_Iter<T>* it){
 
 template <class T>
 Slice_Iter<T> iter(Slice<T> slice){
-    return {
-        .value = 0, 
+    return Slice_Iter<T>{
         .value_ptr = NULL,
         .idx = 0,
         .count = 0,
@@ -1063,10 +1206,26 @@ usize append(Array<T>* array, T element){
     return pos;
 }
 
+
+template <class T>
+void remove(Array<T>* array, usize index){
+    for (usize i = index; i < array->len - 1; i++){
+        array->buffer[i] = array->buffer[i + 1];
+    }
+    array->len -= 1;
+}
+
 template <class T>
 inline
 void clear(Array<T>* array){
     array->len = 0;
+}
+
+
+template <class T>
+Option<T*> get(Array<T>* array, usize i){
+    if (i >= array->len) return {{}, false};
+    return {&array->buffer[i], true};
 }
 
 template <class T>
@@ -1099,6 +1258,15 @@ Slice_Iter<T> iter(Array<T> array){
         .buffer = array.buffer,
         .len    = array.len,
     };
+}
+template<class T>
+void reverse(Array<T>* array){
+    for (usize i = 0; i < array->len / 2; i++){
+        let other = array->len - 1 - i;
+        let temp = array->buffer[i];
+        array->buffer[i] = array->buffer[other];
+        array->buffer[other] = temp;
+    }
 }
 
 template<class T>
@@ -1479,9 +1647,12 @@ String_Rune_Iter iter(String str){
     };
 }
 
-
 String errno_to_str(Errno e){
     return alias(errno_to_c_str(e));
+}
+
+String errno_msg(Errno e){
+    return alias(errno_msg_c_str(e));
 }
 
 bool equal(String str1, String str2){
@@ -1556,6 +1727,21 @@ void push(Queue<T>* q, T el){
     q->buffer[q->write] = el;
     q->write = (q->write + 1) % q->capacity;
     q->len += 1;
+}
+
+
+template <class T>
+T top(Queue<T> q){
+    return q->buffer[q->read];
+}
+
+
+template <class T>
+Option<T> top_safe(Queue<T> q){
+    if (q->len == 0) {
+        return {{}, false};
+    }
+    return {q->buffer[q->read], true};
 }
 
 template <class T>
@@ -1636,3 +1822,137 @@ bool empty(Stack<T> s){
 }
 
 //Todo(Ferenc): add bucket array
+
+template <class T, usize bucket_len>
+struct Bucket_Array{
+    struct Bucket{
+        T buffer[bucket_len];
+    };
+
+    Array<Bucket*> buckets;
+    usize len = 0;
+    Allocator allocator;
+
+    T& operator[](usize i){
+        let bucket_i = i / bucket_len;
+        let in_i     = i % bucket_len;
+        return this->buckets[bucket_i]->buffer[in_i];
+    }
+};
+
+template <class T, usize bucket_len>
+Bucket_Array<T, bucket_len> create_bucket_array(Allocator allocator){
+    return {
+        .buckets = create_array<typename Bucket_Array<T, bucket_len>::Bucket*>(allocator),
+        .allocator = allocator,
+    };
+};
+
+template <class T, usize bucket_len>
+void destroy(Bucket_Array<T, bucket_len> array){
+    For_Each(iter(array.buckets)){
+        free(array.allocator, it.value);
+    }
+    destroy(array.buckets);
+}
+
+template <class T, usize bucket_len>
+usize append(Bucket_Array<T, bucket_len>* array, T el){
+    let bucket_i = array->len / bucket_len;
+    let in_i     = array->len % bucket_len;
+    if (bucket_i >= array->buckets.len){
+        let bucket = allocate<typename Bucket_Array<T, bucket_len>::Bucket>(array->allocator);
+        append(&array->buckets, bucket);
+    }
+
+    array->buckets[bucket_i]->buffer[in_i] = el;
+    let len = array->len;
+    array->len += 1;
+    return len;
+}
+
+
+template <class T, usize bucket_len>
+void clear(Bucket_Array<T, bucket_len>* array){
+    array->len = 0;
+}
+
+
+/*
+   Priority queue
+*/
+
+// Todo(Ferenc): Implement more efficiently
+template <class T>
+using Compare = bool(*)(T el1, T el2);
+
+template <class T>
+struct Priority_Queue{
+    Array<T>   array;
+    Compare<T> compare;
+};
+
+template <class T>
+Priority_Queue<T> create_priority_queue(Allocator allocator, Compare<T> compare){
+    return {
+        .array = create_array<T>(allocator),
+        .compare = compare,
+    };
+}
+
+template <class T>
+void destroy(Priority_Queue<T> q){
+    destroy(q.array);
+}
+
+
+template <class T>
+void push(Priority_Queue<T>* q, T el){
+    append(&q->array, el);
+}
+
+
+template <class T>
+T top(Priority_Queue<T> q){
+    T max = q.array[0];
+
+    for (usize i = 0; i < q.array.len; i++){
+        let el = q.array[i];
+        if (q.compare(max, el)) max = el;
+    }
+
+    return max;
+}
+
+
+template <class T>
+Option<T> top_safe(Priority_Queue<T> q){
+    if (q.array.len == 0) return {{}, false};
+    return {top(q), true};
+}
+
+template <class T>
+T pop(Priority_Queue<T>* q){
+    T max = q->array[0];
+    let index = 0;
+    for (usize i = 0; i < q->array.len; i++){
+        let el = q->array[i];
+        if (q->compare(max, el)) {
+            max = el;
+            index = i;
+        }
+    }
+    remove(&q->array, index);
+    return max;
+}
+
+template <class T>
+Option<T> pop_safe(Priority_Queue<T>* q){
+    if (q->array.len == 0) return {{}, false};
+    return {pop(q), true};
+}
+
+template <class T>
+bool empty(Priority_Queue<T> q){
+    return q.array.len == 0;
+}
