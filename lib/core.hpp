@@ -722,56 +722,25 @@ let mallocator = Allocator{
 //TODO(Ferenc): rewrite
 
 struct Arena{
-    struct Dynamic{
-        u8* next = NULL;
-    };
 
     u8*   buffer = NULL;
     usize pos = 0;
     usize len = 0;
     void* last_alloc = NULL;
-
-    // Dynamic if allocator is not NULL
-    Allocator allocator;
-    usize static_len = 0;
 };
 
-Arena create_static_arena(void* buffer, usize len){
+Arena create_arena(void* buffer, usize len){
     return {
         .buffer = cast(u8*) buffer,
         .len = len,
     };
 }
 
-Arena create_dynamic_arena(Allocator allocator, usize len){
-    return {
-        .allocator = allocator,
-        .static_len = len,
-    };
-}
-
-inline
-bool is_dynamic(Arena arena){
-    return arena.allocator.procedure != NULL;
-}
-
-void dynamic_arena_grow(Arena* arena, usize size){
-    let needed_size = sizeof(Arena::Dynamic) + size;
-    let len = arena->static_len < needed_size ? needed_size : arena->static_len;
-    let buffer = allocate_raw(arena->allocator, len);
-    (cast(Arena::Dynamic*) buffer)->next = arena->buffer;
-
-    arena->pos = sizeof(Arena::Dynamic);
-    arena->len = len;
-    arena->buffer = cast(u8*) buffer;
-}
 
 void* allocate_raw_non_zero(Arena* arena, usize size, usize align = Default_Align) {
     size = align_size(size, align);
-    if (arena->buffer == NULL || arena->pos + size > arena->len) {
-        if (!is_dynamic(*arena)) return NULL;
-        dynamic_arena_grow(arena, size);
-    }
+
+    if (arena->pos + size > arena->len) return NULL; 
 
     let ptr = arena->buffer + arena->pos;
     arena->pos += size;
@@ -786,22 +755,14 @@ void* allocate_raw(Arena* arena, usize size, usize align = Default_Align) {
 }
 
 void free_all(Arena* arena){
-    if (is_dynamic(*arena)){
-        let current = arena->buffer;
-        while (current != NULL){
-            let next = (cast(Arena::Dynamic*) current)->next;
-            free(arena->allocator, current);
-            current = next;
-        }
-    } else {
-        arena->pos = 0;
-        arena->last_alloc = NULL;
-    }
+    arena->pos = 0;
+    arena->last_alloc = NULL;
 }
 
 void free(Arena* arena, void* ptr){ }
 
 void* reallocate_raw(Arena* arena, void* ptr, usize old_size, usize size, usize align = Default_Align){
+    old_size = align_size(old_size, align);
     let pos_before_alloc = arena->pos - old_size;
 
     if (arena->last_alloc == ptr){
@@ -832,8 +793,7 @@ Allocator arena_allocator(Arena* arena){
                 free(arena, msg.free.ptr);
                 return NULL;
             case Allocator_Message::Realloc: 
-                reallocate_raw(arena, msg.realloc.ptr, msg.realloc.old_size, msg.realloc.size, msg.realloc.align);
-                return NULL;
+                return reallocate_raw(arena, msg.realloc.ptr, msg.realloc.old_size, msg.realloc.size, msg.realloc.align);
             }
 
             return NULL;
@@ -982,6 +942,12 @@ struct Slice{
 
     T& operator[](usize idx){ return this->buffer[idx]; }
 };
+
+
+template <class T>
+Slice<T> slice_empty(){
+    return { .len = 0, };
+}
 
 template <class T>
 Slice<T> create_slice(Allocator allocator, usize len){
@@ -1270,6 +1236,15 @@ void reverse(Array<T>* array){
 }
 
 template<class T>
+Array<T> copy(Array<T> array, Allocator allocator){
+    let new_array = create_array<T>(allocator, array.capacity);
+    For_Each(iter(array)){
+        append(&new_array, it.value);
+    }
+    return new_array;
+}
+
+template<class T>
 Slice<T> slice_from(Array<T> array, usize pos, usize len){
     debug_assert(pos + len <= array.len && "slice_from");
     return {
@@ -1455,7 +1430,28 @@ bool rune_whitespace(Rune rune){
 }
 
 inline
-bool rune_ascii_digit(Rune rune){
+bool is_ascii_lowercase_letter(Rune rune){
+    return 'a' <= rune && rune <= 'z';
+}
+
+inline
+bool is_ascii_uppercase_letter(Rune rune){
+    return 'A' <= rune && rune <= 'Z';
+}
+
+inline
+bool is_ascii_letter(Rune rune){
+    return is_ascii_lowercase_letter(rune) || is_ascii_uppercase_letter(rune);
+}
+
+inline
+bool is_ascii_printable(Rune rune){
+    return 33 <= rune && rune <= 126;
+}
+
+
+inline
+bool is_ascii_digit(Rune rune){
     return '0' <= rune && rune <= '9';
 }
 
@@ -1530,7 +1526,7 @@ String alias(const char* c_str, usize len){
    It aliases it, does not copy
 */
 inline
-String string_from(Slice<u8> slice){
+String alias(Slice<u8> slice){
     return String{
         .slice = slice,
     };
@@ -1542,6 +1538,23 @@ String string_from(const char* c_str, Allocator allocator){
     let str = create_string(allocator, len);
     memcpy((void*)str.slice.buffer, (void*)c_str, len);
     return str;
+}
+
+inline
+String string_from(Slice<Rune> runes, Allocator allocator){
+    usize len = 0;
+    For_Each(iter(runes)){
+        u8 buffer[4];
+        len += encode_to_utf8(it.value, buffer);
+    }
+    let slice = create_slice_non_zero<u8>(allocator, len);
+    let pos = 0;
+    For_Each(iter(runes)){
+        let len = encode_to_utf8(it.value, slice_from(slice, pos));
+        pos += len;
+    }
+
+    return alias(slice);
 }
 
 inline
@@ -1558,26 +1571,26 @@ Slice_Iter<u8> byte_iter(String str){
 
 inline
 String substr(String str, usize pos, usize len){
-    return string_from(slice_from(str.slice, pos, len));
+    return alias(slice_from(str.slice, pos, len));
 }
 
 inline
 String substr(String str, usize pos){
-    return string_from(slice_from(str.slice, pos));
+    return alias(slice_from(str.slice, pos));
 }
 
 inline
 Option<String> substr_safe(String str, usize pos, usize len){
     let [s, ok] = slice_from_safe(str.slice, pos, len);
     if (!ok) return {{}, false};
-    return {string_from(s), true};
+    return {alias(s), true};
 }
 
 inline
 Option<String> substr_safe(String str, usize pos){
     let [s, ok] = slice_from_safe(str.slice, pos);
     if (!ok) return {{}, false};
-    return {string_from(s), true};
+    return {alias(s), true};
 }
 
 inline
