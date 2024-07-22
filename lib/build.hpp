@@ -57,7 +57,7 @@ void self_build(const char* source_path,
 
     let [source_file, ok] = file_open(source_path);
     if (!ok) panic("Could not open source_path");
-    let source = string_from(read_all(source_file, allocator));
+    let source = alias(read_all(source_file, allocator));
     let builder = create_string_builder(allocator);
     defer(destroy(builder));
     add(&builder, source_path);
@@ -68,7 +68,7 @@ void self_build(const char* source_path,
     if (!success){
         need_rebuild = true;
     } else {
-        let stored_source = string_from(read_all(stored_file, allocator));
+        let stored_source = alias(read_all(stored_file, allocator));
         close(stored_file);
         need_rebuild = !equal(stored_source, source);
     }
