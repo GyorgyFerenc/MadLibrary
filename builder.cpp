@@ -23,7 +23,7 @@ int main(int argc, char const* argv[]) {
         let code = run(playground, alloc);
         if (code == 0) 
         {
-            println_fmt("[%] Running: %", "Playground", "./playground");
+            //println_fmt("[%] Running: %", "Playground", "./playground");
             //system("./playground");
         }
     } 

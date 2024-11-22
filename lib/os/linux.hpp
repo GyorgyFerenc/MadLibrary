@@ -128,7 +128,6 @@ Pair<ssize, Errno> tcp_receive(Socket socket, Slice<u8> data){
 // File
 // ----
 
-//Todo(Ferenc): Implement files
 
 struct File{
     enum Mode{
