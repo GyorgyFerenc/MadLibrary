@@ -23,12 +23,12 @@ inline
 String build(String_Builder builder, Allocator allocator){
     let slice = slice_from(builder.bytes);
     let c  = copy(slice, allocator);
-    return string_from(c);
+    return alias(c);
 }
 
 inline
 String alias(String_Builder builder){
-    return string_from(slice_from(builder.bytes));
+    return alias(slice_from(builder.bytes));
 }
 
 inline

@@ -50,11 +50,14 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 using usize = std::size_t;
-using ssize = ssize_t;
+using isize = ssize_t;
 using f64 = double;
 using f32 = float;
 using uptr = uintptr_t;
 using iptr  = intptr_t;
+
+//Todo(Ferenc): Add rest
+#define U64_MAX 18446744073709551615ull
 
 #define UNREACHABLE assert(false && "uncreachable");
 
@@ -237,9 +240,150 @@ enum struct Errno: int{
     Ekeyrejected,    // Key was rejected by service
     Eownerdead,      // Owner died
     Enotrecoverable, // State not recoverable
+
+
+    Ewouldblock = Eagain,
 };
 
+
 const char* errno_to_c_str(Errno e){
+    switch (e){
+    case Errno::Ok:              return "Ok";
+    case Errno::Eperm:           return "Eperm";
+    case Errno::Enoent:          return "Enoent";
+    case Errno::Esrch:           return "Esrch";
+    case Errno::Eintr:           return "Eintr";
+    case Errno::Eio:             return "Eio";
+    case Errno::Enxio:           return "Enxio";
+    case Errno::E2big:           return "E2big";
+    case Errno::Enoexec:         return "Enoexec";
+    case Errno::Ebadf:           return "Ebadf";
+    case Errno::Echild:          return "Echild";
+    case Errno::Eagain:          return "Eagain";
+    case Errno::Enomem:          return "Enomem";
+    case Errno::Eacces:          return "Eacces";
+    case Errno::Efault:          return "Efault";
+    case Errno::Enotblk:         return "Enotblk";
+    case Errno::Ebusy:           return "Ebusy";
+    case Errno::Eexist:          return "Eexist";
+    case Errno::Exdev:           return "Exdev";
+    case Errno::Enodev:          return "Enodev";
+    case Errno::Enotdir:         return "Enotdir";
+    case Errno::Eisdir:          return "Eisdir";
+    case Errno::Einval:          return "Einval";
+    case Errno::Enfile:          return "Enfile";
+    case Errno::Emfile:          return "Emfile";
+    case Errno::Enotty:          return "Enotty";
+    case Errno::Etxtbsy:         return "Etxtbsy";
+    case Errno::Efbig:           return "Efbig";
+    case Errno::Enospc:          return "Enospc";
+    case Errno::Espipe:          return "Espipe";
+    case Errno::Erofs:           return "Erofs";
+    case Errno::Emlink:          return "Emlink";
+    case Errno::Epipe:           return "Epipe";
+    case Errno::Edom:            return "Edom";
+    case Errno::Erange:          return "Erange";
+    case Errno::Edeadlk:         return "Edeadlk";
+    case Errno::Enametoolong:    return "Enametoolong";
+    case Errno::Enolck:          return "Enolck";
+    case Errno::Enosys:          return "Enosys";
+    case Errno::Enotempty:       return "Enotempty";
+    case Errno::Eloop:           return "Eloop";
+    case Errno::Enomsg:          return "Enomsg";
+    case Errno::Eidrm:           return "Eidrm";
+    case Errno::Echrng:          return "Echrng";
+    case Errno::El2nsync:        return "El2nsync";
+    case Errno::El3hlt:          return "El3hlt";
+    case Errno::El3rst:          return "El3rst";
+    case Errno::Elnrng:          return "Elnrng";
+    case Errno::Eunatch:         return "Eunatch";
+    case Errno::Enocsi:          return "Enocsi";
+    case Errno::El2hlt:          return "El2hlt";
+    case Errno::Ebade:           return "Ebade";
+    case Errno::Ebadr:           return "Ebadr";
+    case Errno::Exfull:          return "Exfull";
+    case Errno::Enoano:          return "Enoano";
+    case Errno::Ebadrqc:         return "Ebadrqc";
+    case Errno::Ebadslt:         return "Ebadslt";
+    case Errno::Ebfont:          return "Ebfont";
+    case Errno::Enostr:          return "Enostr";
+    case Errno::Enodata:         return "Enodata";
+    case Errno::Etime:           return "Etime";
+    case Errno::Enosr:           return "Enosr";
+    case Errno::Enonet:          return "Enonet";
+    case Errno::Enopkg:          return "Enopkg";
+    case Errno::Eremote:         return "Eremote";
+    case Errno::Enolink:         return "Enolink";
+    case Errno::Eadv:            return "Eadv";
+    case Errno::Esrmnt:          return "Esrmnt";
+    case Errno::Ecomm:           return "Ecomm";
+    case Errno::Eproto:          return "Eproto";
+    case Errno::Emultihop:       return "Emultihop";
+    case Errno::Edotdot:         return "Edotdot";
+    case Errno::Ebadmsg:         return "Ebadmsg";
+    case Errno::Eoverflow:       return "Eoverflow";
+    case Errno::Enotuniq:        return "Enotuniq";
+    case Errno::Ebadfd:          return "Ebadfd";
+    case Errno::Eremchg:         return "Eremchg";
+    case Errno::Elibacc:         return "Elibacc";
+    case Errno::Elibbad:         return "Elibbad";
+    case Errno::Elibscn:         return "Elibscn";
+    case Errno::Elibmax:         return "Elibmax";
+    case Errno::Elibexec:        return "Elibexec";
+    case Errno::Eilseq:          return "Eilseq";
+    case Errno::Erestart:        return "Erestart";
+    case Errno::Estrpipe:        return "Estrpipe";
+    case Errno::Eusers:          return "Eusers";
+    case Errno::Enotsock:        return "Enotsock";
+    case Errno::Edestaddrreq:    return "Edestaddrreq";
+    case Errno::Emsgsize:        return "Emsgsize";
+    case Errno::Eprototype:      return "Eprototype";
+    case Errno::Enoprotoopt:     return "Enoprotoopt";
+    case Errno::Eprotonosupport: return "Eprotonosupport";
+    case Errno::Esocktnosupport: return "Esocktnosupport";
+    case Errno::Eopnotsupp:      return "Eopnotsupp";
+    case Errno::Epfnosupport:    return "Epfnosupport";
+    case Errno::Eafnosupport:    return "Eafnosupport";
+    case Errno::Eaddrinuse:      return "Eaddrinuse";
+    case Errno::Eaddrnotavail:   return "Eaddrnotavail";
+    case Errno::Enetdown:        return "Enetdown";
+    case Errno::Enetunreach:     return "Enetunreach";
+    case Errno::Enetreset:       return "Enetreset";
+    case Errno::Econnaborted:    return "Econnaborted";
+    case Errno::Econnreset:      return "Econnreset";
+    case Errno::Enobufs:         return "Enobufs";
+    case Errno::Eisconn:         return "Eisconn";
+    case Errno::Enotconn:        return "Enotconn";
+    case Errno::Eshutdown:       return "Eshutdown";
+    case Errno::Etoomanyrefs:    return "Etoomanyrefs";
+    case Errno::Etimedout:       return "Etimedout";
+    case Errno::Econnrefused:    return "Econnrefused";
+    case Errno::Ehostdown:       return "Ehostdown";
+    case Errno::Ehostunreach:    return "Ehostunreach";
+    case Errno::Ealready:        return "Ealready";
+    case Errno::Einprogress:     return "Einprogress";
+    case Errno::Estale:          return "Estale";
+    case Errno::Euclean:         return "Euclean";
+    case Errno::Enotnam:         return "Enotnam";
+    case Errno::Enavail:         return "Enavail";
+    case Errno::Eisnam:          return "Eisnam";
+    case Errno::Eremoteio:       return "Eremoteio";
+    case Errno::Edquot:          return "Edquot";
+    case Errno::Enomedium:       return "Enomedium";
+    case Errno::Emediumtype:     return "Emediumtype";
+    case Errno::Ecanceled:       return "Ecanceled";
+    case Errno::Enokey:          return "Enokey";
+    case Errno::Ekeyexpired:     return "Ekeyexpired";
+    case Errno::Ekeyrevoked:     return "Ekeyrevoked";
+    case Errno::Ekeyrejected:    return "Ekeyrejected";
+    case Errno::Eownerdead:      return "Eownerdead";
+    case Errno::Enotrecoverable: return "Enotrecoverable";
+    }
+
+    return "";
+}
+
+const char* errno_msg_c_str(Errno e){
     switch (e){
     case Errno::Ok:              return "Ok";
     case Errno::Eperm:           return "Operation not permitted";
@@ -482,7 +626,7 @@ void* allocate_raw_non_zero(Allocator allocator, usize size, usize align = Defau
 }
 
 void free_all(Allocator allocator){
-    allocator.procedure(allocator.data, { .kind = Allocator_Message::Free_All, {} });
+    allocator.procedure(allocator.data, { .kind = Allocator_Message::Free_All, });
 }
 
 void free(Allocator allocator, void* ptr){
@@ -568,64 +712,35 @@ let mallocator = Allocator{
     .procedure = malloc_allocate,
 };
 
+
 /*
  * -----
  * Arena
  * -----
  */
 
+//TODO(Ferenc): rewrite
+
 struct Arena{
-    struct Dynamic{
-        u8* next = NULL;
-    };
 
     u8*   buffer = NULL;
     usize pos = 0;
     usize len = 0;
     void* last_alloc = NULL;
-
-    // Dynamic if allocator is not NULL
-    Allocator allocator;
-    usize static_len = 0;
 };
 
-Arena create_static_arena(void* buffer, usize len){
+Arena create_arena(void* buffer, usize len){
     return {
         .buffer = cast(u8*) buffer,
         .len = len,
-        .allocator = {},
     };
 }
 
-Arena create_dynamic_arena(Allocator allocator, usize len){
-    return {
-        .allocator = allocator,
-        .static_len = len,
-    };
-}
-
-inline
-bool is_dynamic(Arena arena){
-    return arena.allocator.procedure != NULL;
-}
-
-void dynamic_arena_grow(Arena* arena, usize size){
-    let needed_size = sizeof(Arena::Dynamic) + size;
-    let len = arena->static_len < needed_size ? needed_size : arena->static_len;
-    let buffer = allocate_raw(arena->allocator, len);
-    (cast(Arena::Dynamic*) buffer)->next = arena->buffer;
-
-    arena->pos = sizeof(Arena::Dynamic);
-    arena->len = len;
-    arena->buffer = cast(u8*) buffer;
-}
 
 void* allocate_raw_non_zero(Arena* arena, usize size, usize align = Default_Align) {
     size = align_size(size, align);
-    if (arena->buffer == NULL || arena->pos + size > arena->len) {
-        if (!is_dynamic(*arena)) return NULL;
-        dynamic_arena_grow(arena, size);
-    }
+
+    if (arena->pos + size > arena->len) return NULL; 
 
     let ptr = arena->buffer + arena->pos;
     arena->pos += size;
@@ -640,22 +755,14 @@ void* allocate_raw(Arena* arena, usize size, usize align = Default_Align) {
 }
 
 void free_all(Arena* arena){
-    if (is_dynamic(*arena)){
-        let current = arena->buffer;
-        while (current != NULL){
-            let next = (cast(Arena::Dynamic*) current)->next;
-            free(arena->allocator, current);
-            current = next;
-        }
-    } else {
-        arena->pos = 0;
-        arena->last_alloc = NULL;
-    }
+    arena->pos = 0;
+    arena->last_alloc = NULL;
 }
 
 void free(Arena* arena, void* ptr){ }
 
 void* reallocate_raw(Arena* arena, void* ptr, usize old_size, usize size, usize align = Default_Align){
+    old_size = align_size(old_size, align);
     let pos_before_alloc = arena->pos - old_size;
 
     if (arena->last_alloc == ptr){
@@ -686,8 +793,7 @@ Allocator arena_allocator(Arena* arena){
                 free(arena, msg.free.ptr);
                 return NULL;
             case Allocator_Message::Realloc: 
-                reallocate_raw(arena, msg.realloc.ptr, msg.realloc.old_size, msg.realloc.size, msg.realloc.align);
-                return NULL;
+                return reallocate_raw(arena, msg.realloc.ptr, msg.realloc.old_size, msg.realloc.size, msg.realloc.align);
             }
 
             return NULL;
@@ -837,6 +943,12 @@ struct Slice{
     T& operator[](usize idx){ return this->buffer[idx]; }
 };
 
+
+template <class T>
+Slice<T> slice_empty(){
+    return { .len = 0, };
+}
+
 template <class T>
 Slice<T> create_slice(Allocator allocator, usize len){
     return {
@@ -965,8 +1077,7 @@ bool next(Slice_Iter<T>* it){
 
 template <class T>
 Slice_Iter<T> iter(Slice<T> slice){
-    return {
-        .value = 0, 
+    return Slice_Iter<T>{
         .value_ptr = NULL,
         .idx = 0,
         .count = 0,
@@ -1061,10 +1172,26 @@ usize append(Array<T>* array, T element){
     return pos;
 }
 
+
+template <class T>
+void remove(Array<T>* array, usize index){
+    for (usize i = index; i < array->len - 1; i++){
+        array->buffer[i] = array->buffer[i + 1];
+    }
+    array->len -= 1;
+}
+
 template <class T>
 inline
 void clear(Array<T>* array){
     array->len = 0;
+}
+
+
+template <class T>
+Option<T*> get(Array<T>* array, usize i){
+    if (i >= array->len) return {{}, false};
+    return {&array->buffer[i], true};
 }
 
 template <class T>
@@ -1097,6 +1224,24 @@ Slice_Iter<T> iter(Array<T> array){
         .buffer = array.buffer,
         .len    = array.len,
     };
+}
+template<class T>
+void reverse(Array<T>* array){
+    for (usize i = 0; i < array->len / 2; i++){
+        let other = array->len - 1 - i;
+        let temp = array->buffer[i];
+        array->buffer[i] = array->buffer[other];
+        array->buffer[other] = temp;
+    }
+}
+
+template<class T>
+Array<T> copy(Array<T> array, Allocator allocator){
+    let new_array = create_array<T>(allocator, array.capacity);
+    For_Each(iter(array)){
+        append(&new_array, it.value);
+    }
+    return new_array;
 }
 
 template<class T>
@@ -1285,7 +1430,28 @@ bool rune_whitespace(Rune rune){
 }
 
 inline
-bool rune_ascii_digit(Rune rune){
+bool is_ascii_lowercase_letter(Rune rune){
+    return 'a' <= rune && rune <= 'z';
+}
+
+inline
+bool is_ascii_uppercase_letter(Rune rune){
+    return 'A' <= rune && rune <= 'Z';
+}
+
+inline
+bool is_ascii_letter(Rune rune){
+    return is_ascii_lowercase_letter(rune) || is_ascii_uppercase_letter(rune);
+}
+
+inline
+bool is_ascii_printable(Rune rune){
+    return 33 <= rune && rune <= 126;
+}
+
+
+inline
+bool is_ascii_digit(Rune rune){
     return '0' <= rune && rune <= '9';
 }
 
@@ -1360,7 +1526,7 @@ String alias(const char* c_str, usize len){
    It aliases it, does not copy
 */
 inline
-String string_from(Slice<u8> slice){
+String alias(Slice<u8> slice){
     return String{
         .slice = slice,
     };
@@ -1372,6 +1538,23 @@ String string_from(const char* c_str, Allocator allocator){
     let str = create_string(allocator, len);
     memcpy((void*)str.slice.buffer, (void*)c_str, len);
     return str;
+}
+
+inline
+String string_from(Slice<Rune> runes, Allocator allocator){
+    usize len = 0;
+    For_Each(iter(runes)){
+        u8 buffer[4];
+        len += encode_to_utf8(it.value, buffer);
+    }
+    let slice = create_slice_non_zero<u8>(allocator, len);
+    let pos = 0;
+    For_Each(iter(runes)){
+        let len = encode_to_utf8(it.value, slice_from(slice, pos));
+        pos += len;
+    }
+
+    return alias(slice);
 }
 
 inline
@@ -1388,26 +1571,26 @@ Slice_Iter<u8> byte_iter(String str){
 
 inline
 String substr(String str, usize pos, usize len){
-    return string_from(slice_from(str.slice, pos, len));
+    return alias(slice_from(str.slice, pos, len));
 }
 
 inline
 String substr(String str, usize pos){
-    return string_from(slice_from(str.slice, pos));
+    return alias(slice_from(str.slice, pos));
 }
 
 inline
 Option<String> substr_safe(String str, usize pos, usize len){
     let [s, ok] = slice_from_safe(str.slice, pos, len);
     if (!ok) return {{}, false};
-    return {string_from(s), true};
+    return {alias(s), true};
 }
 
 inline
 Option<String> substr_safe(String str, usize pos){
     let [s, ok] = slice_from_safe(str.slice, pos);
     if (!ok) return {{}, false};
-    return {string_from(s), true};
+    return {alias(s), true};
 }
 
 inline
@@ -1477,9 +1660,12 @@ String_Rune_Iter iter(String str){
     };
 }
 
-
 String errno_to_str(Errno e){
     return alias(errno_to_c_str(e));
+}
+
+String errno_msg(Errno e){
+    return alias(errno_msg_c_str(e));
 }
 
 bool equal(String str1, String str2){
@@ -1554,6 +1740,21 @@ void push(Queue<T>* q, T el){
     q->buffer[q->write] = el;
     q->write = (q->write + 1) % q->capacity;
     q->len += 1;
+}
+
+
+template <class T>
+T top(Queue<T> q){
+    return q->buffer[q->read];
+}
+
+
+template <class T>
+Option<T> top_safe(Queue<T> q){
+    if (q->len == 0) {
+        return {{}, false};
+    }
+    return {q->buffer[q->read], true};
 }
 
 template <class T>
@@ -1634,3 +1835,137 @@ bool empty(Stack<T> s){
 }
 
 //Todo(Ferenc): add bucket array
+
+template <class T, usize bucket_len>
+struct Bucket_Array{
+    struct Bucket{
+        T buffer[bucket_len];
+    };
+
+    Array<Bucket*> buckets;
+    usize len = 0;
+    Allocator allocator;
+
+    T& operator[](usize i){
+        let bucket_i = i / bucket_len;
+        let in_i     = i % bucket_len;
+        return this->buckets[bucket_i]->buffer[in_i];
+    }
+};
+
+template <class T, usize bucket_len>
+Bucket_Array<T, bucket_len> create_bucket_array(Allocator allocator){
+    return {
+        .buckets = create_array<typename Bucket_Array<T, bucket_len>::Bucket*>(allocator),
+        .allocator = allocator,
+    };
+};
+
+template <class T, usize bucket_len>
+void destroy(Bucket_Array<T, bucket_len> array){
+    For_Each(iter(array.buckets)){
+        free(array.allocator, it.value);
+    }
+    destroy(array.buckets);
+}
+
+template <class T, usize bucket_len>
+usize append(Bucket_Array<T, bucket_len>* array, T el){
+    let bucket_i = array->len / bucket_len;
+    let in_i     = array->len % bucket_len;
+    if (bucket_i >= array->buckets.len){
+        let bucket = allocate<typename Bucket_Array<T, bucket_len>::Bucket>(array->allocator);
+        append(&array->buckets, bucket);
+    }
+
+    array->buckets[bucket_i]->buffer[in_i] = el;
+    let len = array->len;
+    array->len += 1;
+    return len;
+}
+
+
+template <class T, usize bucket_len>
+void clear(Bucket_Array<T, bucket_len>* array){
+    array->len = 0;
+}
+
+
+/*
+   Priority queue
+*/
+
+// Todo(Ferenc): Implement more efficiently
+template <class T>
+using Compare = bool(*)(T el1, T el2);
+
+template <class T>
+struct Priority_Queue{
+    Array<T>   array;
+    Compare<T> compare;
+};
+
+template <class T>
+Priority_Queue<T> create_priority_queue(Allocator allocator, Compare<T> compare){
+    return {
+        .array = create_array<T>(allocator),
+        .compare = compare,
+    };
+}
+
+template <class T>
+void destroy(Priority_Queue<T> q){
+    destroy(q.array);
+}
+
+
+template <class T>
+void push(Priority_Queue<T>* q, T el){
+    append(&q->array, el);
+}
+
+
+template <class T>
+T top(Priority_Queue<T> q){
+    T max = q.array[0];
+
+    for (usize i = 0; i < q.array.len; i++){
+        let el = q.array[i];
+        if (q.compare(max, el)) max = el;
+    }
+
+    return max;
+}
+
+
+template <class T>
+Option<T> top_safe(Priority_Queue<T> q){
+    if (q.array.len == 0) return {{}, false};
+    return {top(q), true};
+}
+
+template <class T>
+T pop(Priority_Queue<T>* q){
+    T max = q->array[0];
+    let index = 0;
+    for (usize i = 0; i < q->array.len; i++){
+        let el = q->array[i];
+        if (q->compare(max, el)) {
+            max = el;
+            index = i;
+        }
+    }
+    remove(&q->array, index);
+    return max;
+}
+
+template <class T>
+Option<T> pop_safe(Priority_Queue<T>* q){
+    if (q->array.len == 0) return {{}, false};
+    return {pop(q), true};
+}
+
+template <class T>
+bool empty(Priority_Queue<T> q){
+    return q.array.len == 0;
+}
